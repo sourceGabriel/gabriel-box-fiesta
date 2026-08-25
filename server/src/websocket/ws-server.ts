@@ -14,10 +14,14 @@ type ClientCtx = {
   role: 'host' | 'player' | null;
   playerId?: string;
   seenMessageIds: Set<string>;
+  rateWindowStart: number;
+  rateCount: number;
 };
 
 export class PartyServer {
   private readonly roomManager = new RoomManager();
+  private timerInterval: NodeJS.Timeout;
+  private startedPort = 3000;
   private readonly clients = new Map<WebSocket, ClientCtx>();
   private readonly hostConnections = new Set<WebSocket>();
   private readonly playerConnections = new Map<string, Set<WebSocket>>();
@@ -48,21 +52,48 @@ export class PartyServer {
   });
 
   constructor(private readonly port = 3000) {
+    this.startedPort = port;
     this.wss.on('connection', (socket) => this.onConnection(socket));
-    setInterval(() => this.tickTimers(), 500);
+    this.timerInterval = setInterval(() => this.tickTimers(), 500);
   }
 
   async start(): Promise<void> {
     await new Promise<void>((resolve) => {
       this.http.listen(this.port, '0.0.0.0', () => resolve());
     });
+    const address = this.http.address();
+    if (address && typeof address === 'object') {
+      this.startedPort = address.port;
+    }
     const ip = pickPrimaryLocalIPv4();
     const room = this.roomManager.getRoom();
-    logger.info({ roomCode: room.code, url: `http://${ip}:${this.port}/join/${room.code}` }, 'Party server started');
+    logger.info({ roomCode: room.code, url: `http://${ip}:${this.startedPort}/join/${room.code}` }, 'Party server started');
+  }
+
+  async stop(): Promise<void> {
+    clearInterval(this.timerInterval);
+    for (const socket of this.clients.keys()) {
+      socket.close();
+    }
+    await new Promise<void>((resolve) => this.wss.close(() => resolve()));
+    await new Promise<void>((resolve, reject) => this.http.close((error) => (error ? reject(error) : resolve())));
+  }
+
+  getRoomCode(): string {
+    return this.roomManager.getRoom().code;
+  }
+
+  getPort(): number {
+    return this.startedPort;
   }
 
   private onConnection(socket: WebSocket): void {
-    this.clients.set(socket, { role: null, seenMessageIds: new Set() });
+    this.clients.set(socket, {
+      role: null,
+      seenMessageIds: new Set(),
+      rateWindowStart: Date.now(),
+      rateCount: 0,
+    });
 
     socket.on('message', async (data) => {
       try {
@@ -103,6 +134,16 @@ export class PartyServer {
     }
 
     if (ctx.seenMessageIds.has(message.messageId)) {
+      return;
+    }
+    const now = Date.now();
+    if (now - ctx.rateWindowStart > 5000) {
+      ctx.rateWindowStart = now;
+      ctx.rateCount = 0;
+    }
+    ctx.rateCount += 1;
+    if (ctx.rateCount > 30) {
+      this.send(socket, 'ERROR', { code: 'RATE_LIMITED', message: 'Too many messages', recoverable: true });
       return;
     }
     ctx.seenMessageIds.add(message.messageId);
@@ -275,7 +316,7 @@ export class PartyServer {
   private async broadcastRoomState(): Promise<void> {
     const room = this.roomManager.getRoom();
     const ip = pickPrimaryLocalIPv4();
-    const joinUrl = `http://${ip}:${this.port}/join/${room.code}`;
+    const joinUrl = `http://${ip}:${this.startedPort}/join/${room.code}`;
     const joinQrDataUrl = await QRCode.toDataURL(joinUrl, { margin: 1, scale: 6 });
     this.broadcast('ROOM_STATE', {
       roomCode: room.code,
@@ -301,7 +342,7 @@ export class PartyServer {
     type: T,
     payload: Parameters<typeof makeServerMessage<T>>[1],
   ): void {
-    if (socket.readyState !== socket.OPEN) {
+    if (socket.readyState !== 1) {
       return;
     }
     socket.send(JSON.stringify(makeServerMessage(type, payload)));

@@ -228,3 +228,61 @@ pnpm -r dev
 
 - A arquitetura está documentada e cobre os 19 tópicos solicitados.
 - Nenhuma implementação de fases seguintes foi iniciada nesta entrega.
+
+## Implementação atual (incremental)
+
+Fases implementadas até agora:
+
+- ✅ Fase 2: Core (`Room`, `Session`, `RoomManager`, `Game` interface)
+- ✅ Fase 3: Engine UNO com regras centrais, estado autoritativo e eventos
+- ✅ Fase 4: Servidor WebSocket com protocolo tipado, join/reconnect e roteamento de ações
+- ✅ Fase 5/6 (MVP funcional): apps `host` e `mobile` React conectando em tempo real
+- ✅ Fase 7 (base): reconexão por token de sessão + transferência automática de owner
+- ✅ Fase 8 (base): teste de integração multiplayer com host e múltiplos jogadores
+
+## Como executar localmente
+
+Pré-requisito: Node.js 20+
+
+```bash
+cd /home/runner/work/gabriel-box-fiesta/gabriel-box-fiesta
+npm install
+```
+
+Terminal 1 (servidor):
+
+```bash
+npm run -w server dev
+```
+
+Terminal 2 (host):
+
+```bash
+npm run -w host dev
+```
+
+Terminal 3 (mobile):
+
+```bash
+npm run -w mobile dev
+```
+
+Por padrão, `host` e `mobile` conectam no servidor em `http://<host>:3000`.
+Se necessário, configure `VITE_SERVER_ORIGIN` em cada app frontend.
+
+## Como validar
+
+```bash
+npm run -w server test
+npm run -w server lint
+npm run -w shared lint
+npm run -w host lint
+npm run -w mobile lint
+npm run build
+```
+
+## Problemas conhecidos e rede local
+
+- Em rede local real, firewalls podem bloquear acesso externo à porta `3000`.
+- É necessário liberar a porta do servidor no sistema operacional.
+- Em ambientes com múltiplas interfaces (Wi-Fi/Ethernet/VPN/Docker), o IP exibido pode não ser o ideal; a seleção atual prioriza IPv4 privado.
