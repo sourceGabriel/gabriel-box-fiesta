@@ -1,0 +1,42 @@
+.mobile-layout {
+  min-height: 100vh;
+  display: grid;
+  gap: 0.8rem;
+  padding: 1rem;
+  box-sizing: border-box;
+  background: #101010;
+}
+
+.join-panel,
+.status-panel,
+.hand-panel,
+.actions-panel {
+  background: #171717;
+  border: 1px solid #2b2b2b;
+  border-radius: 10px;
+  padding: 0.8rem;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.card {
+  border: 1px solid #3b3b3b;
+  border-radius: 8px;
+  padding: 0.6rem;
+  text-align: left;
+}
+
+.card.selected {
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 2px #60a5fa44;
+}
+
+.error {
+  color: #f87171;
+}

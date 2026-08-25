@@ -1,0 +1,27 @@
+{
+  "name": "gabriel-box-fiesta",
+  "version": "1.0.0",
+  "description": "Este repositório inicia a **plataforma de party games multiplayer local** com o primeiro jogo inspirado em UNO.",
+  "main": "index.js",
+  "scripts": {
+    "test": "npm run --workspaces test",
+    "build": "npm run --workspaces build",
+    "lint": "npm run --workspaces lint",
+    "dev": "npm run --workspaces dev"
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://localhost:26831/sourceGabriel/gabriel-box-fiesta"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "private": true,
+  "workspaces": [
+    "server",
+    "shared",
+    "host",
+    "mobile"
+  ]
+}
