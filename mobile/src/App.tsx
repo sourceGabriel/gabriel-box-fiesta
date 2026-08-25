@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ServerMessage, UnoCard, UnoPrivatePlayerState, UnoPublicState } from '@party/shared';
 import './App.css';
 
@@ -24,7 +24,8 @@ const getRoomCodeFromPath = (): string => {
 function App() {
   const [roomCode, setRoomCode] = useState(getRoomCodeFromPath());
   const [playerName, setPlayerName] = useState('');
-  const [socket, setSocket] = useState<WebSocket | null>(null);
+  const socketRef = useRef<WebSocket | null>(null);
+  const pendingSessionStorageKeyRef = useRef<string | null>(null);
   const [playerId, setPlayerId] = useState<string | null>(null);
   const [publicState, setPublicState] = useState<UnoPublicState | null>(null);
   const [privateState, setPrivateState] = useState<UnoPrivatePlayerState | null>(null);
@@ -32,13 +33,16 @@ function App() {
   const [chosenColor, setChosenColor] = useState<'red' | 'yellow' | 'green' | 'blue'>('red');
   const [error, setError] = useState('');
   const [connected, setConnected] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
     const ws = new WebSocket(`${wsOrigin}/ws`);
     ws.onopen = () => setConnected(true);
     ws.onclose = () => {
       setConnected(false);
-      setSocket(null);
+      if (socketRef.current === ws) {
+        socketRef.current = null;
+      }
     };
     ws.onmessage = (event) => {
       const message = JSON.parse(event.data as string) as ServerMessage;
@@ -47,8 +51,9 @@ function App() {
           if (message.payload.playerId) {
             setPlayerId(message.payload.playerId);
           }
-          if (message.payload.sessionToken) {
-            localStorage.setItem(`session:${roomCode}:${playerName.toLowerCase()}`, message.payload.sessionToken);
+          if (message.payload.sessionToken && pendingSessionStorageKeyRef.current) {
+            localStorage.setItem(pendingSessionStorageKeyRef.current, message.payload.sessionToken);
+            pendingSessionStorageKeyRef.current = null;
           }
           break;
         case 'GAME_STATE_PUBLIC':
@@ -64,8 +69,18 @@ function App() {
           break;
       }
     };
-    setSocket(ws);
-    return () => ws.close();
+    socketRef.current = ws;
+    return () => {
+      if (socketRef.current === ws) {
+        socketRef.current = null;
+      }
+      ws.close();
+    };
+  }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
   }, []);
 
   const myTurn = publicState?.currentPlayerId === playerId;
@@ -75,12 +90,13 @@ function App() {
   );
 
   const joinOrReconnect = (): void => {
-    if (!socket || !roomCode || !playerName.trim()) {
+    if (!socketRef.current || !roomCode || !playerName.trim()) {
       return;
     }
-    const sessionToken = localStorage.getItem(`session:${roomCode}:${playerName.toLowerCase()}`);
+    const storageKey = `session:${roomCode.toUpperCase()}:${playerName.trim().toLowerCase()}`;
+    const sessionToken = localStorage.getItem(storageKey);
     if (sessionToken) {
-      socket.send(
+      socketRef.current.send(
         JSON.stringify(
           makeMessage('RECONNECT_SESSION', {
             roomCode: roomCode.toUpperCase(),
@@ -92,7 +108,8 @@ function App() {
       return;
     }
 
-    socket.send(
+    pendingSessionStorageKeyRef.current = storageKey;
+    socketRef.current.send(
       JSON.stringify(
         makeMessage('JOIN_ROOM', {
           roomCode: roomCode.toUpperCase(),
@@ -104,10 +121,10 @@ function App() {
   };
 
   const playCard = (): void => {
-    if (!socket || !selectedCard) {
+    if (!socketRef.current || !selectedCard) {
       return;
     }
-    socket.send(
+    socketRef.current.send(
       JSON.stringify(
         makeMessage('PLAY_CARD', {
           cardId: selectedCard.id,
@@ -119,17 +136,17 @@ function App() {
   };
 
   const drawCard = (): void => {
-    if (!socket) {
+    if (!socketRef.current) {
       return;
     }
-    socket.send(JSON.stringify(makeMessage('DRAW_CARD', {})));
+    socketRef.current.send(JSON.stringify(makeMessage('DRAW_CARD', {})));
   };
 
   const callUno = (): void => {
-    if (!socket) {
+    if (!socketRef.current) {
       return;
     }
-    socket.send(JSON.stringify(makeMessage('UNO_CALL', {})));
+    socketRef.current.send(JSON.stringify(makeMessage('UNO_CALL', {})));
   };
 
   return (
@@ -145,7 +162,7 @@ function App() {
 
       <section className="status-panel">
         <p>{myTurn ? 'SUA VEZ' : 'Aguardando turno'}</p>
-        <p>Timer: {publicState?.timer ? Math.max(0, Math.ceil((publicState.timer.expiresAt - Date.now()) / 1000)) : '--'}s</p>
+        <p>Timer: {publicState?.timer ? Math.max(0, Math.ceil((publicState.timer.expiresAt - now) / 1000)) : '--'}s</p>
         <p>Cor atual: {publicState?.currentColor ?? '-'}</p>
         <p>Pilha compra: +{publicState?.pendingDraw ?? 0}</p>
       </section>

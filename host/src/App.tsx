@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ServerMessage, UnoPublicState } from '@party/shared';
 import './App.css';
 
@@ -16,7 +16,7 @@ const makeMessage = <TType extends string, TPayload>(type: TType, payload: TPayl
 });
 
 function App() {
-  const [socket, setSocket] = useState<WebSocket | null>(null);
+  const socketRef = useRef<WebSocket | null>(null);
   const [roomCode, setRoomCode] = useState('');
   const [ownerPlayerId, setOwnerPlayerId] = useState<string | null>(null);
   const [players, setPlayers] = useState<PlayerView[]>([]);
@@ -24,6 +24,7 @@ function App() {
   const [joinQrDataUrl, setJoinQrDataUrl] = useState<string | undefined>(undefined);
   const [publicState, setPublicState] = useState<UnoPublicState | null>(null);
   const [lastError, setLastError] = useState('');
+  const [connected, setConnected] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -48,6 +49,7 @@ function App() {
 
     const ws = new WebSocket(`${wsOrigin}/ws`);
     ws.onopen = () => {
+      setConnected(true);
       ws.send(
         JSON.stringify(
           makeMessage('JOIN_ROOM', {
@@ -77,9 +79,19 @@ function App() {
           break;
       }
     };
-    ws.onclose = () => setSocket(null);
-    setSocket(ws);
-    return () => ws.close();
+    ws.onclose = () => {
+      setConnected(false);
+      if (socketRef.current === ws) {
+        socketRef.current = null;
+      }
+    };
+    socketRef.current = ws;
+    return () => {
+      if (socketRef.current === ws) {
+        socketRef.current = null;
+      }
+      ws.close();
+    };
   }, [roomCode]);
 
   const canStart = useMemo(() => players.filter((player) => player.connected).length >= 2, [players]);
@@ -93,8 +105,8 @@ function App() {
         {joinQrDataUrl ? <img className="qr" src={joinQrDataUrl} alt="QR code da sala" /> : null}
         <p className="url">{joinUrl}</p>
         <button
-          disabled={!socket || !canStart}
-          onClick={() => socket?.send(JSON.stringify(makeMessage('START_GAME', {})))}
+          disabled={!connected || !canStart}
+          onClick={() => socketRef.current?.send(JSON.stringify(makeMessage('START_GAME', {})))}
           type="button"
         >
           Iniciar partida

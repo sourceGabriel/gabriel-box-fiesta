@@ -1,8 +1,8 @@
-# Gabriel Box Fiesta — Fase 1 (Arquitetura do MVP)
+# Gabriel Box Fiesta — Plataforma Party Games (MVP Local)
 
-Este repositório inicia a **plataforma de party games multiplayer local** com o primeiro jogo inspirado em UNO.
+Este repositório implementa um **MVP local de plataforma de party games multiplayer** com o primeiro jogo inspirado em UNO.
 
-> Escopo desta entrega: **somente Fase 1 (arquitetura e plano técnico)**, sem implementação completa das fases seguintes.
+> Escopo atual: Fase 1 documentada + implementação funcional incremental das fases 2–8 (base).
 
 ## 1) Arquitetura recomendada
 
@@ -214,20 +214,12 @@ party-game/
 9. **Fase 9–11**: UX, animações, polimento party game.
 10. **Fase 12**: consolidação de plataforma multi-jogos.
 
-## Execução local (planejada para próximas fases)
-
-Após bootstrap do monorepo:
+## Execução local
 
 ```bash
-# exemplo futuro
-pnpm install
-pnpm -r dev
+cd /home/runner/work/gabriel-box-fiesta/gabriel-box-fiesta
+npm install
 ```
-
-## Validação desta fase
-
-- A arquitetura está documentada e cobre os 19 tópicos solicitados.
-- Nenhuma implementação de fases seguintes foi iniciada nesta entrega.
 
 ## Implementação atual (incremental)
 
@@ -240,14 +232,9 @@ Fases implementadas até agora:
 - ✅ Fase 7 (base): reconexão por token de sessão + transferência automática de owner
 - ✅ Fase 8 (base): teste de integração multiplayer com host e múltiplos jogadores
 
+Pré-requisito: Node.js 20+.
+
 ## Como executar localmente
-
-Pré-requisito: Node.js 20+
-
-```bash
-cd /home/runner/work/gabriel-box-fiesta/gabriel-box-fiesta
-npm install
-```
 
 Terminal 1 (servidor):
 
