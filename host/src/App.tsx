@@ -6,6 +6,7 @@ type PlayerView = { id: string; name: string; connected: boolean; handCount: num
 
 const serverOrigin = import.meta.env.VITE_SERVER_ORIGIN ?? `${window.location.protocol}//${window.location.hostname}:3000`;
 const wsOrigin = serverOrigin.replace('http', 'ws');
+const SAFE_QR_PREFIX = 'data:image/png;base64,';
 
 const makeMessage = <TType extends string, TPayload>(type: TType, payload: TPayload) => ({
   messageId: crypto.randomUUID(),
@@ -95,6 +96,12 @@ function App() {
   }, [roomCode]);
 
   const canStart = useMemo(() => players.filter((player) => player.connected).length >= 2, [players]);
+  const safeJoinQrDataUrl = useMemo(() => {
+    if (!joinQrDataUrl?.startsWith(SAFE_QR_PREFIX)) {
+      return undefined;
+    }
+    return joinQrDataUrl;
+  }, [joinQrDataUrl]);
 
   return (
     <main className="host-layout">
@@ -102,7 +109,7 @@ function App() {
         <h1>UNO</h1>
         <p className="code">{roomCode || '----'}</p>
         <p>Escaneie para entrar</p>
-        {joinQrDataUrl ? <img className="qr" src={joinQrDataUrl} alt="QR code da sala" /> : null}
+        {safeJoinQrDataUrl ? <img className="qr" src={safeJoinQrDataUrl} alt="QR code da sala" /> : null}
         <p className="url">{joinUrl}</p>
         <button
           disabled={!connected || !canStart}
