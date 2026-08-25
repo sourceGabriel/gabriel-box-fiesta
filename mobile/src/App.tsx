@@ -1,0 +1,199 @@
+import { useEffect, useMemo, useState } from 'react';
+import type { ServerMessage, UnoCard, UnoPrivatePlayerState, UnoPublicState } from '@party/shared';
+import './App.css';
+
+const serverOrigin = import.meta.env.VITE_SERVER_ORIGIN ?? `${window.location.protocol}//${window.location.hostname}:3000`;
+const wsOrigin = serverOrigin.replace('http', 'ws');
+
+const makeMessage = <TType extends string, TPayload>(type: TType, payload: TPayload) => ({
+  messageId: crypto.randomUUID(),
+  protocolVersion: 1 as const,
+  sentAt: Date.now(),
+  type,
+  payload,
+});
+
+const getRoomCodeFromPath = (): string => {
+  const segments = window.location.pathname.split('/').filter(Boolean);
+  if (segments[0] === 'join' && segments[1]) {
+    return segments[1].toUpperCase();
+  }
+  return '';
+};
+
+function App() {
+  const [roomCode, setRoomCode] = useState(getRoomCodeFromPath());
+  const [playerName, setPlayerName] = useState('');
+  const [socket, setSocket] = useState<WebSocket | null>(null);
+  const [playerId, setPlayerId] = useState<string | null>(null);
+  const [publicState, setPublicState] = useState<UnoPublicState | null>(null);
+  const [privateState, setPrivateState] = useState<UnoPrivatePlayerState | null>(null);
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const [chosenColor, setChosenColor] = useState<'red' | 'yellow' | 'green' | 'blue'>('red');
+  const [error, setError] = useState('');
+  const [connected, setConnected] = useState(false);
+
+  useEffect(() => {
+    const ws = new WebSocket(`${wsOrigin}/ws`);
+    ws.onopen = () => setConnected(true);
+    ws.onclose = () => {
+      setConnected(false);
+      setSocket(null);
+    };
+    ws.onmessage = (event) => {
+      const message = JSON.parse(event.data as string) as ServerMessage;
+      switch (message.type) {
+        case 'ROOM_JOINED':
+          if (message.payload.playerId) {
+            setPlayerId(message.payload.playerId);
+          }
+          if (message.payload.sessionToken) {
+            localStorage.setItem(`session:${roomCode}:${playerName.toLowerCase()}`, message.payload.sessionToken);
+          }
+          break;
+        case 'GAME_STATE_PUBLIC':
+          setPublicState(message.payload.state);
+          break;
+        case 'PLAYER_STATE_PRIVATE':
+          setPrivateState(message.payload.state);
+          break;
+        case 'ERROR':
+          setError(message.payload.message);
+          break;
+        default:
+          break;
+      }
+    };
+    setSocket(ws);
+    return () => ws.close();
+  }, []);
+
+  const myTurn = publicState?.currentPlayerId === playerId;
+  const selectedCard = useMemo(
+    () => privateState?.hand.find((card) => card.id === selectedCardId) ?? null,
+    [privateState, selectedCardId],
+  );
+
+  const joinOrReconnect = (): void => {
+    if (!socket || !roomCode || !playerName.trim()) {
+      return;
+    }
+    const sessionToken = localStorage.getItem(`session:${roomCode}:${playerName.toLowerCase()}`);
+    if (sessionToken) {
+      socket.send(
+        JSON.stringify(
+          makeMessage('RECONNECT_SESSION', {
+            roomCode: roomCode.toUpperCase(),
+            sessionToken,
+            role: 'player',
+          }),
+        ),
+      );
+      return;
+    }
+
+    socket.send(
+      JSON.stringify(
+        makeMessage('JOIN_ROOM', {
+          roomCode: roomCode.toUpperCase(),
+          playerName: playerName.trim(),
+          role: 'player',
+        }),
+      ),
+    );
+  };
+
+  const playCard = (): void => {
+    if (!socket || !selectedCard) {
+      return;
+    }
+    socket.send(
+      JSON.stringify(
+        makeMessage('PLAY_CARD', {
+          cardId: selectedCard.id,
+          chosenColor: selectedCard.type === 'wild' || selectedCard.type === 'wild_draw_four' ? chosenColor : undefined,
+        }),
+      ),
+    );
+    setSelectedCardId(null);
+  };
+
+  const drawCard = (): void => {
+    if (!socket) {
+      return;
+    }
+    socket.send(JSON.stringify(makeMessage('DRAW_CARD', {})));
+  };
+
+  const callUno = (): void => {
+    if (!socket) {
+      return;
+    }
+    socket.send(JSON.stringify(makeMessage('UNO_CALL', {})));
+  };
+
+  return (
+    <main className="mobile-layout">
+      <h1>Controle UNO</h1>
+      <section className="join-panel">
+        <input value={roomCode} onChange={(event) => setRoomCode(event.target.value.toUpperCase())} placeholder="Código da sala" />
+        <input value={playerName} onChange={(event) => setPlayerName(event.target.value)} placeholder="Seu nome" />
+        <button disabled={!connected} onClick={joinOrReconnect} type="button">
+          Entrar
+        </button>
+      </section>
+
+      <section className="status-panel">
+        <p>{myTurn ? 'SUA VEZ' : 'Aguardando turno'}</p>
+        <p>Timer: {publicState?.timer ? Math.max(0, Math.ceil((publicState.timer.expiresAt - Date.now()) / 1000)) : '--'}s</p>
+        <p>Cor atual: {publicState?.currentColor ?? '-'}</p>
+        <p>Pilha compra: +{publicState?.pendingDraw ?? 0}</p>
+      </section>
+
+      <section className="hand-panel">
+        <h2>Suas cartas</h2>
+        <div className="cards">
+          {(privateState?.hand ?? []).map((card: UnoCard) => {
+            const selected = selectedCardId === card.id;
+            const playable = privateState?.selectableCardIds.includes(card.id);
+            return (
+              <button
+                key={card.id}
+                className={`card ${selected ? 'selected' : ''}`}
+                disabled={!myTurn || !playable}
+                onClick={() => setSelectedCardId(selected ? null : card.id)}
+                type="button"
+              >
+                {card.color} {card.type} {card.value ?? ''}
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="actions-panel">
+        {(selectedCard?.type === 'wild' || selectedCard?.type === 'wild_draw_four') ? (
+          <select value={chosenColor} onChange={(event) => setChosenColor(event.target.value as 'red' | 'yellow' | 'green' | 'blue')}>
+            <option value="red">Vermelho</option>
+            <option value="yellow">Amarelo</option>
+            <option value="green">Verde</option>
+            <option value="blue">Azul</option>
+          </select>
+        ) : null}
+        <button disabled={!myTurn || !selectedCard} onClick={playCard} type="button">
+          Jogar
+        </button>
+        <button disabled={!myTurn} onClick={drawCard} type="button">
+          Comprar
+        </button>
+        <button disabled={(privateState?.hand.length ?? 0) !== 1} onClick={callUno} type="button">
+          UNO!
+        </button>
+      </section>
+
+      {error ? <p className="error">{error}</p> : null}
+    </main>
+  );
+}
+
+export default App;
