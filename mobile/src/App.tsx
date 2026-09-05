@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ServerMessage, UnoCard, UnoPrivatePlayerState, UnoPublicState } from '@party/shared';
+import { getCardArt } from './cardArt';
 import './App.css';
 
 const serverOrigin = import.meta.env.VITE_SERVER_ORIGIN ?? `${window.location.protocol}//${window.location.hostname}:3001`;
@@ -233,9 +234,9 @@ function App() {
                 disabled={!myTurn || !playable}
                 onClick={() => setSelectedCardId(selected ? null : card.id)}
                 type="button"
+                aria-label={card.type === 'number' ? `${card.color} ${card.value}` : `${card.color} ${card.type}`}
               >
-                <span className="card-color">{card.color}</span>
-                <span>{card.type === 'number' ? card.value : card.type}</span>
+                <img className="uno-card-image" src={getCardArt(card)} alt={card.type === 'number' ? `${card.color} ${card.value}` : `${card.color} ${card.type}`} />
               </button>
             );
           })}
