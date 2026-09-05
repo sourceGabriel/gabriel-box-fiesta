@@ -3,6 +3,7 @@
   display: grid;
   gap: 0.8rem;
   padding: 1rem;
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom));
   box-sizing: border-box;
   background: #101010;
   color: #f3f4f6;
@@ -207,9 +208,13 @@
 }
 
 .actions-panel {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
   padding: 0.5rem;
   border: 1px solid #2b2b2b;
-  background: #171717;
+  background: rgba(23, 23, 23, 0.96);
+  backdrop-filter: blur(10px);
 }
 
 .action-row {

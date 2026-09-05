@@ -14,7 +14,7 @@ const base = z.object({
 const color = z.enum(['red', 'yellow', 'green', 'blue']);
 
 const clientSchema = z.discriminatedUnion('type', [
-  base.extend({ type: z.literal('JOIN_ROOM'), payload: z.object({ roomCode: z.string().min(1), playerName: z.string().min(1).max(24), role: z.enum(['player', 'host']) }) }),
+  base.extend({ type: z.literal('JOIN_ROOM'), payload: z.object({ roomCode: z.string().min(1), playerName: z.string().min(1).max(40), role: z.enum(['player', 'host']) }) }),
   base.extend({ type: z.literal('RECONNECT_SESSION'), payload: z.object({ roomCode: z.string().min(1), sessionToken: z.string().min(1), role: z.enum(['player', 'host']) }) }),
   base.extend({ type: z.literal('START_GAME'), payload: z.object({}) }),
   base.extend({ type: z.literal('PLAY_CARD'), payload: z.object({ cardId: z.string().min(1), chosenColor: color.optional() }) }),

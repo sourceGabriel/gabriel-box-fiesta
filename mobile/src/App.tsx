@@ -126,7 +126,10 @@ function App() {
     if (!socketRef.current || !roomCode || !playerName.trim()) {
       return;
     }
-    const storageKey = `session:${roomCode.toUpperCase()}:${playerName.trim().toLowerCase()}`;
+
+    const basePlayerName = playerName.trim();
+    const serverPlayerName = `${selectedAvatar} ${basePlayerName}`;
+    const storageKey = `session:${roomCode.toUpperCase()}:${basePlayerName.toLowerCase()}`;
     const sessionToken = localStorage.getItem(storageKey);
     if (sessionToken) {
       socketRef.current.send(
@@ -146,7 +149,7 @@ function App() {
       JSON.stringify(
         makeMessage('JOIN_ROOM', {
           roomCode: roomCode.toUpperCase(),
-          playerName: playerName.trim(),
+          playerName: serverPlayerName,
           role: 'player',
         }),
       ),
@@ -223,16 +226,12 @@ function App() {
       <section className="players-panel">
         <h2>Jogadores</h2>
         <div className="player-list">
-          {(roomPlayers.length ? roomPlayers : [{ id: playerId ?? 'local', name: playerName || 'Você', connected: true, handCount: privateState?.hand.length ?? 0 }]).map((player) => {
-            const isCurrentPlayer = player.id === playerId;
-            const displayName = isCurrentPlayer ? `${selectedAvatar} ${player.name}` : player.name;
-            return (
-              <div key={player.id} className="player-pill">
-                <span>{displayName}</span>
-                <small>{player.handCount} cartas</small>
-              </div>
-            );
-          })}
+          {(roomPlayers.length ? roomPlayers : [{ id: playerId ?? 'local', name: `${selectedAvatar} ${playerName || 'Você'}`, connected: true, handCount: privateState?.hand.length ?? 0 }]).map((player) => (
+            <div key={player.id} className="player-pill">
+              <span>{player.name}</span>
+              <small>{player.handCount} cartas</small>
+            </div>
+          ))}
         </div>
       </section>
 
