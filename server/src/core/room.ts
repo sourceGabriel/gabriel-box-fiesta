@@ -121,6 +121,14 @@ export class Room {
     this.bumpStateVersion();
   }
 
+  startNextRound(): void {
+    if (!this.game) {
+      throw new Error('GAME_NOT_STARTED:Game is not started');
+    }
+    this.game.startNextRound();
+    this.bumpStateVersion();
+  }
+
   applyGameAction(action: UnoAction): void {
     if (!this.game) {
       throw new Error('GAME_NOT_STARTED:Game is not started');

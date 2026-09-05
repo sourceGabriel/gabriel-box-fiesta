@@ -6,6 +6,7 @@ export type ClientMessageType =
   | 'RECONNECT_SESSION'
   | 'START_GAME'
   | 'END_GAME'
+  | 'NEXT_ROUND'
   | 'PLAY_CARD'
   | 'DRAW_CARD'
   | 'CHOOSE_COLOR'
@@ -45,6 +46,7 @@ export type ClientMessage =
   | Envelope<'RECONNECT_SESSION', { roomCode: string; sessionToken: string; role: 'player' | 'host' }>
   | Envelope<'START_GAME', {}>
   | Envelope<'END_GAME', {}>
+  | Envelope<'NEXT_ROUND', {}>
   | Envelope<'PLAY_CARD', { cardId: string; chosenColor?: 'red' | 'yellow' | 'green' | 'blue' }>
   | Envelope<'DRAW_CARD', { playDrawnCardId?: string; chosenColor?: 'red' | 'yellow' | 'green' | 'blue' }>
   | Envelope<'CHOOSE_COLOR', { color: 'red' | 'yellow' | 'green' | 'blue' }>

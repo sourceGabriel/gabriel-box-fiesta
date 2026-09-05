@@ -34,7 +34,12 @@ export type UnoPublicState = {
   turn: number;
   round: number;
   timer: TurnTimer | null;
+  /** Winner of the most recently finished round (null while a round is active). */
   winnerPlayerId: PlayerId | null;
+  /** Winner of the whole match, set only when phase is 'game_finished'. */
+  gameWinnerPlayerId: PlayerId | null;
+  /** Score that ends the match once any player reaches it. */
+  targetScore: number;
 };
 
 export type UnoPrivatePlayerState = {
@@ -62,5 +67,7 @@ export type UnoFullState = {
   round: number;
   timer: TurnTimer | null;
   winnerPlayerId: PlayerId | null;
+  gameWinnerPlayerId: PlayerId | null;
+  targetScore: number;
   unoWindow: Record<PlayerId, number | null>;
 };

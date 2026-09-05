@@ -272,6 +272,14 @@ export class PartyServer {
       return;
     }
 
+    if (message.type === 'NEXT_ROUND') {
+      this.assertOwner(ctx.playerId, ctx.role);
+      room.startNextRound();
+      this.flushAndPublishState();
+      this.broadcastRoomState();
+      return;
+    }
+
     if (message.type === 'KICK_PLAYER') {
       this.assertOwner(ctx.playerId, ctx.role);
       const targetPlayerId = message.payload.targetPlayerId;

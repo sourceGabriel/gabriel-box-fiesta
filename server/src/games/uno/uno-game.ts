@@ -5,6 +5,7 @@ import { isCardPlayable } from './rules';
 import type { UnoAction } from './types';
 
 const TURN_DURATION_MS = 30_000;
+const DEFAULT_TARGET_SCORE = 500;
 
 const createTimer = (now: number, durationMs = TURN_DURATION_MS) => ({
   startedAt: now,
@@ -25,7 +26,12 @@ export class UnoGame implements Game<UnoFullState, UnoAction, GameEvent, UnoPubl
 
   private state: UnoFullState;
 
-  constructor(private readonly players: { id: string; name: string }[], private readonly roomCode: string, private readonly nowProvider: () => number = Date.now) {
+  constructor(
+    private readonly players: { id: string; name: string }[],
+    private readonly roomCode: string,
+    private readonly nowProvider: () => number = Date.now,
+    private readonly targetScore: number = DEFAULT_TARGET_SCORE,
+  ) {
     const playersOrder = players.map((player) => player.id);
     const playerBase = Object.fromEntries(players.map((player) => [
       player.id,
@@ -52,6 +58,8 @@ export class UnoGame implements Game<UnoFullState, UnoAction, GameEvent, UnoPubl
       round: 0,
       timer: null,
       winnerPlayerId: null,
+      gameWinnerPlayerId: null,
+      targetScore: this.targetScore,
       unoWindow,
     };
   }
@@ -59,7 +67,25 @@ export class UnoGame implements Game<UnoFullState, UnoAction, GameEvent, UnoPubl
   start(): void {
     assertCondition(this.players.length >= 2 && this.players.length <= 8, 'INVALID_PLAYER_COUNT', 'UNO requires 2-8 players');
 
-    let deck = shuffle(createDeck());
+    for (const playerId of this.state.playersOrder) {
+      this.state.players[playerId].score = 0;
+    }
+    this.state.round = 0;
+    this.state.gameWinnerPlayerId = null;
+
+    this.events.push({ type: 'game_started' });
+    this.dealRound(this.state.playersOrder[0] ?? null);
+  }
+
+  /** Deals a fresh round while keeping accumulated scores. Valid only after a round finished. */
+  startNextRound(): void {
+    assertCondition(this.state.phase === 'round_finished', 'INVALID_PHASE', 'A round must be finished before starting the next');
+    this.dealRound(this.state.winnerPlayerId ?? this.state.playersOrder[0] ?? null);
+  }
+
+  private dealRound(startingPlayerId: string | null): void {
+    const starter = startingPlayerId ?? this.state.playersOrder[0]!;
+    const deck = shuffle(createDeck());
     this.state.round += 1;
     this.state.winnerPlayerId = null;
     this.state.pendingDraw = 0;
@@ -85,13 +111,11 @@ export class UnoGame implements Game<UnoFullState, UnoAction, GameEvent, UnoPubl
     this.state.discardPile = [top];
     this.state.currentColor = top.color === 'wild' ? 'red' : top.color;
     this.state.drawPile = deck;
-    this.state.currentPlayerId = this.state.playersOrder[0] ?? null;
+    this.state.currentPlayerId = starter;
     this.state.timer = null;
 
-    this.events.push({ type: 'game_started' });
-    if (this.state.currentPlayerId) {
-      this.events.push({ type: 'turn_started', playerId: this.state.currentPlayerId, turn: this.state.turn });
-    }
+    this.events.push({ type: 'round_started', round: this.state.round, startingPlayerId: starter });
+    this.events.push({ type: 'turn_started', playerId: starter, turn: this.state.turn });
     this.startTurnTimer(this.nowProvider());
   }
 
@@ -213,6 +237,8 @@ export class UnoGame implements Game<UnoFullState, UnoAction, GameEvent, UnoPubl
       round: this.state.round,
       timer,
       winnerPlayerId: this.state.winnerPlayerId,
+      gameWinnerPlayerId: this.state.gameWinnerPlayerId,
+      targetScore: this.state.targetScore,
     };
   }
 
@@ -317,10 +343,22 @@ export class UnoGame implements Game<UnoFullState, UnoAction, GameEvent, UnoPubl
     }
 
     if (hand.length === 0) {
+      const roundScore = this.computeRoundScore(playerId);
       this.state.phase = 'round_finished';
       this.state.winnerPlayerId = playerId;
-      this.state.players[playerId].score += this.computeRoundScore(playerId);
-      this.events.push({ type: 'round_finished', winnerPlayerId: playerId });
+      this.state.players[playerId].score += roundScore;
+      this.state.timer = null;
+      this.events.push({ type: 'round_finished', winnerPlayerId: playerId, roundScore });
+
+      const leader = this.state.playersOrder
+        .map((id) => this.state.players[id])
+        .reduce((best, current) => (current.score > best.score ? current : best));
+      if (leader.score >= this.state.targetScore) {
+        this.state.phase = 'game_finished';
+        this.state.gameWinnerPlayerId = leader.id;
+        this.events.push({ type: 'game_finished', gameWinnerPlayerId: leader.id });
+      }
+
       return { endedRound: true, awaitingColorChoice: false, skipNext, extraReverseForTwoPlayers };
     }
 

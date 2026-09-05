@@ -155,4 +155,39 @@ describe('multiplayer integration', () => {
     p1.close();
     p2.close();
   });
+
+  it('routes NEXT_ROUND and rejects it while a round is active', async () => {
+    server = new PartyServer(0);
+    await server.start();
+    const roomCode = server.getRoomCode();
+    const port = server.getPort();
+
+    const host = new WebSocket(`ws://127.0.0.1:${port}/ws`);
+    await new Promise<void>((resolve) => host.once('open', () => resolve()));
+    host.send(makeMessage('JOIN_ROOM', { roomCode, playerName: 'HOST', role: 'host' }));
+    await waitForMessage(host, 'ROOM_JOINED');
+
+    const p1 = new WebSocket(`ws://127.0.0.1:${port}/ws`);
+    await new Promise<void>((resolve) => p1.once('open', () => resolve()));
+    p1.send(makeMessage('JOIN_ROOM', { roomCode, playerName: 'Alice', role: 'player' }));
+    await waitForMessage(p1, 'ROOM_JOINED');
+
+    const p2 = new WebSocket(`ws://127.0.0.1:${port}/ws`);
+    await new Promise<void>((resolve) => p2.once('open', () => resolve()));
+    p2.send(makeMessage('JOIN_ROOM', { roomCode, playerName: 'Bob', role: 'player' }));
+    await waitForMessage(p2, 'ROOM_JOINED');
+
+    const startedPromise = waitForMessage(host, 'GAME_STARTED');
+    host.send(makeMessage('START_GAME', {}));
+    await startedPromise;
+
+    const errorPromise = waitForMessage(host, 'ERROR');
+    host.send(makeMessage('NEXT_ROUND', {}));
+    const error = await errorPromise;
+    expect(error.payload.message).toMatch(/round must be finished/i);
+
+    host.close();
+    p1.close();
+    p2.close();
+  });
 });

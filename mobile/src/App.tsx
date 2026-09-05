@@ -121,6 +121,14 @@ function App() {
   }, [now, publicState]);
 
   const hasJoined = Boolean(playerId && privateState);
+  const gameOver = publicState?.phase === 'game_finished';
+  const roundOver = publicState?.phase === 'round_finished' || gameOver;
+  const resultWinnerId = gameOver ? publicState?.gameWinnerPlayerId : publicState?.winnerPlayerId;
+  const resultWinnerName = publicState?.players.find((player) => player.id === resultWinnerId)?.name ?? '—';
+  const scoreboard = useMemo(
+    () => [...(publicState?.players ?? [])].sort((a, b) => b.score - a.score),
+    [publicState],
+  );
 
   const joinOrReconnect = (): void => {
     if (!socketRef.current || !roomCode || !playerName.trim()) {
@@ -236,6 +244,23 @@ function App() {
         </div>
       </section>
 
+      {roundOver ? (
+        <section className="result-panel">
+          <h2>{gameOver ? `🏆 ${resultWinnerName} venceu a partida` : `Rodada encerrada — ${resultWinnerName} zerou a mão`}</h2>
+          <ol className="result-scoreboard">
+            {scoreboard.map((player, index) => (
+              <li key={player.id} className={index === 0 ? 'leader' : ''}>
+                <span>{index + 1}. {player.name}</span>
+                <strong>{player.score}</strong>
+              </li>
+            ))}
+          </ol>
+          <p className="hint">
+            {gameOver ? 'Partida encerrada. Aguarde o anfitrião iniciar uma nova.' : 'Aguarde o anfitrião iniciar a próxima rodada.'}
+          </p>
+        </section>
+      ) : null}
+
       <section className="hand-panel">
         <h2>Suas cartas</h2>
         <p className="hint">
@@ -271,13 +296,13 @@ function App() {
           </select>
         ) : null}
         <div className="action-row">
-          <button className="action-button action-green" disabled={!myTurn || !selectedCard} onClick={playCard} type="button">
+          <button className="action-button action-green" disabled={roundOver || !myTurn || !selectedCard} onClick={playCard} type="button">
             Jogar carta
           </button>
-          <button className="action-button action-red" disabled={(privateState?.hand.length ?? 0) !== 1} onClick={callUno} type="button">
+          <button className="action-button action-red" disabled={roundOver || (privateState?.hand.length ?? 0) !== 1} onClick={callUno} type="button">
             UNO!
           </button>
-          <button className="action-button action-blue" disabled={!myTurn} onClick={drawCard} type="button">
+          <button className="action-button action-blue" disabled={roundOver || !myTurn} onClick={drawCard} type="button">
             Comprar carta
           </button>
         </div>

@@ -133,4 +133,53 @@ describe('UnoGame', () => {
     expect(() => game.handleAction({ type: 'uno_challenge', playerId: 'p2', targetPlayerId: 'p1' })).not.toThrow();
     expect(game.getState().hands.p1.length).toBe(beforeCount + 2);
   });
+
+  const forceWin = (game: UnoGame, winnerId: string): void => {
+    const state = (game as unknown as { state: ReturnType<UnoGame['getState']> }).state;
+    state.hands.p1 = [{ id: 'x-p1', color: 'red', type: 'number', value: 9 }];
+    state.hands.p2 = [{ id: 'x-p2', color: 'blue', type: 'number', value: 7 }];
+    state.hands.p3 = [{ id: 'x-p3', color: 'green', type: 'number', value: 4 }];
+    state.hands[winnerId] = [{ id: 'win', color: state.currentColor!, type: 'number', value: 5 }];
+    state.currentPlayerId = winnerId;
+    game.handleAction({ type: 'play_card', playerId: winnerId, cardId: 'win' });
+  };
+
+  it('accumulates score across rounds and lets the winner start the next round', () => {
+    const game = new UnoGame(players, 'ABCD', () => 1000, 500);
+    game.start();
+
+    forceWin(game, 'p1');
+    const afterRound1 = game.getState();
+    expect(afterRound1.phase).toBe('round_finished');
+    expect(afterRound1.winnerPlayerId).toBe('p1');
+    const p1Score = afterRound1.players.p1.score;
+    expect(p1Score).toBeGreaterThan(0);
+
+    game.startNextRound();
+    const round2 = game.getState();
+    expect(round2.phase).toBe('round_active');
+    expect(round2.round).toBe(2);
+    expect(round2.players.p1.score).toBe(p1Score);
+    expect(round2.currentPlayerId).toBe('p1');
+    for (const player of players) {
+      expect(round2.hands[player.id]).toHaveLength(7);
+    }
+  });
+
+  it('finishes the game once a player reaches the target score', () => {
+    const game = new UnoGame(players, 'ABCD', () => 1000, 10);
+    game.start();
+
+    forceWin(game, 'p1');
+    const final = game.getState();
+    expect(final.phase).toBe('game_finished');
+    expect(final.gameWinnerPlayerId).toBe('p1');
+    expect(() => game.startNextRound()).toThrow(/INVALID_PHASE/);
+  });
+
+  it('rejects startNextRound while a round is still active', () => {
+    const game = new UnoGame(players, 'ABCD');
+    game.start();
+    expect(() => game.startNextRound()).toThrow(/INVALID_PHASE/);
+  });
 });

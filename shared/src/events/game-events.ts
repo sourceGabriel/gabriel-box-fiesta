@@ -7,6 +7,7 @@ export type GameEvent =
   | { type: 'player_disconnected'; playerId: PlayerId }
   | { type: 'owner_changed'; playerId: PlayerId | null }
   | { type: 'game_started' }
+  | { type: 'round_started'; round: number; startingPlayerId: PlayerId }
   | { type: 'timer_started'; playerId: PlayerId; turn: number; durationMs: number }
   | { type: 'turn_started'; playerId: PlayerId; turn: number }
   | { type: 'turn_ended'; playerId: PlayerId; turn: number }
@@ -17,4 +18,5 @@ export type GameEvent =
   | { type: 'player_skipped'; playerId: PlayerId }
   | { type: 'uno_called'; playerId: PlayerId }
   | { type: 'uno_penalty_applied'; playerId: PlayerId; count: number }
-  | { type: 'round_finished'; winnerPlayerId: PlayerId };
+  | { type: 'round_finished'; winnerPlayerId: PlayerId; roundScore: number }
+  | { type: 'game_finished'; gameWinnerPlayerId: PlayerId };

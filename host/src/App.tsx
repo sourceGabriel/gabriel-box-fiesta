@@ -146,6 +146,23 @@ function App() {
     socketRef.current?.send(JSON.stringify(makeMessage('END_GAME', {})));
   };
 
+  const handleNextRound = () => {
+    socketRef.current?.send(JSON.stringify(makeMessage('NEXT_ROUND', {})));
+  };
+
+  const handleNewGame = () => {
+    socketRef.current?.send(JSON.stringify(makeMessage('START_GAME', {})));
+  };
+
+  const scoreboard = useMemo(
+    () => [...(publicState?.players ?? [])].sort((a, b) => b.score - a.score),
+    [publicState],
+  );
+  const roundWinnerName = publicState?.players.find((player) => player.id === publicState.winnerPlayerId)?.name ?? '—';
+  const gameWinnerName = publicState?.players.find((player) => player.id === publicState.gameWinnerPlayerId)?.name ?? '—';
+  const roundOver = publicState?.phase === 'round_finished';
+  const gameOver = publicState?.phase === 'game_finished';
+
   const handleKickPlayer = (playerId: string) => {
     const confirmed = window.confirm('Expulsar este jogador da sala?');
     if (!confirmed) {
@@ -214,6 +231,34 @@ function App() {
 
   return (
     <main className="host-layout host-game">
+      {(roundOver || gameOver) ? (
+        <div className="result-overlay" role="dialog" aria-live="polite">
+          <div className="result-card">
+            <p className="eyebrow">{gameOver ? 'Fim da partida' : `Rodada ${publicState.round}`}</p>
+            <h2>{gameOver ? `🏆 ${gameWinnerName} venceu!` : `${roundWinnerName} zerou a mão`}</h2>
+            <ol className="result-scoreboard">
+              {scoreboard.map((player, index) => (
+                <li key={player.id} className={index === 0 ? 'leader' : ''}>
+                  <span>{index + 1}. {player.name}</span>
+                  <strong>{player.score}</strong>
+                </li>
+              ))}
+            </ol>
+            <p className="result-target">Meta: {publicState.targetScore} pts</p>
+            <div className="result-actions">
+              {gameOver ? (
+                <>
+                  <button type="button" className="start-button" onClick={handleNewGame}>Nova partida</button>
+                  <button type="button" className="danger-button" onClick={handleEndGame}>Encerrar</button>
+                </>
+              ) : (
+                <button type="button" className="start-button" onClick={handleNextRound}>Próxima rodada</button>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <button
         type="button"
         className="draw-pile-toggle"
