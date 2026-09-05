@@ -351,17 +351,6 @@ function App() {
           ))}
         </ul>
       </section>
-
-      <section className="table-card">
-        <h2>Mesa</h2>
-        <div className="table-meta">
-          <p>Cor atual: {publicState.currentColor ?? '-'}</p>
-          <p>Descarte: {publicState.topDiscard ? formatCardLabel(publicState.topDiscard) : '-'}</p>
-          <p>Vez: {currentPlayerName}</p>
-          <p>Pilha compra: +{publicState.pendingDraw}</p>
-          <p>Fase: {publicState.phase}</p>
-        </div>
-      </section>
     </main>
   );
 }

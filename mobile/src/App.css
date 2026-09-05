@@ -32,6 +32,13 @@
   z-index: 1;
 }
 
+
+.timer-row {
+  border-bottom: none;
+  padding-bottom: 0;
+  justify-content: center;
+}
+
 .header-room {
   display: inline-flex;
   align-items: center;
@@ -82,11 +89,6 @@
   padding-bottom: 0;
 }
 
-.timer-row {
-  border-bottom: none;
-  padding-bottom: 0;
-  justify-content: center;
-}
 
 .label {
   opacity: 0.7;
@@ -172,8 +174,8 @@
 }
 
 .card.selected {
-  border-color: #60a5fa;
-  box-shadow: 0 0 0 2px #60a5fa44;
+  border-color: #ff0000;
+  box-shadow: 0 0 0 2px #fb2424;
 }
 
 .uno-card-image {
@@ -296,7 +298,7 @@ select {
     border-radius: 14px;
   }
 
-  .action-row {
-    grid-template-columns: 1fr;
-  }
+  /*.action-row {*/
+  /*  grid-template-columns: 1fr;*/
+  /*}*/
 }

@@ -192,6 +192,13 @@ function App() {
           <span className="eyebrow">Sala</span>
           <strong className="room-code-inline">{roomCode || 'Código da sala'}</strong>
         </div>
+
+        <section className="status-panel">
+          <div className="status-row timer-row">
+            <span className="label">Timer</span>
+            <strong className="timer-top-right">{timerLabel}</strong>
+          </div>
+        </section>
       </header>
 
       {!hasJoined ? (
@@ -216,16 +223,10 @@ function App() {
         </section>
       ) : null}
 
-      <section className="status-panel">
-        <div className="status-row timer-row">
-          <span className="label">Timer</span>
-          <strong className="timer-top-right">{timerLabel}</strong>
-        </div>
-      </section>
-
       <section className="players-panel">
         <h2>Jogadores</h2>
         <div className="player-list">
+
           {(roomPlayers.length ? roomPlayers : [{ id: playerId ?? 'local', name: `${selectedAvatar} ${playerName || 'Você'}`, connected: true, handCount: privateState?.hand.length ?? 0 }]).map((player) => (
             <div key={player.id} className="player-pill">
               <span>{player.name}</span>
@@ -258,12 +259,6 @@ function App() {
             );
           })}
         </div>
-        {selectedCard ? (
-          <div className="selected-card-panel">
-            <span className="label">Selecionada</span>
-            <strong>{selectedCard.color === 'wild' ? selectedCard.type : `${selectedCard.color} ${selectedCard.type === 'number' ? selectedCard.value : selectedCard.type}`}</strong>
-          </div>
-        ) : null}
       </section>
 
       <section className="actions-panel">
