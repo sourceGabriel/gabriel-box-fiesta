@@ -254,7 +254,7 @@ Terminal 3 (mobile):
 npm run -w mobile dev
 ```
 
-Por padrão, `host` e `mobile` conectam no servidor em `http://<host>:3000`.
+Por padrão, `host` e `mobile` conectam no servidor em `http://<host>:3001`.
 Se necessário, configure `VITE_SERVER_ORIGIN` em cada app frontend.
 
 ## Como validar
@@ -270,6 +270,6 @@ npm run build
 
 ## Problemas conhecidos e rede local
 
-- Em rede local real, firewalls podem bloquear acesso externo à porta `3000`.
+- Em rede local real, firewalls podem bloquear acesso externo à porta `3001`.
 - É necessário liberar a porta do servidor no sistema operacional.
 - Em ambientes com múltiplas interfaces (Wi-Fi/Ethernet/VPN/Docker), o IP exibido pode não ser o ideal; a seleção atual prioriza IPv4 privado.

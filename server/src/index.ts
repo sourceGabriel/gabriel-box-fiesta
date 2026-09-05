@@ -1,6 +1,6 @@
 import { PartyServer } from './websocket/ws-server';
 
-const port = Number(process.env.PORT ?? 3000);
+const port = Number(process.env.PORT ?? 3001);
 
 const main = async (): Promise<void> => {
   const server = new PartyServer(port);
