@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ServerMessage, UnoPublicState } from '@party/shared';
+import { getCardArt, getCardBackArt } from './cardArt';
 import './App.css';
 
 type PlayerView = { id: string; name: string; connected: boolean; handCount: number };
@@ -219,16 +220,21 @@ function App() {
         <div className="board-table">
           <div className="pile-card draw-pile">
             <span>Monte</span>
+            <img
+              className="card-art large-card"
+              src={publicState.topDrawPileCard ? getCardArt(publicState.topDrawPileCard) : getCardBackArt()}
+              alt={publicState.topDrawPileCard ? formatCardLabel(publicState.topDrawPileCard) : 'Monte de cartas'}
+            />
             <strong>{publicState.drawPileCount}</strong>
           </div>
 
           <div className={`pile-card discard-pile color-${publicState.currentColor ?? 'neutral'}`}>
             <span>Descarte</span>
-            {publicState.topDiscard ? (
-              <strong>{formatCardLabel(publicState.topDiscard)}</strong>
-            ) : (
-              <strong>-</strong>
-            )}
+            <img
+              className="card-art large-card"
+              src={publicState.topDiscard ? getCardArt(publicState.topDiscard) : getCardBackArt()}
+              alt={publicState.topDiscard ? formatCardLabel(publicState.topDiscard) : 'Sem descarte'}
+            />
           </div>
         </div>
 
@@ -270,10 +276,17 @@ function App() {
         <ul>
           {players.map((player) => (
             <li key={player.id} className={publicState.currentPlayerId === player.id ? 'current-turn' : ''}>
-              <span>{player.name}</span>
-              <span>{player.handCount} cartas</span>
-              <span>{player.connected ? 'online' : 'offline'}</span>
-              {ownerPlayerId === player.id ? <strong>OWNER</strong> : null}
+              <div className="player-main">
+                <span>{player.name}</span>
+                <span>{player.handCount} cartas</span>
+                <span>{player.connected ? 'online' : 'offline'}</span>
+                {ownerPlayerId === player.id ? <strong>OWNER</strong> : null}
+              </div>
+              <div className="player-hand-preview" aria-label={`${player.name}: ${player.handCount} cartas`}>
+                {Array.from({ length: Math.min(player.handCount, 3) }, (_, index) => (
+                  <img key={`${player.id}-${index}`} className="mini-card" src={getCardBackArt()} alt="Carta virada para baixo" />
+                ))}
+              </div>
             </li>
           ))}
         </ul>

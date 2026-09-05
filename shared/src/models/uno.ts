@@ -27,6 +27,7 @@ export type UnoPublicState = {
   direction: Direction;
   currentColor: Exclude<UnoColor, 'wild'> | null;
   topDiscard: UnoCard | null;
+  topDrawPileCard: UnoCard | null;
   drawPileCount: number;
   pendingDraw: number;
   pendingDrawType: 'draw_two' | 'wild_draw_four' | null;

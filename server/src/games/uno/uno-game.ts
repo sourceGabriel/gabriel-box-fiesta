@@ -191,6 +191,7 @@ export class UnoGame implements Game<UnoFullState, UnoAction, GameEvent, UnoPubl
       direction: this.state.direction,
       currentColor: this.state.currentColor,
       topDiscard: this.state.discardPile.at(-1) ?? null,
+      topDrawPileCard: this.state.drawPile.at(0) ?? null,
       drawPileCount: this.state.drawPile.length,
       pendingDraw: this.state.pendingDraw,
       pendingDrawType: this.state.pendingDrawType,
