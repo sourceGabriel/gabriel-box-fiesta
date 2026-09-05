@@ -15,7 +15,7 @@ const makeMessage = <T extends string, P>(type: T, payload: P) =>
 const waitForMessage = async <T extends ServerMessage['type']>(
   socket: WebSocket,
   type: T,
-  timeoutMs = 3000,
+  timeoutMs = 3001,
 ): Promise<Extract<ServerMessage, { type: T }>> => {
   return await new Promise((resolve, reject) => {
     const timeout = setTimeout(() => reject(new Error(`Timeout waiting ${type}`)), timeoutMs);
@@ -35,7 +35,7 @@ const waitForMessageWhere = async <T extends ServerMessage['type']>(
   socket: WebSocket,
   type: T,
   predicate: (message: Extract<ServerMessage, { type: T }>) => boolean,
-  timeoutMs = 3000,
+  timeoutMs = 3001,
 ): Promise<Extract<ServerMessage, { type: T }>> => {
   return await new Promise((resolve, reject) => {
     const timeout = setTimeout(() => reject(new Error(`Timeout waiting ${type}`)), timeoutMs);
@@ -128,7 +128,7 @@ describe('multiplayer integration', () => {
 
     const gameStartedPromise = waitForMessage(host, 'GAME_STARTED');
     const publicStatePromise = waitForMessage(host, 'GAME_STATE_PUBLIC');
-    p1.send(makeMessage('START_GAME', {}));
+    host.send(makeMessage('START_GAME', {}));
     await gameStartedPromise;
     const publicState = await publicStatePromise;
     expect(publicState.payload.state.players).toHaveLength(2);
