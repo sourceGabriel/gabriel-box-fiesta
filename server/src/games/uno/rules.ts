@@ -28,5 +28,9 @@ export const isCardPlayable = (
   if (card.type === 'number' && topDiscard.type === 'number' && card.value === topDiscard.value) {
     return true;
   }
-  return card.type === topDiscard.type;
+  // For number cards, only matching value above covers it. For action cards (skip, reverse, draw_two), matching type is allowed.
+  if (card.type !== 'number' && card.type === topDiscard.type) {
+    return true;
+  }
+  return false;
 };
