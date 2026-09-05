@@ -84,12 +84,13 @@ export class UnoGame implements Game<UnoFullState, UnoAction, GameEvent, UnoPubl
     this.state.currentColor = top.color === 'wild' ? 'red' : top.color;
     this.state.drawPile = deck;
     this.state.currentPlayerId = this.state.playersOrder[0] ?? null;
-    this.state.timer = createTimer(this.nowProvider());
+    this.state.timer = null;
 
     this.events.push({ type: 'game_started' });
     if (this.state.currentPlayerId) {
       this.events.push({ type: 'turn_started', playerId: this.state.currentPlayerId, turn: this.state.turn });
     }
+    this.startTurnTimer(this.nowProvider());
   }
 
   onTurnTimeout(): GameEvent[] {
@@ -183,6 +184,17 @@ export class UnoGame implements Game<UnoFullState, UnoAction, GameEvent, UnoPubl
   }
 
   getPublicState(): UnoPublicState {
+    const now = this.nowProvider();
+    const timer = this.state.timer
+      ? {
+          startedAt: this.state.timer.startedAt,
+          expiresAt: this.state.timer.expiresAt,
+          durationMs: this.state.timer.durationMs,
+          serverNow: now,
+          remainingMs: Math.max(0, this.state.timer.expiresAt - now),
+        }
+      : null;
+
     return {
       phase: this.state.phase,
       roomCode: this.state.roomCode,
@@ -197,7 +209,7 @@ export class UnoGame implements Game<UnoFullState, UnoAction, GameEvent, UnoPubl
       pendingDrawType: this.state.pendingDrawType,
       turn: this.state.turn,
       round: this.state.round,
-      timer: this.state.timer,
+      timer,
       winnerPlayerId: this.state.winnerPlayerId,
     };
   }
@@ -259,12 +271,17 @@ export class UnoGame implements Game<UnoFullState, UnoAction, GameEvent, UnoPubl
     let skipNext = false;
     let extraReverseForTwoPlayers = false;
 
+    // Debug: log draw effects during tests
     if (card.type === 'draw_two') {
+      // console.debug(`[DEBUG] playCard: draw_two by ${playerId} before=${this.state.pendingDraw}`);
       this.state.pendingDraw += 2;
       this.state.pendingDrawType = 'draw_two';
+      // console.debug(`[DEBUG] playCard: draw_two applied pendingDraw=${this.state.pendingDraw}`);
     } else if (card.type === 'wild_draw_four') {
+      // console.debug(`[DEBUG] playCard: wild_draw_four by ${playerId} before=${this.state.pendingDraw}`);
       this.state.pendingDraw += 4;
       this.state.pendingDrawType = 'wild_draw_four';
+      // console.debug(`[DEBUG] playCard: wild_draw_four applied pendingDraw=${this.state.pendingDraw}`);
     }
 
     if (card.type === 'skip') {
@@ -361,10 +378,10 @@ export class UnoGame implements Game<UnoFullState, UnoAction, GameEvent, UnoPubl
       }
     }
 
-    this.state.timer = createTimer(this.nowProvider());
     if (this.state.currentPlayerId) {
       this.events.push({ type: 'turn_started', playerId: this.state.currentPlayerId, turn: this.state.turn });
     }
+    this.startTurnTimer(this.nowProvider());
 
     this.maintainDrawPile();
   }
@@ -388,6 +405,18 @@ export class UnoGame implements Game<UnoFullState, UnoAction, GameEvent, UnoPubl
     }
     this.state.players[playerId].handCount = hand.length;
     return cards;
+  }
+
+  // Host-triggered: start the turn timer for the current player.
+  startTurnTimer(now = Date.now(), durationMs = TURN_DURATION_MS): void {
+    if (this.state.phase !== 'round_active') {
+      throw new Error('INVALID_PHASE:Cannot start timer when round is not active');
+    }
+    if (!this.state.currentPlayerId) {
+      throw new Error('NO_CURRENT_PLAYER:No current player to start timer for');
+    }
+    this.state.timer = createTimer(now, durationMs);
+    this.events.push({ type: 'timer_started', playerId: this.state.currentPlayerId, turn: this.state.turn, durationMs });
   }
 
   private applyDraw(playerId: string, count: number): void {

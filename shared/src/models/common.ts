@@ -8,6 +8,10 @@ export type TurnTimer = {
   startedAt: number;
   expiresAt: number;
   durationMs: number;
+  // server timestamp to help clients synchronize clocks
+  serverNow: number;
+  // remaining milliseconds for the current turn (computed server-side)
+  remainingMs: number;
 };
 
 export type Phase =

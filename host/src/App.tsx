@@ -34,8 +34,7 @@ function App() {
   const [publicState, setPublicState] = useState<UnoPublicState | null>(null);
   const [lastError, setLastError] = useState('');
   const [connected, setConnected] = useState(false);
-  const [lastEvent, setLastEvent] = useState('Sala pronta');
-  const [hasStarted, setHasStarted] = useState(false);
+  const [hasStarted] = useState(false);
   const [revealDrawPile, setRevealDrawPile] = useState(false);
   const playersRef = useRef<PlayerView[]>([]);
 
@@ -100,48 +99,6 @@ function App() {
         case 'GAME_STATE_PUBLIC':
           setPublicState(message.payload.state);
           break;
-        case 'GAME_EVENT': {
-          const event = message.payload.event;
-          const actorName = 'playerId' in event && event.playerId
-            ? playersRef.current.find((player) => player.id === event.playerId)?.name ?? 'Jogador'
-            : 'Sistema';
-          switch (event.type) {
-            case 'game_started':
-              setHasStarted(true);
-              setLastEvent('Partida iniciada');
-              break;
-            case 'turn_started':
-              setLastEvent(`Vez de ${actorName}`);
-              break;
-            case 'card_played':
-              setLastEvent(`${actorName} jogou ${event.card.color} ${event.card.type}`);
-              break;
-            case 'card_drawn':
-              setLastEvent(`${actorName} comprou ${event.count} carta(s)`);
-              break;
-            case 'color_changed':
-              setLastEvent(`Cor alterada para ${event.color}`);
-              break;
-            case 'direction_changed':
-              setLastEvent(`Direção ${event.direction === 1 ? 'horária' : 'anti-horária'}`);
-              break;
-            case 'uno_called':
-              setLastEvent(`${actorName} declarou UNO!`);
-              break;
-            case 'uno_penalty_applied':
-              setLastEvent(`${actorName} recebeu penalidade de ${event.count}`);
-              break;
-            case 'round_finished':
-              setLastEvent(
-                `Rodada encerrada: vencedor ${playersRef.current.find((player) => player.id === event.winnerPlayerId)?.name ?? 'desconhecido'}`,
-              );
-              break;
-            default:
-              setLastEvent(event.type);
-              break;
-          }
-          break;
-        }
         case 'ERROR':
           setLastError(message.payload.message);
           break;
@@ -168,11 +125,6 @@ function App() {
 
   const currentPlayerName = useMemo(
     () => players.find((player) => player.id === publicState?.currentPlayerId)?.name ?? '-',
-    [players, publicState],
-  );
-
-  const winnerPlayerName = useMemo(
-    () => players.find((player) => player.id === publicState?.winnerPlayerId)?.name ?? '-',
     [players, publicState],
   );
 
@@ -241,11 +193,6 @@ function App() {
     );
   }
 
-  const phaseLabel =
-    publicState.phase === 'round_finished' || publicState.phase === 'game_finished'
-      ? `${publicState.phase}${publicState.winnerPlayerId ? ` • vencedor ${winnerPlayerName}` : ''}`
-      : publicState.phase;
-
   return (
     <main className="host-layout host-game">
       <button
@@ -283,52 +230,6 @@ function App() {
           </div>
         </div>
 
-        <div className="board-status">
-          <div>
-            <span>Vez</span>
-            <strong>{currentPlayerName}</strong>
-          </div>
-          <div>
-            <span>Cor atual</span>
-            <strong>{publicState.currentColor ?? '-'}</strong>
-          </div>
-          <div>
-            <span>Rodada</span>
-            <strong>{publicState.round}</strong>
-          </div>
-          <div>
-            <span>Turno</span>
-            <strong>{publicState.turn}</strong>
-          </div>
-          <div>
-            <span>Pilha compra</span>
-            <strong>+{publicState.pendingDraw}</strong>
-          </div>
-          <div>
-            <span>Fase</span>
-            <strong>{phaseLabel}</strong>
-          </div>
-        </div>
-
-        <div className="event-feed">
-          <span>Evento</span>
-          <strong>{lastEvent}</strong>
-        </div>
-
-        <div className="round-summary">
-          <div>
-            <span>Vencedor</span>
-            <strong>{publicState.winnerPlayerId ? winnerPlayerName : '-'}</strong>
-          </div>
-          <div>
-            <span>Direção</span>
-            <strong>{publicState.direction === 1 ? 'horária' : 'anti-horária'}</strong>
-          </div>
-          <div>
-            <span>Timer</span>
-            <strong>{publicState.timer ? `${Math.max(0, publicState.timer.expiresAt - Date.now())}ms` : '-'}</strong>
-          </div>
-        </div>
       </section>
 
       <section className="players-card board-players">

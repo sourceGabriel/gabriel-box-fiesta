@@ -115,6 +115,15 @@ export class Room {
     this.bumpStateVersion();
   }
 
+  // Host UI triggers starting the timer for the current turn.
+  startTurnTimer(): void {
+    if (!this.game) {
+      throw new Error('GAME_NOT_STARTED:Game is not started');
+    }
+    this.game.startTurnTimer(Date.now());
+    this.bumpStateVersion();
+  }
+
   applyGameAction(action: UnoAction): void {
     if (!this.game) {
       throw new Error('GAME_NOT_STARTED:Game is not started');

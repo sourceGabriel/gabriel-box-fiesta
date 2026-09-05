@@ -343,7 +343,7 @@ export class PartyServer {
 
   private getJoinUrl(ip: string, roomCode: string): string {
     const explicitOrigin = process.env.PARTY_PUBLIC_URL ?? process.env.VITE_MOBILE_ORIGIN ?? process.env.MOBILE_APP_ORIGIN ?? process.env.PARTY_APP_ORIGIN;
-    const frontendOrigin = explicitOrigin ?? `http://${ip}:5173`;
+    const frontendOrigin = explicitOrigin ?? `http://${ip}:5174`;
     return `${frontendOrigin.replace(/\/$/, '')}/join/${roomCode}`;
   }
 
