@@ -264,6 +264,24 @@ export class PartyServer {
       return;
     }
 
+    if (message.type === 'END_GAME') {
+      this.assertOwner(ctx.playerId, ctx.role);
+      room.endGame();
+      this.broadcast('GAME_ENDED', {});
+      this.broadcastRoomState();
+      return;
+    }
+
+    if (message.type === 'KICK_PLAYER') {
+      this.assertOwner(ctx.playerId, ctx.role);
+      const targetPlayerId = message.payload.targetPlayerId;
+      room.kickPlayer(targetPlayerId);
+      this.playerConnections.delete(targetPlayerId);
+      this.broadcast('PLAYER_LEFT', { playerId: targetPlayerId });
+      this.broadcastRoomState();
+      return;
+    }
+
     if (!ctx.playerId) {
       this.send(socket, 'ERROR', { code: 'NOT_AUTHENTICATED', message: 'Player session required', recoverable: true });
       return;
@@ -399,9 +417,14 @@ export class PartyServer {
     if (!timer) {
       return;
     }
-    if (Date.now() >= timer.expiresAt) {
+
+    const now = Date.now();
+    if (now >= timer.expiresAt) {
       room.applyTimeout();
       this.flushAndPublishState();
+      return;
     }
+
+    this.pushGameState();
   }
 }

@@ -7,6 +7,7 @@ export type GameEvent =
   | { type: 'player_disconnected'; playerId: PlayerId }
   | { type: 'owner_changed'; playerId: PlayerId | null }
   | { type: 'game_started' }
+  | { type: 'timer_started'; playerId: PlayerId; turn: number; durationMs: number }
   | { type: 'turn_started'; playerId: PlayerId; turn: number }
   | { type: 'turn_ended'; playerId: PlayerId; turn: number }
   | { type: 'card_played'; playerId: PlayerId; card: UnoCard }

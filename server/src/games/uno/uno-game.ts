@@ -10,6 +10,8 @@ const createTimer = (now: number, durationMs = TURN_DURATION_MS) => ({
   startedAt: now,
   expiresAt: now + durationMs,
   durationMs,
+  serverNow: now,
+  remainingMs: durationMs,
 });
 
 function assertCondition(condition: unknown, code: string, message: string): asserts condition {

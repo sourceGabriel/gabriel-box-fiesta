@@ -5,6 +5,7 @@ export type ClientMessageType =
   | 'JOIN_ROOM'
   | 'RECONNECT_SESSION'
   | 'START_GAME'
+  | 'END_GAME'
   | 'PLAY_CARD'
   | 'DRAW_CARD'
   | 'CHOOSE_COLOR'
@@ -23,6 +24,7 @@ export type ServerMessageType =
   | 'PLAYER_LEFT'
   | 'OWNER_CHANGED'
   | 'GAME_STARTED'
+  | 'GAME_ENDED'
   | 'GAME_STATE_PUBLIC'
   | 'PLAYER_STATE_PRIVATE'
   | 'GAME_EVENT'
@@ -42,6 +44,7 @@ export type ClientMessage =
   | Envelope<'JOIN_ROOM', { roomCode: string; playerName: string; role: 'player' | 'host' }>
   | Envelope<'RECONNECT_SESSION', { roomCode: string; sessionToken: string; role: 'player' | 'host' }>
   | Envelope<'START_GAME', {}>
+  | Envelope<'END_GAME', {}>
   | Envelope<'PLAY_CARD', { cardId: string; chosenColor?: 'red' | 'yellow' | 'green' | 'blue' }>
   | Envelope<'DRAW_CARD', { playDrawnCardId?: string; chosenColor?: 'red' | 'yellow' | 'green' | 'blue' }>
   | Envelope<'CHOOSE_COLOR', { color: 'red' | 'yellow' | 'green' | 'blue' }>
@@ -60,6 +63,7 @@ export type ServerMessage =
   | Envelope<'PLAYER_LEFT', { playerId: string }>
   | Envelope<'OWNER_CHANGED', { ownerPlayerId: string | null }>
   | Envelope<'GAME_STARTED', {}>
+  | Envelope<'GAME_ENDED', {}>
   | Envelope<'GAME_STATE_PUBLIC', { state: UnoPublicState; stateVersion: number }>
   | Envelope<'PLAYER_STATE_PRIVATE', { state: UnoPrivatePlayerState; stateVersion: number }>
   | Envelope<'GAME_EVENT', { event: GameEvent; stateVersion: number }>

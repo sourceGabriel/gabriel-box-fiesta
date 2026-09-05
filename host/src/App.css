@@ -231,6 +231,60 @@
   gap: 0.5rem;
 }
 
+.players-board-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.host-timer-pill {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.88);
+  padding: 0.7rem 0.85rem;
+}
+
+.host-timer-pill span {
+  color: #cbd5e1;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.host-timer-pill strong {
+  font-size: 1.4rem;
+  font-weight: 800;
+}
+
+.host-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.danger-button,
+.kick-button {
+  border: 1px solid rgba(248, 113, 113, 0.45);
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(127, 29, 29, 0.9), rgba(69, 10, 10, 0.8));
+  color: #fff;
+  font-weight: 700;
+  padding: 0.6rem 0.9rem;
+  cursor: pointer;
+}
+
+.kick-button {
+  border-color: rgba(248, 113, 113, 0.32);
+  background: rgba(127, 29, 29, 0.38);
+  white-space: nowrap;
+}
+
 .players-card li {
   display: flex;
   justify-content: space-between;
@@ -247,6 +301,13 @@
   gap: 0.5rem;
   align-items: center;
   flex: 1;
+}
+
+.player-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
 }
 
 .player-hand-preview {

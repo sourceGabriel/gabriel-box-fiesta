@@ -101,9 +101,6 @@ export class Room {
     if (!requestedBy) {
       throw new Error('NOT_ALLOWED:Player context required');
     }
-    if (requestedBy !== this.ownerPlayerId) {
-      throw new Error('NOT_ALLOWED:Only owner can start game');
-    }
     const connectedPlayers = [...this.players.values()].filter((player) => player.connected);
     if (connectedPlayers.length < 2) {
       throw new Error('NOT_ENOUGH_PLAYERS:At least two players required');
@@ -130,6 +127,25 @@ export class Room {
     }
     this.game.handleAction(action);
     this.bumpStateVersion();
+  }
+
+  endGame(): void {
+    this.game = null;
+    this.state = 'ended';
+    this.bumpStateVersion();
+  }
+
+  kickPlayer(playerId: string): void {
+    const player = this.players.get(playerId);
+    if (!player) {
+      return;
+    }
+    this.players.delete(playerId);
+    this.playersByName.delete(player.name.trim().toLowerCase());
+    if (this.ownerPlayerId === playerId) {
+      const replacement = [...this.players.values()].find((candidate) => candidate.connected && candidate.id !== playerId);
+      this.ownerPlayerId = replacement?.id ?? null;
+    }
   }
 
   applyTimeout(): void {

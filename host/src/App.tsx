@@ -28,7 +28,6 @@ const makeMessage = <TType extends string, TPayload>(type: TType, payload: TPayl
 function App() {
   const socketRef = useRef<WebSocket | null>(null);
   const [roomCode, setRoomCode] = useState('');
-  const [ownerPlayerId, setOwnerPlayerId] = useState<string | null>(null);
   const [players, setPlayers] = useState<PlayerView[]>([]);
   const [joinQrDataUrl, setJoinQrDataUrl] = useState<string | undefined>(undefined);
   const [publicState, setPublicState] = useState<UnoPublicState | null>(null);
@@ -92,12 +91,14 @@ function App() {
       const message = JSON.parse(event.data as string) as ServerMessage;
       switch (message.type) {
         case 'ROOM_STATE':
-          setOwnerPlayerId(message.payload.ownerPlayerId);
           setPlayers(message.payload.players);
           setJoinQrDataUrl(message.payload.joinQrDataUrl);
           break;
         case 'GAME_STATE_PUBLIC':
           setPublicState(message.payload.state);
+          break;
+        case 'GAME_ENDED':
+          setPublicState(null);
           break;
         case 'ERROR':
           setLastError(message.payload.message);
@@ -132,6 +133,25 @@ function App() {
     const colorLabel = card.color === 'wild' ? 'wild' : card.color;
     const valueLabel = card.type === 'number' && card.value !== null ? card.value : card.type;
     return `${colorLabel} ${valueLabel}`;
+  };
+
+  const timerLabel = useMemo(() => {
+    if (!publicState?.timer) {
+      return '—';
+    }
+    return `${Math.max(0, Math.ceil(publicState.timer.remainingMs / 1000))}s`;
+  }, [publicState]);
+
+  const handleEndGame = () => {
+    socketRef.current?.send(JSON.stringify(makeMessage('END_GAME', {})));
+  };
+
+  const handleKickPlayer = (playerId: string) => {
+    const confirmed = window.confirm('Expulsar este jogador da sala?');
+    if (!confirmed) {
+      return;
+    }
+    socketRef.current?.send(JSON.stringify(makeMessage('KICK_PLAYER', { targetPlayerId: playerId })));
   };
 
   if (!publicState) {
@@ -170,7 +190,6 @@ function App() {
                     <li key={player.id}>
                       <span>{player.name}</span>
                       <span>{player.handCount}</span>
-                      {ownerPlayerId === player.id ? <strong>OWNER</strong> : null}
                     </li>
                   ))}
                 </ul>
@@ -233,22 +252,35 @@ function App() {
       </section>
 
       <section className="players-card board-players">
+        <div className="players-board-header">
+          <div className="host-timer-pill">
+            <span>Timer</span>
+            <strong>{timerLabel}</strong>
+          </div>
+          <button type="button" className="danger-button" onClick={handleEndGame}>
+            Encerrar partida
+          </button>
+        </div>
         <h2>Jogadores</h2>
         <ul>
           {players.map((player) => (
-            <li key={player.id} className={publicState.currentPlayerId === player.id ? 'current-turn' : ''}>
-              <div className="player-main">
-                <span>{player.name}</span>
-                <span>{player.handCount} cartas</span>
-                <span>{player.connected ? 'online' : 'offline'}</span>
-                {ownerPlayerId === player.id ? <strong>OWNER</strong> : null}
-              </div>
-              <div className="player-hand-preview" aria-label={`${player.name}: ${player.handCount} cartas`}>
-                {Array.from({ length: Math.min(player.handCount, 3) }, (_, index) => (
-                  <img key={`${player.id}-${index}`} className="mini-card" src={getCardBackArt()} alt="Carta virada para baixo" />
-                ))}
-              </div>
-            </li>
+           <li key={player.id} className={publicState.currentPlayerId === player.id ? 'current-turn' : ''}>
+             <div className="player-main">
+               <span>{player.name}</span>
+               <span>{player.handCount} cartas</span>
+               <span>{player.connected ? 'online' : 'offline'}</span>
+             </div>
+             <div className="player-actions">
+               <div className="player-hand-preview" aria-label={`${player.name}: ${player.handCount} cartas`}>
+                 {Array.from({ length: Math.min(player.handCount, 3) }, (_, index) => (
+                   <img key={`${player.id}-${index}`} className="mini-card" src={getCardBackArt()} alt="Carta virada para baixo" />
+                 ))}
+               </div>
+               <button type="button" className="kick-button" onClick={() => handleKickPlayer(player.id)}>
+                 Expulsar
+               </button>
+             </div>
+           </li>
           ))}
         </ul>
       </section>
