@@ -254,7 +254,12 @@ Terminal 3 (mobile):
 npm run -w mobile dev
 ```
 
-Por padrão, `host` e `mobile` conectam no servidor em `http://<host>:3001`.
+Os clientes web ficam em portas separadas por padrão:
+
+- host: `http://<host>:5173`
+- mobile: `http://<host>:5174`
+
+O servidor continua em `http://<host>:3001`.
 Se necessário, configure `VITE_SERVER_ORIGIN` em cada app frontend.
 
 ## Como validar
