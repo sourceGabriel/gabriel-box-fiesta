@@ -21,13 +21,33 @@ type ClientCtx = {
 export class PartyServer {
   private readonly roomManager = new RoomManager();
   private timerInterval: NodeJS.Timeout;
-  private startedPort = 3000;
+  private startedPort = 3001;
   private readonly clients = new Map<WebSocket, ClientCtx>();
   private readonly hostConnections = new Set<WebSocket>();
   private readonly playerConnections = new Map<string, Set<WebSocket>>();
 
   private readonly http = createServer((req, res) => {
     const url = new URL(req.url ?? '/', `http://${req.headers.host}`);
+    const origin = req.headers.origin;
+    const isLocalOrigin = typeof origin === 'string' && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+
+    if (origin && isLocalOrigin) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+    } else if (origin) {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+    } else {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+    }
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Vary', 'Origin');
+
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204);
+      res.end();
+      return;
+    }
+
     if (url.pathname === '/health') {
       res.writeHead(200, { 'content-type': 'application/json' });
       res.end(JSON.stringify({ ok: true }));
@@ -51,7 +71,7 @@ export class PartyServer {
     maxPayload: 16 * 1024,
   });
 
-  constructor(private readonly port = 3000) {
+  constructor(private readonly port = 3001) {
     this.startedPort = port;
     this.wss.on('connection', (socket) => this.onConnection(socket));
     this.timerInterval = setInterval(() => this.tickTimers(), 500);
@@ -228,8 +248,8 @@ export class PartyServer {
     }
 
     if (message.type === 'START_GAME') {
-      this.assertOwner(ctx.playerId);
-      room.startGame(ctx.playerId ?? null);
+      this.assertOwner(ctx.playerId, ctx.role);
+      room.startGame(ctx.playerId ?? room.ownerPlayerId ?? null);
       this.broadcast('GAME_STARTED', {});
       this.pushGameState();
       this.flushGameEvents();
@@ -348,7 +368,11 @@ export class PartyServer {
     socket.send(JSON.stringify(makeServerMessage(type, payload)));
   }
 
-  private assertOwner(playerId?: string): void {
+  private assertOwner(playerId?: string, role?: ClientCtx['role']): void {
+    if (role === 'host') {
+      return;
+    }
+
     if (!playerId || this.roomManager.getRoom().ownerPlayerId !== playerId) {
       throw new Error('NOT_ALLOWED:Only owner can perform this action');
     }

@@ -9,7 +9,8 @@
 
 .room-card,
 .players-card,
-.table-card {
+.table-card,
+.game-board-card {
   border: 1px solid #2b2b2b;
   border-radius: 12px;
   padding: 1rem;
@@ -49,9 +50,96 @@
   align-items: center;
 }
 
+.players-card li.current-turn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 0.4rem 0.6rem;
+}
+
 .table-meta {
   display: grid;
   gap: 0.3rem;
+}
+
+.game-board-card {
+  display: grid;
+  gap: 1rem;
+}
+
+.board-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.board-header h1 {
+  margin: 0;
+  font-size: 2.5rem;
+}
+
+.room-badge {
+  background: #262626;
+  border: 1px solid #3a3a3a;
+  border-radius: 999px;
+  padding: 0.45rem 0.8rem;
+  color: #dfe7ff;
+}
+
+.board-table {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.pile-card {
+  min-height: 180px;
+  border: 1px solid #303030;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.1rem;
+}
+
+.pile-card strong {
+  font-size: 2rem;
+}
+
+.discard-pile {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.color-red { background: rgba(228, 71, 71, 0.18); }
+.color-yellow { background: rgba(234, 179, 8, 0.18); }
+.color-green { background: rgba(34, 197, 94, 0.18); }
+.color-blue { background: rgba(59, 130, 246, 0.18); }
+.color-neutral { background: rgba(148, 163, 184, 0.12); }
+
+.board-status {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.board-status div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.75rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid #2a2a2a;
+}
+
+.board-status span {
+  color: #a0a0a0;
+  font-size: 0.85rem;
+  text-transform: uppercase;
 }
 
 .error {

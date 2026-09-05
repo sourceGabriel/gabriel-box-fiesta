@@ -4,7 +4,7 @@ import './App.css';
 
 type PlayerView = { id: string; name: string; connected: boolean; handCount: number };
 
-const serverOrigin = import.meta.env.VITE_SERVER_ORIGIN ?? `${window.location.protocol}//${window.location.hostname}:3000`;
+const serverOrigin = import.meta.env.VITE_SERVER_ORIGIN ?? `${window.location.protocol}//${window.location.hostname}:3001`;
 const wsOrigin = serverOrigin.replace('http', 'ws');
 const SAFE_QR_PREFIX = 'data:image/png;base64,';
 
@@ -103,29 +103,121 @@ function App() {
     return joinQrDataUrl;
   }, [joinQrDataUrl]);
 
+  const currentPlayerName = useMemo(
+    () => players.find((player) => player.id === publicState?.currentPlayerId)?.name ?? '-',
+    [players, publicState],
+  );
+
+  const formatCardLabel = (card: NonNullable<UnoPublicState['topDiscard']>) => {
+    const colorLabel = card.color === 'wild' ? 'wild' : card.color;
+    const valueLabel = card.type === 'number' && card.value !== null ? card.value : card.type;
+    return `${colorLabel} ${valueLabel}`;
+  };
+
+  if (!publicState) {
+    return (
+      <main className="host-layout">
+        <header className="room-card">
+          <h1>UNO</h1>
+          <p className="code">{roomCode || '----'}</p>
+          <p>Escaneie para entrar</p>
+          {safeJoinQrDataUrl ? <img className="qr" src={safeJoinQrDataUrl} alt="QR code da sala" /> : null}
+          <p className="url">{joinUrl}</p>
+          <button
+            disabled={!connected || !canStart}
+            onClick={() => socketRef.current?.send(JSON.stringify(makeMessage('START_GAME', {})))}
+            type="button"
+          >
+            Iniciar partida
+          </button>
+          {lastError ? <p className="error">{lastError}</p> : null}
+        </header>
+
+        <section className="players-card">
+          <h2>Jogadores</h2>
+          <ul>
+            {players.map((player) => (
+              <li key={player.id}>
+                <span>{player.name}</span>
+                <span>{player.handCount} cartas</span>
+                <span>{player.connected ? 'online' : 'offline'}</span>
+                {ownerPlayerId === player.id ? <strong>OWNER</strong> : null}
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section className="table-card">
+          <h2>Mesa</h2>
+          <div className="table-meta">
+            <p>Cor atual: -</p>
+            <p>Descarte: -</p>
+            <p>Vez: {currentPlayerName}</p>
+            <p>Pilha compra: +0</p>
+            <p>Fase: waiting_players</p>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className="host-layout">
-      <header className="room-card">
-        <h1>UNO</h1>
-        <p className="code">{roomCode || '----'}</p>
-        <p>Escaneie para entrar</p>
-        {safeJoinQrDataUrl ? <img className="qr" src={safeJoinQrDataUrl} alt="QR code da sala" /> : null}
-        <p className="url">{joinUrl}</p>
-        <button
-          disabled={!connected || !canStart}
-          onClick={() => socketRef.current?.send(JSON.stringify(makeMessage('START_GAME', {})))}
-          type="button"
-        >
-          Iniciar partida
-        </button>
-        {lastError ? <p className="error">{lastError}</p> : null}
-      </header>
+      <section className="game-board-card">
+        <div className="board-header">
+          <h1>UNO</h1>
+          <span className="room-badge">Sala {roomCode}</span>
+        </div>
 
-      <section className="players-card">
+        <div className="board-table">
+          <div className="pile-card draw-pile">
+            <span>Monte</span>
+            <strong>{publicState.drawPileCount}</strong>
+          </div>
+
+          <div className={`pile-card discard-pile color-${publicState.currentColor ?? 'neutral'}`}>
+            <span>Descarte</span>
+            {publicState.topDiscard ? (
+              <strong>{formatCardLabel(publicState.topDiscard)}</strong>
+            ) : (
+              <strong>-</strong>
+            )}
+          </div>
+        </div>
+
+        <div className="board-status">
+          <div>
+            <span>Vez</span>
+            <strong>{currentPlayerName}</strong>
+          </div>
+          <div>
+            <span>Cor atual</span>
+            <strong>{publicState.currentColor ?? '-'}</strong>
+          </div>
+          <div>
+            <span>Rodada</span>
+            <strong>{publicState.round}</strong>
+          </div>
+          <div>
+            <span>Turno</span>
+            <strong>{publicState.turn}</strong>
+          </div>
+          <div>
+            <span>Pilha compra</span>
+            <strong>+{publicState.pendingDraw}</strong>
+          </div>
+          <div>
+            <span>Fase</span>
+            <strong>{publicState.phase}</strong>
+          </div>
+        </div>
+      </section>
+
+      <section className="players-card board-players">
         <h2>Jogadores</h2>
         <ul>
           {players.map((player) => (
-            <li key={player.id}>
+            <li key={player.id} className={publicState.currentPlayerId === player.id ? 'current-turn' : ''}>
               <span>{player.name}</span>
               <span>{player.handCount} cartas</span>
               <span>{player.connected ? 'online' : 'offline'}</span>
@@ -138,11 +230,11 @@ function App() {
       <section className="table-card">
         <h2>Mesa</h2>
         <div className="table-meta">
-          <p>Cor atual: {publicState?.currentColor ?? '-'}</p>
-          <p>Descarte: {publicState?.topDiscard ? `${publicState.topDiscard.color} ${publicState.topDiscard.type}` : '-'}</p>
-          <p>Vez: {players.find((player) => player.id === publicState?.currentPlayerId)?.name ?? '-'}</p>
-          <p>Pilha compra: +{publicState?.pendingDraw ?? 0}</p>
-          <p>Fase: {publicState?.phase ?? 'waiting_players'}</p>
+          <p>Cor atual: {publicState.currentColor ?? '-'}</p>
+          <p>Descarte: {publicState.topDiscard ? formatCardLabel(publicState.topDiscard) : '-'}</p>
+          <p>Vez: {currentPlayerName}</p>
+          <p>Pilha compra: +{publicState.pendingDraw}</p>
+          <p>Fase: {publicState.phase}</p>
         </div>
       </section>
     </main>
