@@ -9,8 +9,16 @@ const serverOrigin = import.meta.env.VITE_SERVER_ORIGIN ?? `${window.location.pr
 const wsOrigin = serverOrigin.replace('http', 'ws');
 const SAFE_QR_PREFIX = 'data:image/png;base64,';
 
+const createMessageId = (): string => {
+  const cryptoInstance = globalThis.crypto;
+  if (cryptoInstance && typeof cryptoInstance.randomUUID === 'function') {
+    return cryptoInstance.randomUUID();
+  }
+  return `msg-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+};
+
 const makeMessage = <TType extends string, TPayload>(type: TType, payload: TPayload) => ({
-  messageId: crypto.randomUUID(),
+  messageId: createMessageId(),
   protocolVersion: 1 as const,
   sentAt: Date.now(),
   type,
@@ -22,12 +30,13 @@ function App() {
   const [roomCode, setRoomCode] = useState('');
   const [ownerPlayerId, setOwnerPlayerId] = useState<string | null>(null);
   const [players, setPlayers] = useState<PlayerView[]>([]);
-  const [joinUrl, setJoinUrl] = useState('');
   const [joinQrDataUrl, setJoinQrDataUrl] = useState<string | undefined>(undefined);
   const [publicState, setPublicState] = useState<UnoPublicState | null>(null);
   const [lastError, setLastError] = useState('');
   const [connected, setConnected] = useState(false);
   const [lastEvent, setLastEvent] = useState('Sala pronta');
+  const [hasStarted, setHasStarted] = useState(false);
+  const [revealDrawPile, setRevealDrawPile] = useState(false);
   const playersRef = useRef<PlayerView[]>([]);
 
   useEffect(() => {
@@ -58,6 +67,7 @@ function App() {
     const ws = new WebSocket(`${wsOrigin}/ws`);
     ws.onopen = () => {
       setConnected(true);
+      console.info('[host] WebSocket conectado', { url: `${wsOrigin}/ws`, roomCode });
       ws.send(
         JSON.stringify(
           makeMessage('JOIN_ROOM', {
@@ -68,13 +78,23 @@ function App() {
         ),
       );
     };
+    ws.onerror = (event) => {
+      console.error('[host] WebSocket error', event);
+      setLastError('Falha na conexão WebSocket do host. Verifique o servidor e a origem configurada.');
+    };
+    ws.onclose = (event) => {
+      console.warn('[host] WebSocket fechado', { code: event.code, reason: event.reason, wasClean: event.wasClean });
+      setConnected(false);
+      if (socketRef.current === ws) {
+        socketRef.current = null;
+      }
+    };
     ws.onmessage = (event) => {
       const message = JSON.parse(event.data as string) as ServerMessage;
       switch (message.type) {
         case 'ROOM_STATE':
           setOwnerPlayerId(message.payload.ownerPlayerId);
           setPlayers(message.payload.players);
-          setJoinUrl(message.payload.joinUrl);
           setJoinQrDataUrl(message.payload.joinQrDataUrl);
           break;
         case 'GAME_STATE_PUBLIC':
@@ -87,6 +107,7 @@ function App() {
             : 'Sistema';
           switch (event.type) {
             case 'game_started':
+              setHasStarted(true);
               setLastEvent('Partida iniciada');
               break;
             case 'turn_started':
@@ -128,12 +149,6 @@ function App() {
           break;
       }
     };
-    ws.onclose = () => {
-      setConnected(false);
-      if (socketRef.current === ws) {
-        socketRef.current = null;
-      }
-    };
     socketRef.current = ws;
     return () => {
       if (socketRef.current === ws) {
@@ -156,6 +171,11 @@ function App() {
     [players, publicState],
   );
 
+  const winnerPlayerName = useMemo(
+    () => players.find((player) => player.id === publicState?.winnerPlayerId)?.name ?? '-',
+    [players, publicState],
+  );
+
   const formatCardLabel = (card: NonNullable<UnoPublicState['topDiscard']>) => {
     const colorLabel = card.color === 'wild' ? 'wild' : card.color;
     const valueLabel = card.type === 'number' && card.value !== null ? card.value : card.type;
@@ -164,53 +184,78 @@ function App() {
 
   if (!publicState) {
     return (
-      <main className="host-layout">
-        <header className="room-card">
-          <h1>UNO</h1>
-          <p className="code">{roomCode || '----'}</p>
-          <p>Escaneie para entrar</p>
-          {safeJoinQrDataUrl ? <img className="qr" src={safeJoinQrDataUrl} alt="QR code da sala" /> : null}
-          <p className="url">{joinUrl}</p>
-          <button
-            disabled={!connected || !canStart}
-            onClick={() => socketRef.current?.send(JSON.stringify(makeMessage('START_GAME', {})))}
-            type="button"
-          >
-            Iniciar partida
-          </button>
-          {lastError ? <p className="error">{lastError}</p> : null}
-        </header>
+      <main className="host-layout host-lobby">
+        <section className="lobby-stage">
+          <div className="lobby-shell">
+            <div className="lobby-header">
+              <p className="eyebrow">Sala ativa</p>
+              <h1>UNO</h1>
+              <p className="hero-code">{roomCode || '----'}</p>
+              <p className="hero-text">Mostre este código na TV e peça para entrar pelo celular.</p>
+            </div>
 
-        <section className="players-card">
-          <h2>Jogadores</h2>
-          <ul>
-            {players.map((player) => (
-              <li key={player.id}>
-                <span>{player.name}</span>
-                <span>{player.handCount} cartas</span>
-                <span>{player.connected ? 'online' : 'offline'}</span>
-                {ownerPlayerId === player.id ? <strong>OWNER</strong> : null}
-              </li>
-            ))}
-          </ul>
-        </section>
+            <div className="lobby-qr-wrap">
+              {safeJoinQrDataUrl ? <img className="qr hero-qr" src={safeJoinQrDataUrl} alt="QR code da sala" /> : null}
+            </div>
 
-        <section className="table-card">
-          <h2>Mesa</h2>
-          <div className="table-meta">
-            <p>Cor atual: -</p>
-            <p>Descarte: -</p>
-            <p>Vez: {currentPlayerName}</p>
-            <p>Pilha compra: +0</p>
-            <p>Fase: waiting_players</p>
+            <div className="hero-actions">
+              <button
+                className="start-button"
+                disabled={!connected || !canStart}
+                onClick={() => socketRef.current?.send(JSON.stringify(makeMessage('START_GAME', {})))}
+                type="button"
+              >
+                Iniciar partida
+              </button>
+              <span className="status-chip">{connected ? `${players.filter((player) => player.connected).length} online` : 'offline'}</span>
+            </div>
+
+            <div className="lobby-footer">
+              <section className="players-card compact-card">
+                <h2>Jogadores</h2>
+                <ul>
+                  {players.map((player) => (
+                    <li key={player.id}>
+                      <span>{player.name}</span>
+                      <span>{player.handCount}</span>
+                      {ownerPlayerId === player.id ? <strong>OWNER</strong> : null}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+
+              <section className="table-card compact-card">
+                <h2>Pré-jogo</h2>
+                <div className="table-meta">
+                  <p>Vez: {currentPlayerName}</p>
+                  <p>Pronto: {canStart ? 'sim' : 'aguardando'}</p>
+                  <p>Status: {hasStarted ? 'partida iniciada' : 'aguardando início'}</p>
+                </div>
+              </section>
+            </div>
+
+            {lastError ? <p className="error">{lastError}</p> : null}
           </div>
         </section>
       </main>
     );
   }
 
+  const phaseLabel =
+    publicState.phase === 'round_finished' || publicState.phase === 'game_finished'
+      ? `${publicState.phase}${publicState.winnerPlayerId ? ` • vencedor ${winnerPlayerName}` : ''}`
+      : publicState.phase;
+
   return (
-    <main className="host-layout">
+    <main className="host-layout host-game">
+      <button
+        type="button"
+        className="draw-pile-toggle"
+        onClick={() => setRevealDrawPile((current) => !current)}
+      >
+        {revealDrawPile ? 'Censurar monte' : 'Revelar monte'}
+      </button>
+
       <section className="game-board-card">
         <div className="board-header">
           <h1>UNO</h1>
@@ -222,7 +267,7 @@ function App() {
             <span>Monte</span>
             <img
               className="card-art large-card"
-              src={publicState.topDrawPileCard ? getCardArt(publicState.topDrawPileCard) : getCardBackArt()}
+              src={revealDrawPile && publicState.topDrawPileCard ? getCardArt(publicState.topDrawPileCard) : getCardBackArt()}
               alt={publicState.topDrawPileCard ? formatCardLabel(publicState.topDrawPileCard) : 'Monte de cartas'}
             />
             <strong>{publicState.drawPileCount}</strong>
@@ -261,13 +306,28 @@ function App() {
           </div>
           <div>
             <span>Fase</span>
-            <strong>{publicState.phase}</strong>
+            <strong>{phaseLabel}</strong>
           </div>
         </div>
 
         <div className="event-feed">
           <span>Evento</span>
           <strong>{lastEvent}</strong>
+        </div>
+
+        <div className="round-summary">
+          <div>
+            <span>Vencedor</span>
+            <strong>{publicState.winnerPlayerId ? winnerPlayerName : '-'}</strong>
+          </div>
+          <div>
+            <span>Direção</span>
+            <strong>{publicState.direction === 1 ? 'horária' : 'anti-horária'}</strong>
+          </div>
+          <div>
+            <span>Timer</span>
+            <strong>{publicState.timer ? `${Math.max(0, publicState.timer.expiresAt - Date.now())}ms` : '-'}</strong>
+          </div>
         </div>
       </section>
 

@@ -6,8 +6,16 @@ import './App.css';
 const serverOrigin = import.meta.env.VITE_SERVER_ORIGIN ?? `${window.location.protocol}//${window.location.hostname}:3001`;
 const wsOrigin = serverOrigin.replace('http', 'ws');
 
+const createMessageId = (): string => {
+  const cryptoInstance = globalThis.crypto;
+  if (cryptoInstance && typeof cryptoInstance.randomUUID === 'function') {
+    return cryptoInstance.randomUUID();
+  }
+  return `msg-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+};
+
 const makeMessage = <TType extends string, TPayload>(type: TType, payload: TPayload) => ({
-  messageId: crypto.randomUUID(),
+  messageId: createMessageId(),
   protocolVersion: 1 as const,
   sentAt: Date.now(),
   type,
@@ -22,9 +30,12 @@ const getRoomCodeFromPath = (): string => {
   return '';
 };
 
+const avatarOptions = ['🙂', '😎', '🎉', '🔥', '🕺', '🤠', '😺', '🐼'];
+
 function App() {
   const [roomCode, setRoomCode] = useState(getRoomCodeFromPath());
   const [playerName, setPlayerName] = useState('');
+  const [selectedAvatar, setSelectedAvatar] = useState('🙂');
   const socketRef = useRef<WebSocket | null>(null);
   const pendingSessionStorageKeyRef = useRef<string | null>(null);
   const [playerId, setPlayerId] = useState<string | null>(null);
@@ -39,8 +50,16 @@ function App() {
 
   useEffect(() => {
     const ws = new WebSocket(`${wsOrigin}/ws`);
-    ws.onopen = () => setConnected(true);
-    ws.onclose = () => {
+    ws.onopen = () => {
+      setConnected(true);
+      console.info('[mobile] WebSocket conectado', { url: `${wsOrigin}/ws`, roomCode });
+    };
+    ws.onerror = (event) => {
+      console.error('[mobile] WebSocket error', event);
+      setError('Falha de rede no WebSocket do celular. Verifique o IP do servidor e o código da sala.');
+    };
+    ws.onclose = (event) => {
+      console.warn('[mobile] WebSocket fechado', { code: event.code, reason: event.reason, wasClean: event.wasClean });
       setConnected(false);
       if (socketRef.current === ws) {
         socketRef.current = null;
@@ -48,6 +67,7 @@ function App() {
     };
     ws.onmessage = (event) => {
       const message = JSON.parse(event.data as string) as ServerMessage;
+      console.info('[mobile] Mensagem recebida', message);
       switch (message.type) {
         case 'ROOM_JOINED':
           if (message.payload.playerId) {
@@ -93,16 +113,14 @@ function App() {
     () => privateState?.hand.find((card) => card.id === selectedCardId) ?? null,
     [privateState, selectedCardId],
   );
-  const activePlayerName = useMemo(
-    () => roomPlayers.find((player) => player.id === publicState?.currentPlayerId)?.name ?? 'Aguardando',
-    [roomPlayers, publicState],
-  );
-  const currentDiscardLabel = useMemo(() => {
-    if (!publicState?.topDiscard) {
-      return 'Sem descarte';
+  const timerLabel = useMemo(() => {
+    if (!publicState?.timer) {
+      return '--';
     }
-    return `${publicState.topDiscard.color} ${publicState.topDiscard.type === 'number' ? publicState.topDiscard.value : publicState.topDiscard.type}`;
-  }, [publicState]);
+    return `${Math.max(0, Math.ceil((publicState.timer.expiresAt - now) / 1000))}s`;
+  }, [now, publicState]);
+
+  const hasJoined = Boolean(playerId && privateState);
 
   const joinOrReconnect = (): void => {
     if (!socketRef.current || !roomCode || !playerName.trim()) {
@@ -167,62 +185,62 @@ function App() {
   return (
     <main className="mobile-layout">
       <header className="mobile-header">
-        <div>
-          <p className="eyebrow">Sala</p>
-          <h1>{roomCode || 'Código da sala'}</h1>
+        <div className="header-room">
+          <span className="eyebrow">Sala</span>
+          <strong className="room-code-inline">{roomCode || 'Código da sala'}</strong>
         </div>
-        <span className={`connection ${connected ? 'online' : 'offline'}`}>{connected ? 'online' : 'offline'}</span>
       </header>
 
-      <section className="join-panel">
-        <input value={roomCode} onChange={(event) => setRoomCode(event.target.value.toUpperCase())} placeholder="Código da sala" />
-        <input value={playerName} onChange={(event) => setPlayerName(event.target.value)} placeholder="Seu nome" />
-        <button disabled={!connected} onClick={joinOrReconnect} type="button">
-          {playerId ? 'Entrar novamente' : 'Entrar'}
-        </button>
-      </section>
+      {!hasJoined ? (
+        <section className="join-panel">
+          <input value={roomCode} onChange={(event) => setRoomCode(event.target.value.toUpperCase())} placeholder="Código da sala" />
+          <input value={playerName} onChange={(event) => setPlayerName(event.target.value)} placeholder="Seu nome" />
+          <div className="avatar-picker" aria-label="Escolha um avatar">
+            {avatarOptions.map((avatar) => (
+              <button
+                key={avatar}
+                type="button"
+                className={`avatar-option ${selectedAvatar === avatar ? 'selected' : ''}`}
+                onClick={() => setSelectedAvatar(avatar)}
+              >
+                {avatar}
+              </button>
+            ))}
+          </div>
+          <button disabled={!connected} onClick={joinOrReconnect} type="button">
+            {playerId ? 'Entrar novamente' : 'Entrar'}
+          </button>
+        </section>
+      ) : null}
 
       <section className="status-panel">
-        <div className="status-row">
-          <span className="label">Estado</span>
-          <strong className={myTurn ? 'turn-highlight' : ''}>{myTurn ? 'SUA VEZ' : 'Aguardando turno'}</strong>
-        </div>
-        <div className="status-row">
-          <span className="label">Vez atual</span>
-          <strong>{activePlayerName}</strong>
-        </div>
-        <div className="status-row">
+        <div className="status-row timer-row">
           <span className="label">Timer</span>
-          <strong>{publicState?.timer ? Math.max(0, Math.ceil((publicState.timer.expiresAt - now) / 1000)) : '--'}s</strong>
-        </div>
-        <div className="status-row">
-          <span className="label">Cor atual</span>
-          <strong>{publicState?.currentColor ?? '-'}</strong>
-        </div>
-        <div className="status-row">
-          <span className="label">Descarte</span>
-          <strong>{currentDiscardLabel}</strong>
-        </div>
-        <div className="status-row">
-          <span className="label">Compra pendente</span>
-          <strong>+{publicState?.pendingDraw ?? 0}</strong>
+          <strong className="timer-top-right">{timerLabel}</strong>
         </div>
       </section>
 
       <section className="players-panel">
         <h2>Jogadores</h2>
         <div className="player-list">
-          {(roomPlayers.length ? roomPlayers : [{ id: playerId ?? 'local', name: playerName || 'Você', connected: true, handCount: privateState?.hand.length ?? 0 }]).map((player) => (
-            <div key={player.id} className={`player-pill ${publicState?.currentPlayerId === player.id ? 'is-turn' : ''}`}>
-              <span>{player.name}</span>
-              <small>{player.handCount} cartas</small>
-            </div>
-          ))}
+          {(roomPlayers.length ? roomPlayers : [{ id: playerId ?? 'local', name: playerName || 'Você', connected: true, handCount: privateState?.hand.length ?? 0 }]).map((player) => {
+            const isCurrentPlayer = player.id === playerId;
+            const displayName = isCurrentPlayer ? `${selectedAvatar} ${player.name}` : player.name;
+            return (
+              <div key={player.id} className="player-pill">
+                <span>{displayName}</span>
+                <small>{player.handCount} cartas</small>
+              </div>
+            );
+          })}
         </div>
       </section>
 
       <section className="hand-panel">
         <h2>Suas cartas</h2>
+        <p className="hint">
+          Toque em uma carta para selecionar. Cartas destacadas em verde podem ser jogadas agora.
+        </p>
         <div className="cards">
           {(privateState?.hand ?? []).map((card: UnoCard) => {
             const selected = selectedCardId === card.id;
@@ -241,6 +259,12 @@ function App() {
             );
           })}
         </div>
+        {selectedCard ? (
+          <div className="selected-card-panel">
+            <span className="label">Selecionada</span>
+            <strong>{selectedCard.color === 'wild' ? selectedCard.type : `${selectedCard.color} ${selectedCard.type === 'number' ? selectedCard.value : selectedCard.type}`}</strong>
+          </div>
+        ) : null}
       </section>
 
       <section className="actions-panel">
@@ -252,15 +276,17 @@ function App() {
             <option value="blue">Azul</option>
           </select>
         ) : null}
-        <button disabled={!myTurn || !selectedCard} onClick={playCard} type="button">
-          Jogar carta
-        </button>
-        <button disabled={!myTurn} onClick={drawCard} type="button">
-          Comprar carta
-        </button>
-        <button disabled={(privateState?.hand.length ?? 0) !== 1} onClick={callUno} type="button">
-          UNO!
-        </button>
+        <div className="action-row">
+          <button className="action-button action-green" disabled={!myTurn || !selectedCard} onClick={playCard} type="button">
+            Jogar carta
+          </button>
+          <button className="action-button action-red" disabled={(privateState?.hand.length ?? 0) !== 1} onClick={callUno} type="button">
+            UNO!
+          </button>
+          <button className="action-button action-blue" disabled={!myTurn} onClick={drawCard} type="button">
+            Comprar carta
+          </button>
+        </div>
       </section>
 
       {error ? <p className="error">{error}</p> : null}

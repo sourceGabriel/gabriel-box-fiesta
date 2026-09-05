@@ -87,7 +87,8 @@ export class PartyServer {
     }
     const ip = pickPrimaryLocalIPv4();
     const room = this.roomManager.getRoom();
-    logger.info({ roomCode: room.code, url: `http://${ip}:${this.startedPort}/join/${room.code}` }, 'Party server started');
+    const joinUrl = this.getJoinUrl(ip, room.code);
+    logger.info({ roomCode: room.code, joinUrl, serverPort: this.startedPort }, 'Party server started');
   }
 
   async stop(): Promise<void> {
@@ -153,6 +154,10 @@ export class PartyServer {
       return;
     }
 
+    const remoteAddress = (socket as WebSocket & { _socket?: { remoteAddress?: string } })._socket?.remoteAddress ?? 'unknown';
+    const roomCode = 'roomCode' in message.payload ? message.payload.roomCode : 'n/a';
+    logger.info({ remoteAddress, type: message.type, roomCode }, 'Received client message');
+
     if (ctx.seenMessageIds.has(message.messageId)) {
       return;
     }
@@ -181,6 +186,7 @@ export class PartyServer {
 
     if (message.type === 'JOIN_ROOM') {
       if (message.payload.roomCode !== room.code) {
+        logger.warn({ remoteAddress, requestedRoomCode: message.payload.roomCode, actualRoomCode: room.code }, 'Rejecting JOIN_ROOM for invalid room code');
         this.send(socket, 'ERROR', { code: 'ROOM_NOT_FOUND', message: 'Invalid room code', recoverable: true });
         return;
       }
@@ -188,11 +194,13 @@ export class PartyServer {
       if (message.payload.role === 'host') {
         ctx.role = 'host';
         this.hostConnections.add(socket);
+        logger.info({ remoteAddress, roomCode: room.code, role: 'host' }, 'Host connected');
         this.send(socket, 'ROOM_JOINED', { roomCode: room.code, role: 'host', ownerPlayerId: room.ownerPlayerId });
         this.broadcastRoomState();
         return;
       }
 
+      logger.info({ remoteAddress, roomCode: room.code, playerName: message.payload.playerName }, 'Player join request received');
       const { player, sessionToken } = room.joinPlayer(message.payload.playerName, Date.now());
       ctx.role = 'player';
       ctx.playerId = player.id;
@@ -333,10 +341,17 @@ export class PartyServer {
     }
   }
 
+  private getJoinUrl(ip: string, roomCode: string): string {
+    const explicitOrigin = process.env.PARTY_PUBLIC_URL ?? process.env.VITE_MOBILE_ORIGIN ?? process.env.MOBILE_APP_ORIGIN ?? process.env.PARTY_APP_ORIGIN;
+    const frontendOrigin = explicitOrigin ?? `http://${ip}:5173`;
+    return `${frontendOrigin.replace(/\/$/, '')}/join/${roomCode}`;
+  }
+
   private async broadcastRoomState(): Promise<void> {
     const room = this.roomManager.getRoom();
     const ip = pickPrimaryLocalIPv4();
-    const joinUrl = `http://${ip}:${this.startedPort}/join/${room.code}`;
+    const joinUrl = this.getJoinUrl(ip, room.code);
+    logger.info({ roomCode: room.code, ip, joinUrl }, 'Broadcasting room state with QR join URL');
     const joinQrDataUrl = await QRCode.toDataURL(joinUrl, { margin: 1, scale: 6 });
     this.broadcast('ROOM_STATE', {
       roomCode: room.code,
