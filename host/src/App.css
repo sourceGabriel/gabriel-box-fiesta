@@ -136,10 +136,25 @@
   border: 1px solid #2a2a2a;
 }
 
-.board-status span {
+.board-status span,
+.event-feed span {
   color: #a0a0a0;
   font-size: 0.85rem;
   text-transform: uppercase;
+}
+
+.event-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.75rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid #2a2a2a;
+}
+
+.event-feed strong {
+  font-size: 1rem;
 }
 
 .error {

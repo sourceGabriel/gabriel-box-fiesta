@@ -26,6 +26,12 @@ function App() {
   const [publicState, setPublicState] = useState<UnoPublicState | null>(null);
   const [lastError, setLastError] = useState('');
   const [connected, setConnected] = useState(false);
+  const [lastEvent, setLastEvent] = useState('Sala pronta');
+  const playersRef = useRef<PlayerView[]>([]);
+
+  useEffect(() => {
+    playersRef.current = players;
+  }, [players]);
 
   useEffect(() => {
     let mounted = true;
@@ -73,6 +79,47 @@ function App() {
         case 'GAME_STATE_PUBLIC':
           setPublicState(message.payload.state);
           break;
+        case 'GAME_EVENT': {
+          const event = message.payload.event;
+          const actorName = 'playerId' in event && event.playerId
+            ? playersRef.current.find((player) => player.id === event.playerId)?.name ?? 'Jogador'
+            : 'Sistema';
+          switch (event.type) {
+            case 'game_started':
+              setLastEvent('Partida iniciada');
+              break;
+            case 'turn_started':
+              setLastEvent(`Vez de ${actorName}`);
+              break;
+            case 'card_played':
+              setLastEvent(`${actorName} jogou ${event.card.color} ${event.card.type}`);
+              break;
+            case 'card_drawn':
+              setLastEvent(`${actorName} comprou ${event.count} carta(s)`);
+              break;
+            case 'color_changed':
+              setLastEvent(`Cor alterada para ${event.color}`);
+              break;
+            case 'direction_changed':
+              setLastEvent(`Direção ${event.direction === 1 ? 'horária' : 'anti-horária'}`);
+              break;
+            case 'uno_called':
+              setLastEvent(`${actorName} declarou UNO!`);
+              break;
+            case 'uno_penalty_applied':
+              setLastEvent(`${actorName} recebeu penalidade de ${event.count}`);
+              break;
+            case 'round_finished':
+              setLastEvent(
+                `Rodada encerrada: vencedor ${playersRef.current.find((player) => player.id === event.winnerPlayerId)?.name ?? 'desconhecido'}`,
+              );
+              break;
+            default:
+              setLastEvent(event.type);
+              break;
+          }
+          break;
+        }
         case 'ERROR':
           setLastError(message.payload.message);
           break;
@@ -210,6 +257,11 @@ function App() {
             <span>Fase</span>
             <strong>{publicState.phase}</strong>
           </div>
+        </div>
+
+        <div className="event-feed">
+          <span>Evento</span>
+          <strong>{lastEvent}</strong>
         </div>
       </section>
 
