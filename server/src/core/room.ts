@@ -80,6 +80,7 @@ export class Room {
 
     player.connected = true;
     player.lastSeenAt = now;
+    this.game?.setPlayerConnected(player.id, true);
     return player;
   }
 
@@ -90,6 +91,7 @@ export class Room {
     }
     player.connected = false;
     player.lastSeenAt = now;
+    this.game?.setPlayerConnected(playerId, false);
 
     if (this.ownerPlayerId === playerId) {
       const replacement = [...this.players.values()].find((candidate) => candidate.connected && candidate.id !== playerId);

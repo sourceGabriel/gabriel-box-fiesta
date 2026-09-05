@@ -119,6 +119,13 @@ export class UnoGame implements Game<UnoFullState, UnoAction, GameEvent, UnoPubl
     this.startTurnTimer(this.nowProvider());
   }
 
+  setPlayerConnected(playerId: string, connected: boolean): void {
+    const player = this.state.players[playerId];
+    if (player) {
+      player.connected = connected;
+    }
+  }
+
   onTurnTimeout(): GameEvent[] {
     if (this.state.phase !== 'round_active' || !this.state.currentPlayerId) {
       return [];

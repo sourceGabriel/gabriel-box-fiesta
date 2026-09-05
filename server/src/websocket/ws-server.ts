@@ -141,6 +141,7 @@ export class PartyServer {
             this.broadcast('PLAYER_LEFT', { playerId: ctx.playerId });
             this.broadcastRoomState();
             this.broadcastOwnerChanged();
+            this.pushGameState();
           }
         }
       }
@@ -261,6 +262,7 @@ export class PartyServer {
       this.broadcast('GAME_STARTED', {});
       this.pushGameState();
       this.flushGameEvents();
+      this.broadcastRoomState();
       return;
     }
 

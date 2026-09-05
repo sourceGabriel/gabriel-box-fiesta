@@ -32,6 +32,32 @@ const getRoomCodeFromPath = (): string => {
 
 const avatarOptions = ['🙂', '😎', '🎉', '🔥', '🕺', '🤠', '😺', '🐼'];
 
+const activeSessionStorageKey = (roomCode: string): string => `activeSession:${roomCode.toUpperCase()}`;
+
+const readStoredSessionKey = (roomCode: string): string | null => {
+  if (!roomCode) {
+    return null;
+  }
+  try {
+    return localStorage.getItem(activeSessionStorageKey(roomCode));
+  } catch {
+    return null;
+  }
+};
+
+const clearStoredSession = (storageKey: string | null, roomCode: string): void => {
+  try {
+    if (storageKey) {
+      localStorage.removeItem(storageKey);
+    }
+    if (roomCode) {
+      localStorage.removeItem(activeSessionStorageKey(roomCode));
+    }
+  } catch {
+    // ignore storage errors
+  }
+};
+
 function App() {
   const [roomCode, setRoomCode] = useState(getRoomCodeFromPath());
   const [playerName, setPlayerName] = useState('');
@@ -46,66 +72,124 @@ function App() {
   const [chosenColor, setChosenColor] = useState<'red' | 'yellow' | 'green' | 'blue'>('red');
   const [error, setError] = useState('');
   const [connected, setConnected] = useState(false);
-  const [now, setNow] = useState(() => Date.now());
+  const activeSessionKeyRef = useRef<string | null>(readStoredSessionKey(getRoomCodeFromPath()));
+  const roomCodeRef = useRef(roomCode);
+  const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    const ws = new WebSocket(`${wsOrigin}/ws`);
-    ws.onopen = () => {
-      setConnected(true);
-      console.info('[mobile] WebSocket conectado', { url: `${wsOrigin}/ws`, roomCode });
+    roomCodeRef.current = roomCode;
+  }, [roomCode]);
+
+  const showError = (message: string): void => {
+    setError(message);
+    if (errorTimerRef.current) {
+      clearTimeout(errorTimerRef.current);
+    }
+    errorTimerRef.current = setTimeout(() => setError(''), 5000);
+  };
+
+  useEffect(() => {
+    let keepAlive = true;
+    let ws: WebSocket | null = null;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    let attempts = 0;
+
+    const connect = (): void => {
+      ws = new WebSocket(`${wsOrigin}/ws`);
+      socketRef.current = ws;
+
+      ws.onopen = () => {
+        attempts = 0;
+        setConnected(true);
+        const key = activeSessionKeyRef.current;
+        const token = key ? localStorage.getItem(key) : null;
+        if (token && roomCodeRef.current) {
+          ws?.send(JSON.stringify(makeMessage('RECONNECT_SESSION', {
+            roomCode: roomCodeRef.current.toUpperCase(),
+            sessionToken: token,
+            role: 'player',
+          })));
+        }
+      };
+      ws.onerror = () => {
+        // A close event always follows; reconnection is handled there.
+      };
+      ws.onclose = () => {
+        setConnected(false);
+        if (socketRef.current === ws) {
+          socketRef.current = null;
+        }
+        if (!keepAlive) {
+          return;
+        }
+        const delay = Math.min(1000 * 2 ** attempts, 5000);
+        attempts += 1;
+        retryTimer = setTimeout(connect, delay);
+      };
+      ws.onmessage = (event) => {
+        const message = JSON.parse(event.data as string) as ServerMessage;
+        switch (message.type) {
+          case 'ROOM_JOINED':
+            if (message.payload.playerId) {
+              setPlayerId(message.payload.playerId);
+            }
+            if (pendingSessionStorageKeyRef.current) {
+              activeSessionKeyRef.current = pendingSessionStorageKeyRef.current;
+              try {
+                localStorage.setItem(activeSessionStorageKey(roomCodeRef.current), pendingSessionStorageKeyRef.current);
+              } catch {
+                // ignore storage errors
+              }
+            }
+            if (message.payload.sessionToken && pendingSessionStorageKeyRef.current) {
+              try {
+                localStorage.setItem(pendingSessionStorageKeyRef.current, message.payload.sessionToken);
+              } catch {
+                // ignore storage errors
+              }
+              pendingSessionStorageKeyRef.current = null;
+            }
+            setError('');
+            break;
+          case 'ROOM_STATE':
+            setRoomPlayers(message.payload.players);
+            break;
+          case 'GAME_STATE_PUBLIC':
+            setPublicState(message.payload.state);
+            break;
+          case 'PLAYER_STATE_PRIVATE':
+            setPrivateState(message.payload.state);
+            break;
+          case 'ERROR':
+            if (/INVALID_SESSION|PLAYER_NOT_FOUND/.test(message.payload.message)) {
+              clearStoredSession(activeSessionKeyRef.current, roomCodeRef.current);
+              activeSessionKeyRef.current = null;
+              setPlayerId(null);
+              setPrivateState(null);
+            } else {
+              showError(message.payload.message);
+            }
+            break;
+          default:
+            break;
+        }
+      };
     };
-    ws.onerror = (event) => {
-      console.error('[mobile] WebSocket error', event);
-      setError('Falha de rede no WebSocket do celular. Verifique o IP do servidor e o código da sala.');
-    };
-    ws.onclose = (event) => {
-      console.warn('[mobile] WebSocket fechado', { code: event.code, reason: event.reason, wasClean: event.wasClean });
-      setConnected(false);
-      if (socketRef.current === ws) {
-        socketRef.current = null;
-      }
-    };
-    ws.onmessage = (event) => {
-      const message = JSON.parse(event.data as string) as ServerMessage;
-      console.info('[mobile] Mensagem recebida', message);
-      switch (message.type) {
-        case 'ROOM_JOINED':
-          if (message.payload.playerId) {
-            setPlayerId(message.payload.playerId);
-          }
-          if (message.payload.sessionToken && pendingSessionStorageKeyRef.current) {
-            localStorage.setItem(pendingSessionStorageKeyRef.current, message.payload.sessionToken);
-            pendingSessionStorageKeyRef.current = null;
-          }
-          break;
-        case 'ROOM_STATE':
-          setRoomPlayers(message.payload.players);
-          break;
-        case 'GAME_STATE_PUBLIC':
-          setPublicState(message.payload.state);
-          break;
-        case 'PLAYER_STATE_PRIVATE':
-          setPrivateState(message.payload.state);
-          break;
-        case 'ERROR':
-          setError(message.payload.message);
-          break;
-        default:
-          break;
-      }
-    };
-    socketRef.current = ws;
+
+    connect();
     return () => {
+      keepAlive = false;
+      if (retryTimer) {
+        clearTimeout(retryTimer);
+      }
+      if (errorTimerRef.current) {
+        clearTimeout(errorTimerRef.current);
+      }
       if (socketRef.current === ws) {
         socketRef.current = null;
       }
-      ws.close();
+      ws?.close();
     };
-  }, []);
-
-  useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
   }, []);
 
   const myTurn = publicState?.currentPlayerId === playerId;
@@ -113,22 +197,23 @@ function App() {
     () => privateState?.hand.find((card) => card.id === selectedCardId) ?? null,
     [privateState, selectedCardId],
   );
-  const timerLabel = useMemo(() => {
-    if (!publicState?.timer) {
-      return '--';
-    }
-    return `${Math.max(0, Math.ceil((publicState.timer.expiresAt - now) / 1000))}s`;
-  }, [now, publicState]);
+  // The server pushes state ~2x/s and computes remainingMs itself, so we never read the phone clock.
+  const timerLabel = publicState?.timer ? `${Math.max(0, Math.ceil(publicState.timer.remainingMs / 1000))}s` : '--';
 
-  const hasJoined = Boolean(playerId && privateState);
+  const hasJoined = Boolean(playerId);
+  const gameStarted = Boolean(privateState);
   const gameOver = publicState?.phase === 'game_finished';
   const roundOver = publicState?.phase === 'round_finished' || gameOver;
+  const playing = gameStarted && !roundOver;
+  const canSubmitJoin = connected && roomCode.trim().length > 0 && playerName.trim().length > 0;
   const resultWinnerId = gameOver ? publicState?.gameWinnerPlayerId : publicState?.winnerPlayerId;
   const resultWinnerName = publicState?.players.find((player) => player.id === resultWinnerId)?.name ?? '—';
   const scoreboard = useMemo(
     () => [...(publicState?.players ?? [])].sort((a, b) => b.score - a.score),
     [publicState],
   );
+  // Live hand counts / turn come from the public state during a game; fall back to the lobby roster.
+  const rosterPlayers = publicState?.players ?? roomPlayers;
 
   const joinOrReconnect = (): void => {
     if (!socketRef.current || !roomCode || !playerName.trim()) {
@@ -138,6 +223,12 @@ function App() {
     const basePlayerName = playerName.trim();
     const serverPlayerName = `${selectedAvatar} ${basePlayerName}`;
     const storageKey = `session:${roomCode.toUpperCase()}:${basePlayerName.toLowerCase()}`;
+    activeSessionKeyRef.current = storageKey;
+    try {
+      localStorage.setItem(activeSessionStorageKey(roomCode), storageKey);
+    } catch {
+      // ignore storage errors
+    }
     const sessionToken = localStorage.getItem(storageKey);
     if (sessionToken) {
       socketRef.current.send(
@@ -198,21 +289,32 @@ function App() {
       <header className="mobile-header">
         <div className="header-room">
           <span className="eyebrow">Sala</span>
-          <strong className="room-code-inline">{roomCode || 'Código da sala'}</strong>
+          <strong className="room-code-inline">{roomCode || '—'}</strong>
+          {!connected ? <span className="conn-pill">reconectando…</span> : null}
         </div>
-
-        <section className="status-panel">
-          <div className="status-row timer-row">
-            <span className="label">Timer</span>
-            <strong className="timer-top-right">{timerLabel}</strong>
+        {playing ? (
+          <div className={`header-timer ${myTurn ? 'is-turn' : ''}`}>
+            <span className="label">{myTurn ? 'Sua vez' : 'Aguarde'}</span>
+            <strong>{timerLabel}</strong>
           </div>
-        </section>
+        ) : null}
       </header>
 
       {!hasJoined ? (
         <section className="join-panel">
-          <input value={roomCode} onChange={(event) => setRoomCode(event.target.value.toUpperCase())} placeholder="Código da sala" />
-          <input value={playerName} onChange={(event) => setPlayerName(event.target.value)} placeholder="Seu nome" />
+          <h2>Entrar na sala</h2>
+          <input
+            value={roomCode}
+            onChange={(event) => setRoomCode(event.target.value.toUpperCase())}
+            placeholder="Código da sala"
+            autoCapitalize="characters"
+          />
+          <input
+            value={playerName}
+            onChange={(event) => setPlayerName(event.target.value)}
+            placeholder="Seu nome"
+            maxLength={20}
+          />
           <div className="avatar-picker" aria-label="Escolha um avatar">
             {avatarOptions.map((avatar) => (
               <button
@@ -225,24 +327,34 @@ function App() {
               </button>
             ))}
           </div>
-          <button disabled={!connected} onClick={joinOrReconnect} type="button">
-            {playerId ? 'Entrar novamente' : 'Entrar'}
+          <button className="primary-button" disabled={!canSubmitJoin} onClick={joinOrReconnect} type="button">
+            Entrar
           </button>
+        </section>
+      ) : !gameStarted ? (
+        <section className="waiting-panel">
+          <div className="waiting-badge">{selectedAvatar}</div>
+          <h2>Você está na sala</h2>
+          <p className="hint">Aguardando o anfitrião iniciar a partida…</p>
         </section>
       ) : null}
 
-      <section className="players-panel">
-        <h2>Jogadores</h2>
-        <div className="player-list">
-
-          {(roomPlayers.length ? roomPlayers : [{ id: playerId ?? 'local', name: `${selectedAvatar} ${playerName || 'Você'}`, connected: true, handCount: privateState?.hand.length ?? 0 }]).map((player) => (
-            <div key={player.id} className="player-pill">
-              <span>{player.name}</span>
-              <small>{player.handCount} cartas</small>
-            </div>
-          ))}
-        </div>
-      </section>
+      {(hasJoined || rosterPlayers.length > 0) ? (
+        <section className="players-panel">
+          <h2>Jogadores{rosterPlayers.length ? ` (${rosterPlayers.length})` : ''}</h2>
+          <div className="player-list">
+            {rosterPlayers.map((player) => (
+              <div
+                key={player.id}
+                className={`player-pill ${player.id === playerId ? 'is-me' : ''} ${player.id === publicState?.currentPlayerId ? 'is-turn' : ''}`}
+              >
+                <span>{player.name}</span>
+                <small>{player.handCount} cartas</small>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {roundOver ? (
         <section className="result-panel">
@@ -261,52 +373,63 @@ function App() {
         </section>
       ) : null}
 
-      <section className="hand-panel">
-        <h2>Suas cartas</h2>
-        <p className="hint">
-          Toque em uma carta para selecionar. Cartas destacadas em verde podem ser jogadas agora.
-        </p>
-        <div className="cards">
-          {(privateState?.hand ?? []).map((card: UnoCard) => {
-            const selected = selectedCardId === card.id;
-            const playable = !!privateState?.selectableCardIds.includes(card.id);
-            return (
-              <button
-                key={card.id}
-                className={`card ${selected ? 'selected' : ''} ${playable ? 'playable' : ''}`}
-                disabled={!myTurn || !playable}
-                onClick={() => setSelectedCardId(selected ? null : card.id)}
-                type="button"
-                aria-label={card.type === 'number' ? `${card.color} ${card.value}` : `${card.color} ${card.type}`}
-              >
-                <img className="uno-card-image" src={getCardArt(card)} alt={card.type === 'number' ? `${card.color} ${card.value}` : `${card.color} ${card.type}`} />
-              </button>
-            );
-          })}
-        </div>
-      </section>
+      {playing ? (
+        <>
+          <section className="hand-panel">
+            <div className="hand-head">
+              <h2>Suas cartas</h2>
+              <span className="hand-status">{myTurn ? 'Sua vez de jogar' : 'Aguardando sua vez'}</span>
+            </div>
+            <p className="hint">Toque para selecionar. Cartas com borda verde podem ser jogadas agora.</p>
+            <div className="cards">
+              {(privateState?.hand ?? []).map((card: UnoCard) => {
+                const selected = selectedCardId === card.id;
+                const playable = !!privateState?.selectableCardIds.includes(card.id);
+                return (
+                  <button
+                    key={card.id}
+                    className={`card ${selected ? 'selected' : ''} ${playable ? 'playable' : ''}`}
+                    disabled={!myTurn || !playable}
+                    onClick={() => setSelectedCardId(selected ? null : card.id)}
+                    type="button"
+                    aria-label={card.type === 'number' ? `${card.color} ${card.value}` : `${card.color} ${card.type}`}
+                  >
+                    <img className="uno-card-image" src={getCardArt(card)} alt={card.type === 'number' ? `${card.color} ${card.value}` : `${card.color} ${card.type}`} />
+                  </button>
+                );
+              })}
+            </div>
+          </section>
 
-      <section className="actions-panel">
-        {(selectedCard?.type === 'wild' || selectedCard?.type === 'wild_draw_four') ? (
-          <select value={chosenColor} onChange={(event) => setChosenColor(event.target.value as 'red' | 'yellow' | 'green' | 'blue')}>
-            <option value="red">Vermelho</option>
-            <option value="yellow">Amarelo</option>
-            <option value="green">Verde</option>
-            <option value="blue">Azul</option>
-          </select>
-        ) : null}
-        <div className="action-row">
-          <button className="action-button action-green" disabled={roundOver || !myTurn || !selectedCard} onClick={playCard} type="button">
-            Jogar carta
-          </button>
-          <button className="action-button action-red" disabled={roundOver || (privateState?.hand.length ?? 0) !== 1} onClick={callUno} type="button">
-            UNO!
-          </button>
-          <button className="action-button action-blue" disabled={roundOver || !myTurn} onClick={drawCard} type="button">
-            Comprar carta
-          </button>
-        </div>
-      </section>
+          <section className="actions-panel">
+            {(selectedCard?.type === 'wild' || selectedCard?.type === 'wild_draw_four') ? (
+              <div className="color-choice" role="group" aria-label="Escolha a cor do coringa">
+                {(['red', 'yellow', 'green', 'blue'] as const).map((color) => (
+                  <button
+                    key={color}
+                    type="button"
+                    className={`color-swatch swatch-${color} ${chosenColor === color ? 'selected' : ''}`}
+                    onClick={() => setChosenColor(color)}
+                    aria-label={color}
+                    aria-pressed={chosenColor === color}
+                  />
+                ))}
+              </div>
+            ) : null}
+            <div className="action-row">
+              <button className="action-button action-green" disabled={!myTurn || !selectedCard} onClick={playCard} type="button">
+                Jogar
+              </button>
+              <button className="action-button action-blue" disabled={!myTurn} onClick={drawCard} type="button">
+                Comprar
+              </button>
+              <button className="action-button action-red" disabled={(privateState?.hand.length ?? 0) !== 1} onClick={callUno} type="button">
+                UNO!
+              </button>
+            </div>
+          </section>
+        </>
+      ) : null}
 
       {error ? <p className="error">{error}</p> : null}
     </main>

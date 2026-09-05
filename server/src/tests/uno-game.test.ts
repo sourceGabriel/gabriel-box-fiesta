@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import type { UnoCard } from '@party/shared';
 import { UnoGame } from '../games/uno/uno-game';
+
+const numberCard = (id: string, color: UnoCard['color'], value: number): UnoCard => ({ id, color, type: 'number', value });
+const drawTwoCard = (id: string, color: UnoCard['color']): UnoCard => ({ id, color, type: 'draw_two', value: null });
+const wildDrawFourCard = (id: string): UnoCard => ({ id, color: 'wild', type: 'wild_draw_four', value: null });
 
 const players = [
   { id: 'p1', name: 'A' },
@@ -72,53 +77,42 @@ describe('UnoGame', () => {
   });
 
   it('supports +4 over +2 stacking rule', () => {
-    const game = new UnoGame([
-      { id: 'p1', name: 'A' },
-      { id: 'p2', name: 'B' },
-      { id: 'p3', name: 'C' },
-    ], 'ABCD');
+    const game = new UnoGame(players, 'ABCD');
     game.start();
     const state = (game as unknown as { state: ReturnType<UnoGame['getState']> }).state;
-    const p1Plus2 = state.hands.p1.find((card) => card.type === 'draw_two');
-    const p2Plus4 = state.hands.p2.find((card) => card.type === 'wild_draw_four');
 
-    if (!p1Plus2 || !p2Plus4) {
-      expect(true).toBe(true);
-      return;
-    }
+    state.discardPile = [numberCard('top', 'red', 5)];
+    state.currentColor = 'red';
+    state.currentPlayerId = 'p1';
+    state.hands.p1 = [drawTwoCard('d2', 'red'), numberCard('f1', 'red', 1)];
+    state.hands.p2 = [wildDrawFourCard('wd4'), numberCard('f2', 'red', 2)];
+    // p3 can also stack, so the pending stays alive for assertion instead of auto-resolving.
+    state.hands.p3 = [wildDrawFourCard('wd4b'), numberCard('f3', 'green', 3)];
 
-    state.currentColor = p1Plus2.color === 'wild' ? 'red' : p1Plus2.color;
-    game.handleAction({ type: 'play_card', playerId: 'p1', cardId: p1Plus2.id });
-    game.handleAction({ type: 'play_card', playerId: 'p2', cardId: p2Plus4.id, chosenColor: 'blue' });
+    game.handleAction({ type: 'play_card', playerId: 'p1', cardId: 'd2' });
+    expect(game.getState().pendingDraw).toBe(2);
 
+    game.handleAction({ type: 'play_card', playerId: 'p2', cardId: 'wd4', chosenColor: 'blue' });
     const after = game.getState();
     expect(after.pendingDraw).toBe(6);
     expect(after.pendingDrawType).toBe('wild_draw_four');
+    expect(after.currentPlayerId).toBe('p3');
   });
 
   it('prevents +2 over pending +4 rule', () => {
-    const game = new UnoGame([
-      { id: 'p1', name: 'A' },
-      { id: 'p2', name: 'B' },
-      { id: 'p3', name: 'C' },
-    ], 'ABCD');
+    const game = new UnoGame(players, 'ABCD');
     game.start();
-
     const state = (game as unknown as { state: ReturnType<UnoGame['getState']> }).state;
-    const p1Plus4 = state.hands.p1.find((card) => card.type === 'wild_draw_four');
-    const p2Plus2 = state.hands.p2.find((card) => card.type === 'draw_two');
 
-    if (!p1Plus4 || !p2Plus2) {
-      expect(true).toBe(true);
-      return;
-    }
-
-    game.handleAction({ type: 'play_card', playerId: 'p1', cardId: p1Plus4.id, chosenColor: 'green' });
+    state.discardPile = [wildDrawFourCard('top')];
+    state.currentColor = 'green';
     state.currentPlayerId = 'p2';
     state.pendingDraw = 4;
     state.pendingDrawType = 'wild_draw_four';
+    state.hands.p2 = [drawTwoCard('d2', 'green')];
+
     expect(() => {
-      game.handleAction({ type: 'play_card', playerId: 'p2', cardId: p2Plus2.id });
+      game.handleAction({ type: 'play_card', playerId: 'p2', cardId: 'd2' });
     }).toThrow(/CARD_NOT_PLAYABLE/);
   });
 
