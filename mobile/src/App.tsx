@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ServerMessage, UnoCard, UnoPrivatePlayerState, UnoPublicState } from '@party/shared';
 import './App.css';
 
-const serverOrigin = import.meta.env.VITE_SERVER_ORIGIN ?? `${window.location.protocol}//${window.location.hostname}:3000`;
+const serverOrigin = import.meta.env.VITE_SERVER_ORIGIN ?? `${window.location.protocol}//${window.location.hostname}:3001`;
 const wsOrigin = serverOrigin.replace('http', 'ws');
 
 const makeMessage = <TType extends string, TPayload>(type: TType, payload: TPayload) => ({
@@ -29,6 +29,7 @@ function App() {
   const [playerId, setPlayerId] = useState<string | null>(null);
   const [publicState, setPublicState] = useState<UnoPublicState | null>(null);
   const [privateState, setPrivateState] = useState<UnoPrivatePlayerState | null>(null);
+  const [roomPlayers, setRoomPlayers] = useState<Array<{ id: string; name: string; connected: boolean; handCount: number }>>([]);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [chosenColor, setChosenColor] = useState<'red' | 'yellow' | 'green' | 'blue'>('red');
   const [error, setError] = useState('');
@@ -55,6 +56,9 @@ function App() {
             localStorage.setItem(pendingSessionStorageKeyRef.current, message.payload.sessionToken);
             pendingSessionStorageKeyRef.current = null;
           }
+          break;
+        case 'ROOM_STATE':
+          setRoomPlayers(message.payload.players);
           break;
         case 'GAME_STATE_PUBLIC':
           setPublicState(message.payload.state);
@@ -88,6 +92,16 @@ function App() {
     () => privateState?.hand.find((card) => card.id === selectedCardId) ?? null,
     [privateState, selectedCardId],
   );
+  const activePlayerName = useMemo(
+    () => roomPlayers.find((player) => player.id === publicState?.currentPlayerId)?.name ?? 'Aguardando',
+    [roomPlayers, publicState],
+  );
+  const currentDiscardLabel = useMemo(() => {
+    if (!publicState?.topDiscard) {
+      return 'Sem descarte';
+    }
+    return `${publicState.topDiscard.color} ${publicState.topDiscard.type === 'number' ? publicState.topDiscard.value : publicState.topDiscard.type}`;
+  }, [publicState]);
 
   const joinOrReconnect = (): void => {
     if (!socketRef.current || !roomCode || !playerName.trim()) {
@@ -151,20 +165,59 @@ function App() {
 
   return (
     <main className="mobile-layout">
-      <h1>Controle UNO</h1>
+      <header className="mobile-header">
+        <div>
+          <p className="eyebrow">Sala</p>
+          <h1>{roomCode || 'Código da sala'}</h1>
+        </div>
+        <span className={`connection ${connected ? 'online' : 'offline'}`}>{connected ? 'online' : 'offline'}</span>
+      </header>
+
       <section className="join-panel">
         <input value={roomCode} onChange={(event) => setRoomCode(event.target.value.toUpperCase())} placeholder="Código da sala" />
         <input value={playerName} onChange={(event) => setPlayerName(event.target.value)} placeholder="Seu nome" />
         <button disabled={!connected} onClick={joinOrReconnect} type="button">
-          Entrar
+          {playerId ? 'Entrar novamente' : 'Entrar'}
         </button>
       </section>
 
       <section className="status-panel">
-        <p>{myTurn ? 'SUA VEZ' : 'Aguardando turno'}</p>
-        <p>Timer: {publicState?.timer ? Math.max(0, Math.ceil((publicState.timer.expiresAt - now) / 1000)) : '--'}s</p>
-        <p>Cor atual: {publicState?.currentColor ?? '-'}</p>
-        <p>Pilha compra: +{publicState?.pendingDraw ?? 0}</p>
+        <div className="status-row">
+          <span className="label">Estado</span>
+          <strong className={myTurn ? 'turn-highlight' : ''}>{myTurn ? 'SUA VEZ' : 'Aguardando turno'}</strong>
+        </div>
+        <div className="status-row">
+          <span className="label">Vez atual</span>
+          <strong>{activePlayerName}</strong>
+        </div>
+        <div className="status-row">
+          <span className="label">Timer</span>
+          <strong>{publicState?.timer ? Math.max(0, Math.ceil((publicState.timer.expiresAt - now) / 1000)) : '--'}s</strong>
+        </div>
+        <div className="status-row">
+          <span className="label">Cor atual</span>
+          <strong>{publicState?.currentColor ?? '-'}</strong>
+        </div>
+        <div className="status-row">
+          <span className="label">Descarte</span>
+          <strong>{currentDiscardLabel}</strong>
+        </div>
+        <div className="status-row">
+          <span className="label">Compra pendente</span>
+          <strong>+{publicState?.pendingDraw ?? 0}</strong>
+        </div>
+      </section>
+
+      <section className="players-panel">
+        <h2>Jogadores</h2>
+        <div className="player-list">
+          {(roomPlayers.length ? roomPlayers : [{ id: playerId ?? 'local', name: playerName || 'Você', connected: true, handCount: privateState?.hand.length ?? 0 }]).map((player) => (
+            <div key={player.id} className={`player-pill ${publicState?.currentPlayerId === player.id ? 'is-turn' : ''}`}>
+              <span>{player.name}</span>
+              <small>{player.handCount} cartas</small>
+            </div>
+          ))}
+        </div>
       </section>
 
       <section className="hand-panel">
@@ -172,16 +225,17 @@ function App() {
         <div className="cards">
           {(privateState?.hand ?? []).map((card: UnoCard) => {
             const selected = selectedCardId === card.id;
-            const playable = privateState?.selectableCardIds.includes(card.id);
+            const playable = !!privateState?.selectableCardIds.includes(card.id);
             return (
               <button
                 key={card.id}
-                className={`card ${selected ? 'selected' : ''}`}
+                className={`card ${selected ? 'selected' : ''} ${playable ? 'playable' : ''}`}
                 disabled={!myTurn || !playable}
                 onClick={() => setSelectedCardId(selected ? null : card.id)}
                 type="button"
               >
-                {card.color} {card.type} {card.value ?? ''}
+                <span className="card-color">{card.color}</span>
+                <span>{card.type === 'number' ? card.value : card.type}</span>
               </button>
             );
           })}
@@ -198,10 +252,10 @@ function App() {
           </select>
         ) : null}
         <button disabled={!myTurn || !selectedCard} onClick={playCard} type="button">
-          Jogar
+          Jogar carta
         </button>
         <button disabled={!myTurn} onClick={drawCard} type="button">
-          Comprar
+          Comprar carta
         </button>
         <button disabled={(privateState?.hand.length ?? 0) !== 1} onClick={callUno} type="button">
           UNO!

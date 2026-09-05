@@ -5,10 +5,13 @@
   padding: 1rem;
   box-sizing: border-box;
   background: #101010;
+  color: #f3f4f6;
 }
 
+.mobile-header,
 .join-panel,
 .status-panel,
+.players-panel,
 .hand-panel,
 .actions-panel {
   background: #171717;
@@ -19,22 +22,143 @@
   gap: 0.6rem;
 }
 
+.mobile-header {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: 0.7rem;
+  opacity: 0.7;
+  text-transform: uppercase;
+}
+
+.mobile-header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.connection {
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.connection.online {
+  background: rgba(34, 197, 94, 0.15);
+  color: #86efac;
+}
+
+.connection.offline {
+  background: rgba(248, 113, 113, 0.15);
+  color: #fca5a5;
+}
+
+.status-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid #2b2b2b;
+  padding-bottom: 0.35rem;
+}
+
+.status-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.label {
+  opacity: 0.7;
+}
+
+.turn-highlight {
+  color: #fbbf24;
+}
+
+.player-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.player-pill {
+  display: grid;
+  gap: 0.1rem;
+  border: 1px solid #3b3b3b;
+  border-radius: 999px;
+  padding: 0.4rem 0.7rem;
+  background: #1f1f1f;
+}
+
+.player-pill.is-turn {
+  border-color: #fbbf24;
+  box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.4);
+}
+
 .cards {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.5rem;
 }
 
 .card {
   border: 1px solid #3b3b3b;
   border-radius: 8px;
-  padding: 0.6rem;
+  padding: 0.75rem 0.5rem;
   text-align: left;
+  display: grid;
+  gap: 0.25rem;
+  min-height: 80px;
+  background: #0f172a;
+  color: #f8fafc;
+}
+
+.card.playable {
+  border-color: #34d399;
+  background: rgba(16, 185, 129, 0.12);
 }
 
 .card.selected {
   border-color: #60a5fa;
   box-shadow: 0 0 0 2px #60a5fa44;
+}
+
+.card-color {
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  opacity: 0.8;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  border: none;
+  border-radius: 8px;
+  background: #2563eb;
+  color: white;
+  padding: 0.7rem 0.9rem;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+input,
+select {
+  background: #0b0b0b;
+  color: #f3f4f6;
+  border: 1px solid #2b2b2b;
+  border-radius: 8px;
+  padding: 0.7rem 0.8rem;
 }
 
 .error {
