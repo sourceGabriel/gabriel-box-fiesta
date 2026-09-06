@@ -1,0 +1,198 @@
+/* Coup phone controller. Loaded only when the Coup game is active. */
+
+.coup-panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 1rem;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.coup-center { justify-items: center; text-align: center; }
+.coup-badge { font-size: 2.4rem; }
+.coup-result { border-color: rgba(226, 177, 60, 0.45); }
+
+/* ---------- banner ---------- */
+.coup-banner-strip {
+  text-align: center;
+  padding: 0.7rem;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  font-weight: 700;
+  color: var(--muted);
+}
+.coup-banner-strip.is-live {
+  color: #08110a;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-color: transparent;
+  background: linear-gradient(135deg, #f0c250, #d99a2b);
+  box-shadow: 0 0 22px rgba(226, 177, 60, 0.4);
+}
+
+/* ---------- my influences ---------- */
+.coup-me-head { display: flex; align-items: baseline; justify-content: space-between; }
+.coup-me-head h2 { font-size: 0.95rem; }
+.coup-me-coins { font-weight: 800; color: #e2b13c; }
+
+.coup-me-cards { display: flex; gap: 0.6rem; }
+.coup-mini {
+  flex: 1;
+  min-width: 0;
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel-2);
+  padding: 0.75rem 0.5rem;
+  display: grid;
+  justify-items: center;
+  gap: 0.25rem;
+  text-align: center;
+}
+.coup-mini.is-revealed { opacity: 0.5; }
+.coup-mini-emoji { font-size: 1.6rem; }
+.coup-mini-name { font-size: 0.8rem; font-weight: 700; }
+.coup-mini-tag { font-size: 0.65rem; text-transform: uppercase; color: #fca5a5; letter-spacing: 0.06em; }
+
+.coup-table-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
+.coup-tag {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  font-variant-numeric: tabular-nums;
+}
+.coup-howto-open {
+  margin-left: auto;
+  font-size: 0.75rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+}
+
+/* ---------- prompt ---------- */
+.coup-prompt { border-color: rgba(226, 177, 60, 0.4); }
+.coup-prompt h2 { font-size: 1rem; line-height: 1.35; }
+.coup-prompt-note { font-size: 0.8rem; color: var(--muted); }
+
+.coup-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+.coup-action-btn {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.75rem 0.6rem;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--text);
+  text-align: left;
+  min-height: 60px;
+}
+.coup-action-btn strong { font-size: 0.92rem; }
+.coup-action-btn span { font-size: 0.72rem; color: var(--muted); }
+.coup-action-btn:disabled { opacity: 0.4; }
+
+.coup-targets, .coup-block-opts, .coup-lose-opts { display: grid; gap: 0.5rem; }
+.coup-target-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.85rem 0.9rem;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--text);
+  font-weight: 700;
+}
+.coup-target-btn span { color: #e2b13c; font-variant-numeric: tabular-nums; }
+.coup-target-btn em { margin-left: auto; font-style: normal; font-size: 0.75rem; color: #fca5a5; }
+.coup-target-btn:disabled { opacity: 0.4; }
+
+.coup-yesno { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+.coup-danger, .coup-neutral, .coup-block-btn, .coup-lose-btn {
+  border: none;
+  border-radius: 12px;
+  padding: 0.9rem 0.6rem;
+  font-weight: 800;
+  font-size: 0.95rem;
+  min-height: 52px;
+  color: #fff;
+}
+.coup-danger { background: linear-gradient(135deg, #f87171, #b91c1c); }
+.coup-neutral { background: var(--panel-2); color: var(--text); border: 1px solid var(--line); }
+.coup-block-btn { background: linear-gradient(135deg, #60a5fa, #1d4ed8); }
+.coup-lose-btn { background: var(--panel-2); color: var(--text); border: 1px solid var(--line); }
+
+.coup-exchange { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 0.6rem; }
+.coup-ex-card {
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel-2);
+  padding: 0.75rem 0.4rem;
+  display: grid;
+  justify-items: center;
+  gap: 0.2rem;
+  color: var(--text);
+}
+.coup-ex-card.on { box-shadow: 0 0 0 3px var(--good, #22c55e); }
+
+/* ---------- roster ---------- */
+.coup-roster h2 { font-size: 0.95rem; }
+.coup-roster ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.35rem; }
+.coup-roster li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: 10px;
+  background: var(--panel-2);
+  border: 1px solid transparent;
+  font-size: 0.88rem;
+}
+.coup-roster li.is-turn { border-color: #e2b13c; background: rgba(226, 177, 60, 0.14); }
+.coup-roster li.is-out { opacity: 0.45; }
+.coup-roster-meta { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* ---------- how to play ---------- */
+.coup-howto {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.1rem;
+  background: rgba(4, 6, 12, 0.82);
+  backdrop-filter: blur(5px);
+  overflow-y: auto;
+}
+.coup-howto-card {
+  width: min(400px, 94vw);
+  display: grid;
+  gap: 0.9rem;
+  padding: 1.4rem 1.25rem;
+  border-radius: 18px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+.coup-howto-card h2 { font-size: 1.15rem; }
+.coup-howto-lead { font-size: 0.88rem; color: var(--muted); }
+.coup-howto-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.55rem; }
+.coup-howto-list li { display: flex; gap: 0.6rem; font-size: 0.85rem; line-height: 1.35; }
+.coup-howto-emoji { font-size: 1.2rem; flex: none; }
+.coup-howto-note { font-size: 0.82rem; color: var(--muted); line-height: 1.4; }
+.coup-howto-close {
+  border: none;
+  border-radius: 12px;
+  padding: 0.9rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #f0c250, #d99a2b);
+  color: #08110a;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coup-banner-strip.is-live { box-shadow: none; }
+}

@@ -1,5 +1,6 @@
 import type { ControllerGameView } from './types';
 import { UnoControllerView } from './uno/UnoControllerView';
+import { CoupControllerView } from './coup/CoupControllerView';
 
 /**
  * Maps a game id (from GAME_CATALOG / the started game) to its phone-controller view.
@@ -7,4 +8,5 @@ import { UnoControllerView } from './uno/UnoControllerView';
  */
 export const CONTROLLER_GAMES: Record<string, ControllerGameView> = {
   uno: UnoControllerView,
+  coup: CoupControllerView,
 };
