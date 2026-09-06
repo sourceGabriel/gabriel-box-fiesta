@@ -35,7 +35,17 @@ npm run -w host lint      # oxlint
 
 ## Estrutura
 
-Hoje `src/App.tsx` é um componente único (lobby + tabuleiro UNO + animações da
-Fase 10). A Fase A do plano (`.claude/plans/`) extrai isto para
-`src/shell/` (conexão, lobby, chrome — genéricos) + `src/games/uno/` (a view do
-UNO), com um registry estático `HOST_GAMES` para múltiplos jogos.
+- `src/App.tsx` — dispatcher fino: monta a conexão e mostra o lobby até um jogo
+  começar, depois entrega para a view registrada daquele jogo. Não conhece UNO.
+- `src/shell/` — parte **genérica** (nenhum conhecimento de jogo):
+  - `useRoomConnection.ts` — `/room` + WebSocket (reconexão + backoff), expõe
+    `{ roomCode, players, catalog, selectedGameId, activeGameId, publicState,
+    events, connected, send, … }`. `publicState`/`events` são opacos aqui.
+  - `LobbyScreen.tsx` — QR + código + lista de jogadores + botão iniciar; mostra
+    a grade do `GAME_CATALOG` só quando há mais de um jogo. `brandName` é prop.
+  - `messages.ts`, `shell.css`.
+- `src/games/{types,registry}.ts` — `HostGameViewProps` e
+  `HOST_GAMES = { uno: UnoHostView }`. Adicionar um jogo = 1 import + 1 entrada.
+- `src/games/uno/` — a view do UNO (`UnoHostView.tsx`), `describeEvent.ts`,
+  `animations.ts` (Fase 10), `cardArt.ts`, `uno-host.css`.
+- `src/index.css` — reset mínimo + design tokens (`--bg`/`--panel`/`--line`/…).

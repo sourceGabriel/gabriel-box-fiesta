@@ -35,3 +35,10 @@ The project is currently between the room lifecycle phase and the actual host ga
 - `UnoGame`: `GameContext` ctor, injected RNG (determinism fix), `handleAction(playerId, unknown)` + private `dispatch`, `getStatus()`, `getTimer()`.
 - `ws-server`: `SELECT_GAME` + `GAME_ACTION` handlers; 5 legacy UNO verbs kept (dual protocol); `GAME_CATALOG` on join; capability-gated timer tick. Wire state/event payload shapes unchanged (boundary casts, `TODO(A5)`).
 - Tests migrated + 2 new; 27 server tests green (stable ×4). No frontend changes. Backward-compatible except `ROOM_STATE.handCount` → `0` (no consumer).
+
+## 2026-09-06 — Fase A / PR A3 (branch `feature/coup-ou-coupa`)
+- New: `host/src/shell/` (`messages.ts`, `useRoomConnection.ts`, `LobbyScreen.tsx`, `shell.css`) — game-agnostic connection + lobby + chrome; `useRoomConnection` exposes `publicState`/`events` as opaque `unknown`.
+- New: `host/src/games/{types,registry}.ts` (`HostGameViewProps`, `HOST_GAMES = { uno: UnoHostView }`) + `host/src/games/uno/` (`UnoHostView.tsx`, `describeEvent.ts`, `animations.ts`, `cardArt.ts` moved, `uno-host.css`).
+- `host/src/App.tsx` → ~55-line dispatcher (lobby until `activeGameId && publicState`, then `HOST_GAMES[activeGameId]`). No UNO knowledge in the shell.
+- `host/src/index.css` dead Vite-template block replaced with a minimal reset + design tokens; `host/src/App.css` and template `host/src/assets/` removed.
+- No wire change (server + mobile untouched). Host build + root build + `npm run -w host lint` + 27 server tests green.

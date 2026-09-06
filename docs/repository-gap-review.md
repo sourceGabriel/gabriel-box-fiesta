@@ -1,6 +1,6 @@
 # Revisão do repositório: lacunas em relação ao prompt mestre
 
-_Atualizado em 2026-09-06 (branch `feature/coup-ou-coupa`, após PR A1+A2)._
+_Atualizado em 2026-09-06 (branch `feature/coup-ou-coupa`, após PR A1+A2+A3)._
 
 ## Resumo executivo
 O MVP jogável do UNO (§53) está **completo e validado**: host mostra a mesa em tempo real, partida completa com cartas especiais, coringa com escolha de cor, UNO!, denúncia, placar acumulado entre rodadas, fim de partida, pausar/continuar, reconexão de jogador e transferência de owner. **27 testes de servidor verdes**; build dos 4 workspaces verde.
@@ -8,7 +8,8 @@ O MVP jogável do UNO (§53) está **completo e validado**: host mostra a mesa e
 **Fase A (núcleo agnóstico, §52) em andamento:**
 - ✅ **A1** — contrato genérico em `shared/` (`GameMeta`, `GameStatus`, `LifecycleEvent`, mensagens `GAME_ACTION`/`SELECT_GAME`/`GAME_CATALOG`).
 - ✅ **A2** — `GamePlugin`/registry + `GameInstance` opaco + `Room` sem import de UNO no servidor; protocolo duplo. O **servidor** já satisfaz "adicionar jogo = `src/games/<id>/` + 1 linha no registry".
-- 🔜 **A3/A4** — falta extrair o shell dos frontends (`host`/`mobile`), hoje 100% UNO.
+- ✅ **A3** — `host` dividido em shell agnóstico (`host/src/shell/`: `useRoomConnection` + `LobbyScreen`, `publicState`/`events` opacos) + `host/src/games/uno/` (registry `HOST_GAMES`). `App.tsx` virou dispatcher fino; `App.css` e `assets/` do template removidos.
+- 🔜 **A4** — falta extrair o shell do `mobile` (hoje 100% UNO), incluindo o subsistema de sessão/reconexão.
 - 🔜 **A5** — remover os 5 verbos UNO do fio; payloads `{ gameId, state }` genéricos.
 
 ## O que já existe (Fases 1–10 + polimento)
@@ -33,7 +34,7 @@ O MVP jogável do UNO (§53) está **completo e validado**: host mostra a mesa e
 A interface `Game<>` já existe e não é usada pelo core — a extração de um `GamePlugin`/registry é limitada e bem definida.
 
 ### 2) Frontend sem shell multi-jogo
-`host/src/App.tsx` (~589 linhas) e `mobile/src/App.tsx` (~554 linhas) são componentes flat, 100% UNO, sem router nem separação shell/jogo. `cardArt.ts` está duplicado byte-a-byte entre host e mobile. Não há pacote de UI compartilhado; tokens de CSS duplicados com valores levemente diferentes. `host/src/index.css` ainda é o template do Vite (morto, conflitante).
+**Host resolvido em A3:** `host/src/App.tsx` agora é um dispatcher fino (shell `useRoomConnection`/`LobbyScreen` + `HOST_GAMES[activeGameId]`); o template morto de `host/src/index.css` foi trocado por reset + tokens; `host/src/App.css` e `host/src/assets/` removidos. Falta o `mobile` (A4): `mobile/src/App.tsx` (~554 linhas) ainda é um componente flat 100% UNO. `cardArt.ts` continua duplicado byte-a-byte entre host e mobile — a consolidação num `@party/ui` fica pra Fase C. Tokens de CSS ainda duplicados entre os dois apps (Fase C).
 
 ### 3) Fase 11 — identidade visual completa + sons (§47)
 Mobile já tem identidade "party" própria; host tem visual TV coeso. Falta: sistema de design compartilhado (`@party/ui`), sons (sintetizados via Web Audio, sem assets), e uma identidade de marca própria substituindo o nome "UNO" (adiado por decisão do usuário).
