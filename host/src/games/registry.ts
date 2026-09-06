@@ -1,6 +1,8 @@
 import type { HostGameEntry } from './types';
 import { UnoHostView } from './uno/UnoHostView';
 import { UnoCover } from './uno/UnoCover';
+import { CoupHostView } from './coup/CoupHostView';
+import { CoupCover } from './coup/CoupCover';
 
 /**
  * Maps a game id (from the server's GAME_CATALOG / the started game) to its host
@@ -9,4 +11,5 @@ import { UnoCover } from './uno/UnoCover';
  */
 export const HOST_GAMES: Record<string, HostGameEntry> = {
   uno: { View: UnoHostView, Cover: UnoCover },
+  coup: { View: CoupHostView, Cover: CoupCover },
 };
