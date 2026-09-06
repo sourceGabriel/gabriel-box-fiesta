@@ -1,7 +1,14 @@
 # CLAUDE.md — gabriel-box-fiesta
 
-Claude-oriented operating brief. Mirrors `.copilot/spec-kit/` but tuned for efficiency and cross-session memory.
-**Read this first; don't re-explore what's already captured here.**
+Claude operating brief. Mirrors `.copilot/spec-kit/`, tuned for efficiency.
+**Read this first; don't re-explore what's already captured here or in memory.**
+
+## Working efficiently
+- **Default to terse** — status and confirmations in a line or two. Full detail only for decisions, audits, and trade-offs.
+- **Broad search across many files → spawn the `Explore` subagent** (returns conclusions, not file dumps). Read whole files only once you know which.
+- Never read `package-lock.json`, `uno_card_sheet_crops/**`, `**/dist/**` (also denied in `.claude/settings.json`).
+- Commands: `/validate` after a slice · `/checkpoint` before handoff · `/run` for a live stack · `/phase <id>` to open a slice.
+- A `Stop` hook auto-typechecks uncommitted `server`/`shared` changes — trust it instead of re-running `tsc` manually.
 
 ## What this is
 Local (LAN, no internet, no accounts, in-memory) "Jackbox-style" party-game platform: a **shared TV `host`** + **phone `mobile` controllers** + **authoritative `server`**. First game is UNO-inspired. Platform must stay extensible to more games.
@@ -57,14 +64,15 @@ Monorepo, npm workspaces: `server` · `shared` (**types-only, no runtime, no zod
 - Validate all inputs server-side. Keep session tokens separate from display names. Keep rate-limiting present.
 
 ## Validation
+`/validate` runs it all and reports one line. Under the hood:
 ```
-npm run -w server test      # must stay 25 green
-npm run -w server lint       # tsc --noEmit
-npm run -w host lint         # oxlint
-npm run -w mobile lint       # oxlint
-npm run build                # all 4 workspaces
+npm run -w server test       # must stay green (currently 27)
+npm run -w server lint        # tsc --noEmit
+npm run -w host lint          # oxlint
+npm run -w mobile lint        # oxlint
+npm run build                 # all 4 workspaces
 ```
-Smoke: `npm run -w server dev` + `-w host dev` + `-w mobile dev`; host lobby → 2 mobiles via `/join/<code>` → full UNO round + pause + reconnect (reload a mobile tab) + owner transfer (close owner tab).
+Smoke (`/run`): host lobby → 2 mobiles via `/join/<code>` → full UNO round + pause + reconnect (reload a mobile tab) + owner transfer (close owner tab).
 
 ## Reference repos (already analysed — don't re-fetch)
 - `rodwilco/rumpus` (8★, vanilla JS) — the plugin-registry pattern to mirror: `GAMES={id:GameClass}`, `meta.minPlayers`, `handleSubmit(playerId,payload)`.

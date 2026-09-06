@@ -117,5 +117,19 @@
 ### Why
 - Proves the host shell carries zero game knowledge: a second game is one `HOST_GAMES` entry + one view module. The connection/lobby/reconnect chrome is now reusable as-is.
 
+## 2026-09-06 — Claude Code config for efficiency + token reduction (branch `feature/claude-config`)
+### Added
+- `.claude/settings.json` — `permissions.deny` on Read of `package-lock.json`, the card `*.png` files and `*.min.*` (stops token-heavy reads); `permissions.allow` for safe read-only Bash (`npm test`/`build`/`lint`, `npx tsc`/`vitest`/`tsx`, read-only `git`, read-only `gh pr/run/issue`) so those stop prompting.
+- `.claude/hooks/typecheck-on-stop.mjs` + a `Stop` hook — if `server/`/`shared/` have uncommitted changes, runs `tsc --noEmit` when Claude finishes; silent on success, surfaces type errors (exit 2) so they're fixed in the same turn.
+- `.claude/commands/{validate,run,checkpoint,phase}.md` — slash commands for the repeated rituals.
+- `.claude/launch.json` — committed (was gitignored) so `/run` works in every worktree; ports are fixed so it's not worktree-specific.
+
+### Changed
+- `CLAUDE.md` — added a "Working efficiently" section (terse-by-default, `Explore`-subagent-first, deny list, commands); validation block references `/validate` and no longer hardcodes a test count.
+- `.gitignore` — un-ignore `.claude/launch.json`; ignore `.claude/settings.local.json` (personal grants).
+
+### Why
+- Every permission prompt is a round-trip and every accidental read of `package-lock.json` (~25k tokens) or a card PNG is wasted context. The deny/allow lists and the terse/subagent defaults cut token use per session; the `Stop` typecheck catches errors in one turn instead of a fix-up pass; the commands collapse multi-turn rituals into one.
+
 ## Next planned change
 - Fase A, PR A4: mobile shell + session/reconnect subsystem + `mobile/src/games/uno/` (no wire change). Then A5 (drop the legacy UNO verbs, generic `{ gameId, state }` payloads).

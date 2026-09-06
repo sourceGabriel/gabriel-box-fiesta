@@ -42,3 +42,9 @@ The project is currently between the room lifecycle phase and the actual host ga
 - `host/src/App.tsx` → ~55-line dispatcher (lobby until `activeGameId && publicState`, then `HOST_GAMES[activeGameId]`). No UNO knowledge in the shell.
 - `host/src/index.css` dead Vite-template block replaced with a minimal reset + design tokens; `host/src/App.css` and template `host/src/assets/` removed.
 - No wire change (server + mobile untouched). Host build + root build + `npm run -w host lint` + 27 server tests green.
+
+## 2026-09-06 — Claude Code config for efficiency (branch `feature/claude-config`, off `ec44dff`)
+- New `.claude/`: `settings.json` (Read-deny on `package-lock.json` / card `*.png` / `*.min.*`; Bash allow for safe read-only `npm`/`npx`/`git`/`gh` commands; `Stop` typecheck hook), `hooks/typecheck-on-stop.mjs`, `commands/{validate,run,checkpoint,phase}.md`, `launch.json` (un-ignored + committed).
+- `CLAUDE.md`: added a "Working efficiently" section; validation block references `/validate` and stops hardcoding the test count. (The "Current state / Fase A" section stays — kept in full by the user.)
+- `.gitignore`: un-ignore `.claude/launch.json`; ignore `.claude/settings.local.json`.
+- Config only — no app code touched. Goal: fewer permission prompts, no accidental token-heavy reads, type errors caught in the same turn.

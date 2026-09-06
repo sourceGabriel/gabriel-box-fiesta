@@ -8,5 +8,5 @@ coverage/
 !/.idea/workspace.xml
 .idea/workspace.xml
 
-# local dev launch config (worktree-specific)
-.claude/launch.json
+# Claude Code: personal permission grants (per-machine); shared config is .claude/settings.json
+.claude/settings.local.json

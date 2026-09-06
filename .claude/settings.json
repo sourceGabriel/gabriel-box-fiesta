@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "deny": [
+      "Read(./package-lock.json)",
+      "Read(./uno_card_sheet_crops/*.png)",
+      "Read(./**/*.min.js)",
+      "Read(./**/*.min.css)"
+    ],
+    "allow": [
+      "Bash(npm test:*)",
+      "Bash(npm run test:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npm run -w server test:*)",
+      "Bash(npm run -w server lint:*)",
+      "Bash(npm run -w shared lint:*)",
+      "Bash(npm run -w host lint:*)",
+      "Bash(npm run -w mobile lint:*)",
+      "Bash(npm run -w server build:*)",
+      "Bash(npm run -w shared build:*)",
+      "Bash(npm run -w host build:*)",
+      "Bash(npm run -w mobile build:*)",
+      "Bash(npm ci)",
+      "Bash(npm install)",
+      "Bash(npm ls:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx vitest:*)",
+      "Bash(npx tsx:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git blame:*)",
+      "Bash(git branch:*)",
+      "Bash(git fetch:*)",
+      "Bash(git remote -v)",
+      "Bash(git stash list:*)",
+      "Bash(git worktree list:*)",
+      "Bash(git merge-base:*)",
+      "Bash(git rev-parse:*)",
+      "Bash(git rev-list:*)",
+      "Bash(git ls-files:*)",
+      "Bash(git ls-tree:*)",
+      "Bash(git ls-remote:*)",
+      "Bash(git describe:*)",
+      "Bash(git check-ignore:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr list:*)",
+      "Bash(gh pr diff:*)",
+      "Bash(gh pr checks:*)",
+      "Bash(gh run list:*)",
+      "Bash(gh run view:*)",
+      "Bash(gh issue view:*)",
+      "Bash(gh issue list:*)"
+    ]
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "node .claude/hooks/typecheck-on-stop.mjs" }
+        ]
+      }
+    ]
+  }
+}
