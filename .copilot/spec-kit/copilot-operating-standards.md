@@ -37,12 +37,12 @@ A phase is only complete when:
 - the tracking docs are updated in the same batch (`docs/CHANGELOG.md`, `docs/repository-gap-review.md`, `.copilot/logs/changes-log.md`, the active plan file).
 
 ## Current roadmap (2026-09-06)
-The UNO MVP (§53) is complete and validated. Work now proceeds on the **game-agnostic core** (master prompt §52) per the plan at
-`C:\Users\gabri\.claude\plans\antes-dos-proximos-passos-elegant-clover.md`:
+The UNO MVP (§53), the game-agnostic core (§52) and a second game (Coup) are all complete. Plans:
+`C:\Users\gabri\.claude\plans\antes-dos-proximos-passos-elegant-clover.md` (Fases A–C) and `em-paralelo-ao-que-purring-moler.md` (Fase D).
 
-- **Fase A** — ✅ COMPLETE. `GamePlugin` registry + opaque `GameInstance` + game-agnostic `Room`; frontend shell per role + `games/uno/` module; generic wire (`GAME_ACTION` only, `{ gameId, state|event: unknown }` payloads). 5 green PRs (A1 shared contract, A2 server registry, A3 host shell, A4 mobile shell + `session.ts`, A5 protocol cleanup). UNO stays identical. Was a **deliberate reorder ahead of Fase 11** because a second complete game is blocked on the abstraction.
-- **Fase B** — ✅ COMPLETE. 3-screen host flow (`AttractScreen` → `CatalogScreen` → `LobbyScreen`), per-game cover art (`HOST_GAMES[id].Cover`), keyboard + click nav, QR only on the lobby; `END_GAME` returns to that game's lobby (`Room.endGame()` → `accepting_players` keeping `selectedGameId`). No new wire messages.
+- **Fase A** — ✅ COMPLETE. `GamePlugin` registry + opaque `GameInstance` + game-agnostic `Room`; frontend shell per role + `games/uno/` module; generic wire (`GAME_ACTION` only, `{ gameId, state|event: unknown }` payloads). 5 green PRs (A1–A5). UNO stays identical. Was a **deliberate reorder ahead of Fase 11** because a second complete game was blocked on the abstraction.
+- **Fase B** — ✅ COMPLETE. 3-screen host flow (`AttractScreen` → `CatalogScreen` → `LobbyScreen`), per-game cover art (`HOST_GAMES[id].Cover`), keyboard + click nav, QR only on the lobby; `END_GAME` returns to that game's lobby.
 - **Fase C** — ✅ COMPLETE. `@party/ui` = tokens (C1) + components + retrofit (C2) + synth Web Audio sounds host-only (C3) + `uno-cards` card-art map (C4). No duplicated frontend code between the apps. §47: the "UNO" name is kept — `BrandMark.text` is the single rename point.
-- **Fase D** — integrate the second game: comparative analysis of its repo → port rules to a `GamePlugin` → build its host + controller views.
+- **Fase D** — ✅ COMPLETE (v1). Coup as game #2, classic ruleset, ported from a standalone repo (rules reference — ported, not imported). D1 `shared` contract, D2 `server/src/games/coup/` engine + plugin (57 server tests), D3 host view, D4 mobile controller + "how to play", D5 generic emoji reactions (`SEND_REACTION`/`REACTION`). **§52 held in practice** — the game touched zero `core/`/`ws-server`/shell/`shared/protocol` files (only D5, a platform feature, touched the protocol). Deferred: bots (need a "virtual player" concept), the Reformation expansion, D6 polish (sounds, card-flip animation).
 
 Acceptance test for Fase A (proves §52): a stub game plugs in by touching only `server/src/games/<id>/` + one line in each registry — zero edits to `core/`, `ws-server.ts`, or the frontend shell.

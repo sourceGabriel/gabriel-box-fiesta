@@ -112,3 +112,15 @@ The project is currently between the room lifecycle phase and the actual host ga
 - Live smoke (host + 2 phones): full Coup match incl. bluff→challenge→reveal→influence-loss→turn-advance, pause/resume, 2-player endgame, game-over overlay, "Nova partida", reaction bubble on TV. No errors. server tsc + host/mobile oxlint + build (5 ws) green.
 - **Deferred from v1:** D6 polish (sound-map, card-flip anim), bots (needs platform "virtual player" concept — Coup's `BotBrain` is ~1100 lines pure TS), Reformation expansion.
 - Committed as 5 commits (D1–D5) on `feature/coupzin`.
+
+## 2026-09-06 — Fase D docs refresh (branch `feature/coupzin`)
+- After push: reviewed + updated every doc/README that had gone stale pre-Coup.
+- `README.md` — intro (two games), dir tree (`games/coup/`, `ui/`), "Implementação atual" (Fases A–D ✅), validate block (57 tests, 5 workspaces), "Jogar" made game-neutral.
+- `server/README.md` — `coup/` in the games map + a Coup engine row; test count; `SEND_REACTION` note; "shared stays types-only, zod lives in `games/<id>/action-schema.ts`".
+- `shared/README.md` — `models/coup.ts` + `games/coup/events.ts` rows; `SEND_REACTION`/`REACTION` in the protocol row.
+- `host/README.md` / `mobile/README.md` — `HOST_GAMES`/`CONTROLLER_GAMES` with `coup`; `games/coup/` file lists; `reactions` in the `useRoomConnection` exposes.
+- `ui/README.md` — **new** (the workspace had none): tokens/components/sound/uno-cards, the "game colours + sound-maps live in the game module" rule.
+- `.github/copilot-instructions.md` — mission (two games), current focus (A–D done, deferred list), `CoupGame` in the naming examples.
+- `.copilot/spec-kit/README.md` + `copilot-operating-standards.md` — roadmap: Fase D ✅ COMPLETE with the D1–D5 breakdown + deferred (bots/Reformation/D6); both plan files listed.
+- `CLAUDE.md` — test count 28→57, 4→5 workspaces, §52-proof line (now "confirmed by Coup"), reference-repos Coup line (ported, not just reference; standalone repo path + `BotBrain` pointer), git-conventions branch history (`feature/coupzin`).
+- Docs-only — no code touched.

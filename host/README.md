@@ -41,7 +41,8 @@ npm run -w host lint      # oxlint
 - `src/shell/` — parte **genérica** (nenhum conhecimento de jogo):
   - `useRoomConnection.ts` — `/room` + WebSocket (reconexão + backoff), expõe
     `{ roomCode, players, catalog, selectedGameId, activeGameId, publicState,
-    events, connected, send, … }`. `publicState`/`events` são opacos aqui.
+    events, reactions, connected, send, … }`. `publicState`/`events` são opacos
+    aqui; `reactions` é a fila de emoji (auto-expira em 4s).
   - `AttractScreen.tsx` — marca "Box Fiesta" + código da sala; avança só manual
     (tecla/clique). Sem QR.
   - `CatalogScreen.tsx` — grade do `GAME_CATALOG` + arte de capa por jogo
@@ -49,9 +50,14 @@ npm run -w host lint      # oxlint
   - `LobbyScreen.tsx` — QR grande + código + jogadores + "Iniciar {jogo}" +
     "Trocar de jogo". É a única tela com QR.
   - `messages.ts`, `shell.css`.
-- `src/games/{types,registry}.ts` — `HostGameViewProps`, `HostGameEntry` e
-  `HOST_GAMES = { uno: { View: UnoHostView, Cover: UnoCover } }`. Adicionar um
-  jogo = 1 import + 1 entrada.
+- `src/games/{types,registry}.ts` — `HostGameViewProps` (inclui `reactions`),
+  `HostGameEntry` e `HOST_GAMES = { uno: {…}, coup: {…} }` (`{ View, Cover }`).
+  Adicionar um jogo = 1 import + 1 entrada.
 - `src/games/uno/` — `UnoHostView.tsx`, `UnoCover.tsx` (capa SVG),
-  `describeEvent.ts`, `animations.ts` (Fase 10), `cardArt.ts`, `uno-host.css`.
-- `src/index.css` — reset mínimo + design tokens (`--bg`/`--panel`/`--line`/…).
+  `describeEvent.ts`, `animations.ts` (Fase 10), `sound-map.ts`, `uno-host.css`
+  (arte das cartas vem de `@party/ui/uno-cards`).
+- `src/games/coup/` — `CoupHostView.tsx` (mesa, banner de fase, faixa de
+  revelação de desafio, feed, overlays, bolhas de reação), `CoupCover.tsx`,
+  `describeEvent.ts`, `coupCards.ts` (emoji/cor por personagem — sem assets),
+  `coup-host.css`.
+- `src/index.css` — reset mínimo; tokens vêm de `@party/ui/tokens.css` (via `main.tsx`).

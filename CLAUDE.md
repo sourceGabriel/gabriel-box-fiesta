@@ -73,9 +73,9 @@ Monorepo, npm workspaces: `server` · `shared` (**types-only, no runtime, no zod
 | Mobile UI (shell + game module, after A4) | `mobile/src/shell/` (`session`, `useRoomConnection`, `MobileHeader`, `JoinScreen`, `WaitingScreen`, `shell.css`) + `mobile/src/games/{types,registry}.ts` + `mobile/src/games/uno/` + thin `App.tsx` + `index.css` (theme/tokens) |
 | Card PNGs | `uno_card_sheet_crops/` (repo root, 57 files); mapped by `ui/src/uno-cards.ts` (`@party/ui/uno-cards`) |
 | Tests | `server/src/tests/{uno-game,room,multiplayer.integration}.test.ts` |
-| Per-workspace how-to | `{server,shared,host,mobile}/README.md` |
+| Per-workspace how-to | `{server,shared,ui,host,mobile}/README.md` |
 
-**§52 proof:** adding a game = implement `GamePlugin` (pure TS) + `server/src/games/<id>/` + 1 line in `GAMES` + a host view + a controller view + 1 line in each frontend registry. Zero edits to `core/`, `ws-server.ts`, or either shell. The only UNO name left in shared is `models/uno.ts` + `games/uno/events.ts` (both UNO-scoped) and `unoPlugin.meta.name = 'UNO'` (§47, changes in Fase C).
+**§52 proof (confirmed by Coup in Fase D):** adding a game = implement `GamePlugin` (pure TS) + `server/src/games/<id>/` + 1 line in `GAMES` + a host view + a controller view + 1 line in each frontend registry. Zero edits to `core/`, `ws-server.ts`, either shell, or `shared/protocol`. Per-game names in `shared` stay scoped: `models/{uno,coup}.ts` + `games/{uno,coup}/events.ts`; `{uno,coup}Plugin.meta.name` are the §47 rename points.
 
 ## Hard rules
 - Server is the single source of truth. Host/mobile never enforce rules. No business logic in React.
@@ -89,17 +89,17 @@ Monorepo, npm workspaces: `server` · `shared` (**types-only, no runtime, no zod
 ## Validation
 `/validate` runs it all and reports one line. Under the hood:
 ```
-npm run -w server test       # must stay green (currently 28)
+npm run -w server test       # must stay green (currently 57)
 npm run -w server lint        # tsc --noEmit
 npm run -w host lint          # oxlint
 npm run -w mobile lint        # oxlint
-npm run build                 # all 4 workspaces
+npm run build                 # all 5 workspaces (incl. ui)
 ```
-Smoke (`/run`): host lobby → 2 mobiles via `/join/<code>` → full UNO round + pause + reconnect (reload a mobile tab) + owner transfer (close owner tab).
+Smoke (`/run`): host catalog → pick a game → 2 mobiles via `/join/<code>` → full round + pause + reconnect (reload a mobile tab) + owner transfer (close owner tab). For Coup: bluffed claim → challenge → reveal → influence loss → 2-player endgame.
 
 ## Reference repos (already analysed — don't re-fetch)
 - `rodwilco/rumpus` (8★, vanilla JS) — the plugin-registry pattern to mirror: `GAMES={id:GameClass}`, `meta.minPlayers`, `handleSubmit(playerId,payload)`.
-- `8tp/Coup` (MIT, Next.js/Zustand/Socket.io, **no TV screen**) — `ActionResolver.ts` ~850 lines pure. **Rules reference only** — port, don't import.
+- `8tp/Coup` (MIT, Next.js/Zustand/Socket.io, **no TV screen**) — classic `ActionResolver` **ported** in Fase D → `server/src/games/coup/` (RNG/clock injected, `setTimeout` dropped, Reformation removed). The standalone repo lives at `C:\Users\gabri\Documents\workspace\Jogos\Coup` — its `BotBrain.ts` (~1100 lines pure TS) is the reference for future bots.
 - `bodbjanar` (archived), `freewee` (2015, sensor games), `amoebas` (0★) — confirm the screen/controller/QR/LAN pattern we already have. Nothing to import.
 - Our infra (signed session tokens + grace, typed protocol + zod, 25 tests) already exceeds all 4 platform refs.
 
@@ -107,4 +107,4 @@ Smoke (`/run`): host lobby → 2 mobiles via `/join/<code>` → full UNO round +
 - Work on `feature/*` branches; never commit directly to `main`/`develop`.
 - Commit message trailer: `Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>`.
 - PR body trailer: `🤖 Generated with [Claude Code](https://claude.com/claude-code)`.
-- Fases 5–10 landed via PR #2 (`feature/testa-claudin`); everything is at `c8b602e` on `main`/`develop`/`feature/coup-ou-coupa`.
+- History: Fases 5–10 via PR #2 (`feature/testa-claudin`, `c8b602e` on `main`/`develop`). Fases A–C on `feature/coup-ou-coupa` (`22f19b3`). **Fase D (Coup) on `feature/coupzin`** (`d98f58a`..`0c114d4`, pushed), branched off `feature/coup-ou-coupa`.

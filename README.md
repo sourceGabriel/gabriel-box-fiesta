@@ -1,8 +1,9 @@
 # Gabriel Box Fiesta — Plataforma Party Games (MVP Local)
 
-Este repositório implementa um **MVP local de plataforma de party games multiplayer** com o primeiro jogo inspirado em UNO.
+Este repositório implementa um **MVP local de plataforma de party games multiplayer**. Dois jogos: um inspirado em UNO e um inspirado em Coup.
 
-> Escopo atual: MVP do UNO completo e validado (Fases 1–10). Próximo: núcleo agnóstico de jogo (§52) para plugar um 2º jogo. Ver `docs/CHANGELOG.md` e `docs/repository-gap-review.md`.
+> Escopo atual: MVP do UNO completo e validado (Fases 1–10) + núcleo agnóstico de jogo (Fases A–C, §52) + **Coup como 2º jogo** (Fase D, regras clássicas). Ver `docs/CHANGELOG.md` e `docs/repository-gap-review.md`.
+> Adicionar um jogo = `server/src/games/<id>/` + `host/src/games/<id>/` + `mobile/src/games/<id>/` + 1 linha em cada registry. Zero mudança no núcleo.
 
 ## 1) Arquitetura recomendada
 
@@ -163,18 +164,15 @@ Servidor → clientes:
 ```text
 party-game/
 ├── server/
-│   ├── core/
-│   ├── games/uno/
+│   ├── core/            # Room / Session / game-plugin.ts (agnóstico)
+│   ├── games/uno/       # engine + plugin do UNO
+│   ├── games/coup/      # engine + plugin do Coup (Fase D)
 │   ├── websocket/
 │   └── app/
-├── shared/
-│   ├── protocol/
-│   ├── events/
-│   └── models/
-├── host/
-│   └── src/
-└── mobile/
-    └── src/
+├── shared/              # só tipos: protocol/ + models/ + games/{uno,coup}/events.ts
+├── ui/                  # @party/ui — tokens + componentes + sons (consumido como fonte)
+├── host/  src/{shell,games/{uno,coup}}/
+└── mobile/ src/{shell,games/{uno,coup}}/
 ```
 
 ## 16) Dependências necessárias (MVP)
@@ -226,12 +224,11 @@ _Atualizado em 2026-09-06. Detalhe por mudança em `docs/CHANGELOG.md`._
 - ✅ **Fase 7** — Reconexão por token de sessão assinado + transferência automática de owner + auto-reconnect com backoff nos dois clients.
 - ✅ **Fase 8** — Testes de integração multiplayer (join/owner/reconexão, 8 jogadores, partida sustentada, mensagem duplicada).
 - ✅ **Fase 9–10** — UX + animações dirigidas por evento no host (cartas voando, flash de cor, burst de UNO/vitória; respeita `prefers-reduced-motion`).
-- 🚧 **Fase A (núcleo agnóstico, §52)** — em andamento na branch `feature/coup-ou-coupa`. Extrair `GamePlugin`/registry para adicionar um 2º jogo sem tocar no núcleo. Plano: `.claude/plans/antes-dos-proximos-passos-elegant-clover.md`. Feito **antes** da Fase 11 por decisão (2º jogo pronto e travado na abstração).
-  - ✅ A1 — contrato genérico em `shared/` (`GameMeta`, `GameStatus`, `LifecycleEvent`, `GAME_ACTION`/`SELECT_GAME`/`GAME_CATALOG`), não quebra nada.
-  - ✅ A2 — registry de plugins + `GameInstance` opaco + `Room` agnóstico no servidor; protocolo duplo (verbos UNO antigos + `GAME_ACTION`). 27 testes verdes.
-  - 🔜 A3/A4 — extrair shell dos frontends (`host`/`mobile`) + módulo `games/uno/`.
-  - 🔜 A5 — remover verbos UNO do fio; payloads `{ gameId, state }` genéricos.
-- 🔜 **Fase 11 (§47)** — identidade visual completa + sons; dobrada na Fase C do plano (design system `@party/ui`).
+- ✅ **Fase A (núcleo agnóstico, §52)** — `GamePlugin`/registry + `GameInstance` opaco + `Room` agnóstico; shell por papel (`host`/`mobile`) + módulos `games/uno/`; fio genérico (só `GAME_ACTION`, payloads `{ gameId, state|event: unknown }`).
+- ✅ **Fase B** — fluxo de 3 telas no host (`AttractScreen` → `CatalogScreen` → `LobbyScreen`), arte de capa por jogo, QR só no lobby; fim de jogo volta pro lobby do mesmo jogo.
+- ✅ **Fase C** — `@party/ui` (workspace `ui/`): tokens + componentes + sons sintetizados (Web Audio, host) + mapa de arte das cartas do UNO. Sem CSS duplicado entre os apps. §47: nome "UNO" mantido (`BrandMark.text` é o ponto único de rename).
+- ✅ **Fase D** — **Coup como 2º jogo** (regras clássicas, portado de um app standalone). `server/src/games/coup/` (engine pura), `host`/`mobile` `games/coup/` (views + tela "Como jogar"), + **reações emoji genéricas** no protocolo. Bots e a expansão "Reformation" ficaram para depois. Plano: `.claude/plans/em-paralelo-ao-que-purring-moler.md`.
+- 🔜 **Fase 11 (§47)** — identidade visual própria completa; adiada (nomes "UNO"/"Coup" mantidos por ora).
 
 ## Como rodar a aplicação (rede local)
 
@@ -259,8 +256,8 @@ npm run -w mobile dev    # controle do celular — porta 5174
 
 1. Abra a tela do host no PC/TV: `http://localhost:5173`. Ele mostra o **código da sala** e um **QR code**.
 2. Cada jogador abre no celular (na mesma rede Wi-Fi) `http://<IP-DO-PC>:5174/join/<CÓDIGO>` — ou escaneia o QR. O IP aparece no log do servidor ao subir.
-3. Digite o nome, escolha um avatar, entre. O **primeiro** jogador vira o **owner** e vê o botão "Iniciar partida" (o host também pode iniciar).
-4. 2–8 jogadores. Owner inicia; o jogo roda; owner pode pausar/continuar/expulsar/encerrar e iniciar a próxima rodada.
+3. Na TV, escolha o jogo no catálogo (setas/Enter ou clique). Cada jogador digita o nome, escolhe um avatar e entra pelo celular. O **primeiro** jogador vira o **owner** e vê o botão "Iniciar" (o host também pode iniciar).
+4. Contagem de jogadores por jogo (UNO 2–8, Coup 2–6 — o lobby mostra). Owner inicia; o jogo roda; owner pode pausar/continuar/expulsar/encerrar.
 
 **Configuração opcional (`.env` em `host/` e `mobile/`):**
 
@@ -271,16 +268,16 @@ npm run -w mobile dev    # controle do celular — porta 5174
 ## Como validar
 
 ```bash
-npm run -w server test    # ~27 testes (regras UNO + integração multiplayer)
+npm run -w server test    # ~57 testes (regras UNO + Coup + integração multiplayer)
 npm run -w server lint    # tsc --noEmit
 npm run -w host lint      # oxlint
 npm run -w mobile lint    # oxlint
-npm run build             # build dos 4 workspaces
+npm run build             # build dos 5 workspaces (incl. ui)
 ```
 
 Ou tudo de uma vez a partir da raiz: `npm test && npm run lint && npm run build`.
 
-**Smoke manual:** suba os 3 serviços, abra o host + 2 celulares (ou 2 abas do navegador em `/join/<código>`), jogue uma rodada completa, pause/continue, recarregue uma aba de celular (a sessão deve retomar), feche a aba do owner (o owner deve transferir após ~30s).
+**Smoke manual:** suba os 3 serviços, abra o host + 2 celulares (ou 2 abas do navegador em `/join/<código>`), escolha um jogo no catálogo da TV, jogue uma partida completa, pause/continue, recarregue uma aba de celular (a sessão deve retomar), feche a aba do owner (o owner deve transferir após ~30s).
 
 ## Problemas conhecidos e rede local
 

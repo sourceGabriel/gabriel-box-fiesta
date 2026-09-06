@@ -44,13 +44,17 @@ npm run -w mobile lint    # oxlint
     open, persistência de token no `ROOM_JOINED`, recuperação de
     `INVALID_SESSION`/`PLAYER_NOT_FOUND`, `joinOrReconnect({ playerName, avatar })`.
     Expõe `{ roomCode, playerId, connected, error, roomPlayers, catalog,
-    selectedGameId, activeGameId, publicState, privateState, send, … }` —
-    `publicState`/`privateState` opacos.
+    selectedGameId, activeGameId, publicState, privateState, reactions, send, … }`
+    — `publicState`/`privateState` opacos; `reactions` é a fila de emoji (4s).
   - `MobileHeader.tsx`, `JoinScreen.tsx`, `WaitingScreen.tsx` (mostra o nome do
     jogo selecionado), `messages.ts`, `shell.css`.
-- `src/games/{types,registry}.ts` — `ControllerGameViewProps` e
-  `CONTROLLER_GAMES = { uno: UnoControllerView }`. Adicionar um jogo = 1 import + 1
-  entrada.
+- `src/games/{types,registry}.ts` — `ControllerGameViewProps` (inclui `reactions`)
+  e `CONTROLLER_GAMES = { uno: UnoControllerView, coup: CoupControllerView }`.
+  Adicionar um jogo = 1 import + 1 entrada.
 - `src/games/uno/` — `UnoControllerView.tsx` (mão, mesa, ações, modal de cor,
   UNO/denúncia, resultado, pausa), `cardArt.ts`, `uno-controller.css`.
-- `src/index.css` — reset + design tokens (`--panel`, `--accent`, `--uno-*`, …).
+- `src/games/coup/` — `CoupControllerView.tsx` (um prompt por vez conforme
+  `priv.pendingDecision`: ação→alvo, desafio, bloqueio, desafio-de-bloqueio,
+  perda de influência, troca), `HowToPlay.tsx` (regras estáticas), `coupCards.ts`,
+  `coup-controller.css`. Barra de emoji envia `SEND_REACTION`.
+- `src/index.css` — reset + `--uno-*`; tokens vêm de `@party/ui/tokens.css`.

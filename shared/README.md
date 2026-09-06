@@ -10,9 +10,10 @@ O **único** ponto de acoplamento entre `server`, `host` e `mobile`.
 | `src/models/common.ts` | genéricos: `PlayerId`, `RoomId`, `SessionId`, `TurnTimer` |
 | `src/models/room.ts` | `Player`, `Session`, `RoomSummary` |
 | `src/models/uno.ts` | tipos do UNO (`UnoCard`, `UnoPublicState`, `UnoPrivatePlayerState`, `UnoPhase`, `Direction`, …) |
+| `src/models/coup.ts` | tipos do Coup (`CoupPublicState`, `CoupPrivateState`, `CoupCharacter`, `CoupActionType`, `CoupPhase`, `CoupDecision`, …) — valores string iguais aos enums internos da engine |
 | `src/games/{meta,status,lifecycle}.ts` | contrato genérico de jogo: `GameMeta`, `GameStatus`, `LifecycleEvent` |
-| `src/games/uno/events.ts` | união de eventos do UNO (`UnoGameEvent`) — viaja opaca em `GAME_EVENT { event: unknown }` |
-| `src/protocol/messages.ts` | `Envelope`, `ClientMessage`, `ServerMessage` — o protocolo de fio; payloads de estado/evento são `unknown` (`{ gameId, state\|event: unknown }`) |
+| `src/games/uno/events.ts` · `src/games/coup/events.ts` | uniões de eventos por jogo (`UnoGameEvent` / `CoupGameEvent`) — viajam opacas em `GAME_EVENT { event: unknown }` |
+| `src/protocol/messages.ts` | `Envelope`, `ClientMessage`, `ServerMessage` — o protocolo de fio; payloads de estado/evento são `unknown` (`{ gameId, state\|event: unknown }`). Inclui `SEND_REACTION`/`REACTION` (emoji genérico, agnóstico de jogo). |
 
 ## Uso
 

@@ -1,10 +1,11 @@
 # Copilot instructions for gabriel-box-fiesta
 
 ## Mission
-This repository is a local multiplayer party-game platform with a server-authoritative architecture. The first game is a UNO-inspired game, but the platform must remain extensible to future games.
+This repository is a local multiplayer party-game platform with a server-authoritative architecture. Two games ship today (UNO-inspired, Coup-inspired); the platform stays extensible to future games.
 
 ## Current focus
-The UNO MVP is complete and validated. Active work: the **game-agnostic core** (master prompt §52) so a second game plugs in without touching `core/`, `ws-server.ts` or the frontend shell. Plan: `C:\Users\gabri\.claude\plans\antes-dos-proximos-passos-elegant-clover.md`. See `.copilot/spec-kit/copilot-operating-standards.md` for the roadmap and the deliberate reorder ahead of the "party visual" phase.
+UNO MVP + the game-agnostic core (Fases A–C, master prompt §52) + **Coup as game #2** (Fase D, classic ruleset) are all complete. Adding a game touches only `server/src/games/<id>/`, `host/src/games/<id>/`, `mobile/src/games/<id>/` and one line in each registry — never `core/`, `ws-server.ts` or the frontend shell.
+Deferred: Coup bots (need a platform "virtual player" concept), the Coup "Reformation" expansion, and Fase 11 (own visual identity, §47 — names "UNO"/"Coup" kept for now). Plans in `C:\Users\gabri\.claude\plans\`. See `.copilot/spec-kit/copilot-operating-standards.md` for the roadmap.
 Keep `docs/CHANGELOG.md`, `docs/repository-gap-review.md` and `.copilot/logs/changes-log.md` current in the same batch as any code change.
 
 ## Core principles
@@ -24,7 +25,7 @@ Keep `docs/CHANGELOG.md`, `docs/repository-gap-review.md` and `.copilot/logs/cha
 
 ## Working rules
 - Do not add database, Kafka, Redis, or service fragmentation unless explicitly requested.
-- Do not implement multiple games or cross-game features before the current phase is validated.
+- Do not add cross-game features or a third game before the current work is validated; new games plug into the existing plugin contract, never fork the core.
 - Do not skip phase gates: explain objective, decisions, architecture, files, tests, run instructions, validation, and known risks before moving to the next phase.
 - Prefer targeted validation: run the smallest relevant build or test command for the affected workspace.
 - Preserve the repository as runnable after each phase.
@@ -39,7 +40,7 @@ Keep `docs/CHANGELOG.md`, `docs/repository-gap-review.md` and `.copilot/logs/cha
 ## Naming and code style
 - Prefer TypeScript with explicit types.
 - Keep modules small and testable.
-- Use clear domain names like `Room`, `Player`, `Session`, `GameState`, `UnoGame`.
+- Use clear domain names like `Room`, `Player`, `Session`, `GameInstance`, `UnoGame`, `CoupGame`.
 - Keep private state server-side; only share what is allowed to each client.
 - Avoid duplicated logic between UI and backend.
 
