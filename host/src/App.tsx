@@ -1,5 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import type { GameEvent, ServerMessage, UnoCard, UnoPublicState } from '@party/shared';
+
+type Point = { x: number; y: number };
+type ActiveAnim = { seq: number; event: GameEvent; from?: Point; to?: Point };
 import { getCardArt, getCardBackArt } from './cardArt';
 import './App.css';
 
@@ -16,6 +19,21 @@ const cardText = (card: UnoCard): string => {
   if (card.type === 'wild_draw_four') return 'coringa +4';
   return 'coringa';
 };
+
+// Which events get a queued board animation, and how long it holds the queue (ms).
+const ANIMATION_MS: Partial<Record<GameEvent['type'], number>> = {
+  card_played: 620,
+  card_drawn: 620,
+  color_changed: 820,
+  direction_changed: 700,
+  player_skipped: 720,
+  uno_called: 1100,
+  uno_penalty_applied: 950,
+};
+const REDUCED_MOTION =
+  typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+    ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    : false;
 
 const describeEvent = (event: GameEvent, nameOf: (id: string) => string): string | null => {
   switch (event.type) {
@@ -67,6 +85,12 @@ function App() {
   const [revealDrawPile, setRevealDrawPile] = useState(false);
   const [feedEvents, setFeedEvents] = useState<{ seq: number; event: GameEvent }[]>([]);
   const feedSeq = useRef(0);
+  const [animQueue, setAnimQueue] = useState<{ seq: number; event: GameEvent }[]>([]);
+  const [anim, setAnim] = useState<ActiveAnim | null>(null);
+  const [showResult, setShowResult] = useState(false);
+  const discardRef = useRef<HTMLDivElement | null>(null);
+  const monteRef = useRef<HTMLDivElement | null>(null);
+  const rowRefs = useRef(new Map<string, HTMLLIElement>());
 
   useEffect(() => {
     let mounted = true;
@@ -144,18 +168,26 @@ function App() {
             setPublicState(message.payload.state);
             break;
           case 'GAME_EVENT': {
-            const line = describeEvent(message.payload.event, () => '');
-            if (line !== null) {
-              setFeedEvents((current) => [...current, { seq: (feedSeq.current += 1), event: message.payload.event }].slice(-8));
+            const gameEvent = message.payload.event;
+            const seq = (feedSeq.current += 1);
+            if (describeEvent(gameEvent, () => '') !== null) {
+              setFeedEvents((current) => [...current, { seq, event: gameEvent }].slice(-8));
+            }
+            if (!REDUCED_MOTION && ANIMATION_MS[gameEvent.type] !== undefined) {
+              setAnimQueue((current) => [...current, { seq, event: gameEvent }].slice(-5));
             }
             break;
           }
           case 'GAME_STARTED':
             setFeedEvents([]);
+            setAnimQueue([]);
+            setAnim(null);
             break;
           case 'GAME_ENDED':
             setPublicState(null);
             setFeedEvents([]);
+            setAnimQueue([]);
+            setAnim(null);
             break;
           case 'ERROR':
             setLastError(message.payload.message);
@@ -178,6 +210,52 @@ function App() {
       ws?.close();
     };
   }, [roomCode]);
+
+  // Drain the animation queue one event at a time so animations never overlap or race the board.
+  useEffect(() => {
+    if (anim || animQueue.length === 0) {
+      return;
+    }
+    const [next, ...rest] = animQueue;
+    const centre = (el: Element | null | undefined): Point | undefined => {
+      const rect = el?.getBoundingClientRect();
+      return rect ? { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 } : undefined;
+    };
+    const ev = next.event;
+    let from: Point | undefined;
+    let to: Point | undefined;
+    if (ev.type === 'card_played') {
+      from = centre(rowRefs.current.get(ev.playerId));
+      to = centre(discardRef.current);
+    } else if (ev.type === 'card_drawn') {
+      from = centre(monteRef.current);
+      to = centre(rowRefs.current.get(ev.playerId));
+    } else if (ev.type === 'uno_penalty_applied') {
+      to = centre(rowRefs.current.get(ev.playerId));
+    }
+    setAnimQueue(rest);
+    setAnim({ ...next, from, to });
+  }, [anim, animQueue]);
+
+  // Each active animation clears itself after its hold time.
+  useEffect(() => {
+    if (!anim) {
+      return;
+    }
+    const timer = setTimeout(() => setAnim(null), ANIMATION_MS[anim.event.type] ?? 500);
+    return () => clearTimeout(timer);
+  }, [anim]);
+
+  const roundOverPhase = publicState?.phase === 'round_finished' || publicState?.phase === 'game_finished';
+  // Hold the result overlay back briefly so the winning card's animation lands first (spec §36).
+  useEffect(() => {
+    if (!roundOverPhase) {
+      setShowResult(false);
+      return;
+    }
+    const timer = setTimeout(() => setShowResult(true), REDUCED_MOTION ? 0 : 900);
+    return () => clearTimeout(timer);
+  }, [roundOverPhase]);
 
   const canStart = useMemo(() => players.filter((player) => player.connected).length >= 2, [players]);
   const safeJoinQrDataUrl = useMemo(() => {
@@ -248,6 +326,50 @@ function App() {
     socketRef.current?.send(JSON.stringify(makeMessage('KICK_PLAYER', { targetPlayerId: playerId })));
   };
 
+  const flyStyle = (from: Point, to: Point, extra?: CSSProperties): CSSProperties => ({
+    ['--x0' as string]: `${from.x}px`,
+    ['--y0' as string]: `${from.y}px`,
+    ['--x1' as string]: `${to.x}px`,
+    ['--y1' as string]: `${to.y}px`,
+    ...extra,
+  });
+
+  const renderAnim = () => {
+    if (!anim) {
+      return null;
+    }
+    const { seq, event, from, to } = anim;
+    if (event.type === 'card_played' && from && to) {
+      return <img key={seq} className="fly-card" src={getCardArt(event.card)} alt="" style={flyStyle(from, to)} />;
+    }
+    if (event.type === 'card_drawn' && from && to) {
+      return Array.from({ length: Math.min(event.count, 3) }, (_, i) => (
+        <img
+          key={`${seq}-${i}`}
+          className="fly-card is-back"
+          src={getCardBackArt()}
+          alt=""
+          style={flyStyle(from, to, { animationDelay: `${i * 80}ms` })}
+        />
+      ));
+    }
+    if (event.type === 'color_changed') {
+      return <div key={seq} className={`fx-color dot-${event.color}`} />;
+    }
+    if (event.type === 'direction_changed') {
+      return <div key={seq} className="fx-direction">{event.direction === -1 ? '↺' : '↻'}</div>;
+    }
+    if (event.type === 'uno_called') {
+      return <div key={seq} className="fx-uno">UNO!</div>;
+    }
+    if (event.type === 'uno_penalty_applied' && to) {
+      return <div key={seq} className="fx-penalty" style={{ left: `${to.x}px`, top: `${to.y}px` }}>+{event.count}</div>;
+    }
+    return null;
+  };
+
+  const skippedPlayerId = anim?.event.type === 'player_skipped' ? anim.event.playerId : null;
+
   if (!publicState) {
     return (
       <main className="host-shell host-lobby">
@@ -303,6 +425,9 @@ function App() {
 
   return (
     <main className="host-shell host-game">
+      <div className="anim-layer" aria-hidden="true">{renderAnim()}</div>
+      {roundOverPhase && !showResult ? <div className="anim-layer confetti" aria-hidden="true" /> : null}
+
       {paused ? (
         <div className="result-overlay" role="dialog" aria-live="polite">
           <div className="result-card">
@@ -316,7 +441,7 @@ function App() {
         </div>
       ) : null}
 
-      {(roundOver || gameOver) ? (
+      {showResult && (roundOver || gameOver) ? (
         <div className="result-overlay" role="dialog" aria-live="polite">
           <div className="result-card">
             <p className="eyebrow">{gameOver ? 'Fim da partida' : `Rodada ${publicState.round}`}</p>
@@ -360,12 +485,12 @@ function App() {
         <section className="table-zone">
           <div className="table-meta-row">
             <span className={`color-dot dot-${publicState.currentColor ?? 'neutral'}`}>{publicState.currentColor ?? '—'}</span>
-            <span className="meta-chip">{directionLabel}</span>
+            <span className={`meta-chip ${anim?.event.type === 'direction_changed' ? 'spin' : ''}`}>{directionLabel}</span>
             {publicState.pendingDraw > 0 ? <span className="meta-chip is-danger">Comprar +{publicState.pendingDraw}</span> : null}
           </div>
 
           <div className="piles">
-            <div className="pile">
+            <div className="pile" ref={monteRef}>
               <span className="pile-label">Monte</span>
               <img
                 className="pile-art"
@@ -374,10 +499,11 @@ function App() {
               />
               <span className="pile-count">{publicState.drawPileCount} cartas</span>
             </div>
-            <div className={`pile is-discard color-${publicState.currentColor ?? 'neutral'}`}>
+            <div className={`pile is-discard color-${publicState.currentColor ?? 'neutral'}`} ref={discardRef}>
               <span className="pile-label">Descarte</span>
               <img
-                className="pile-art"
+                key={publicState.topDiscard?.id ?? 'none'}
+                className="pile-art discard-pop"
                 src={publicState.topDiscard ? getCardArt(publicState.topDiscard) : getCardBackArt()}
                 alt={publicState.topDiscard ? formatCardLabel(publicState.topDiscard) : 'Sem descarte'}
               />
@@ -405,7 +531,14 @@ function App() {
           </div>
           <ul className="player-rows">
             {boardPlayers.map((player) => (
-              <li key={player.id} className={publicState.currentPlayerId === player.id ? 'is-turn' : ''}>
+              <li
+                key={player.id}
+                ref={(el) => {
+                  if (el) rowRefs.current.set(player.id, el);
+                  else rowRefs.current.delete(player.id);
+                }}
+                className={`${publicState.currentPlayerId === player.id ? 'is-turn' : ''} ${skippedPlayerId === player.id ? 'just-skipped' : ''}`}
+              >
                 <span className={`conn-dot ${player.connected ? 'on' : 'off'}`} aria-hidden="true" />
                 <span className="p-name">{player.name}</span>
                 {publicState.currentPlayerId === player.id && publicState.pendingDraw > 0

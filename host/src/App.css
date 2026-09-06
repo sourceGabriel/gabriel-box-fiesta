@@ -692,3 +692,160 @@ ul, ol {
     justify-content: space-between;
   }
 }
+
+/* ---------- Fase 10: event-driven animations ---------- */
+.anim-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.fly-card {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: clamp(64px, 11vmin, 150px);
+  aspect-ratio: 2.9 / 4.5;
+  object-fit: contain;
+  border-radius: 10px;
+  filter: drop-shadow(0 16px 24px rgba(0, 0, 0, 0.45));
+  animation: fly-card-move 0.5s cubic-bezier(0.3, 0, 0.2, 1) forwards;
+}
+
+.fly-card.is-back {
+  width: clamp(44px, 7vmin, 96px);
+}
+
+@keyframes fly-card-move {
+  0% {
+    transform: translate(var(--x0), var(--y0)) translate(-50%, -50%) scale(0.55) rotate(-14deg);
+    opacity: 0;
+  }
+  18% { opacity: 1; }
+  100% {
+    transform: translate(var(--x1), var(--y1)) translate(-50%, -50%) scale(1) rotate(4deg);
+    opacity: 1;
+  }
+}
+
+.discard-pop { animation: discard-pop 0.35s ease-out; }
+
+@keyframes discard-pop {
+  0% { transform: scale(0.78) rotate(-7deg); }
+  60% { transform: scale(1.07) rotate(3deg); }
+  100% { transform: scale(1) rotate(0); }
+}
+
+.fx-color {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at 50% 44%, currentColor, transparent 62%);
+  opacity: 0;
+  animation: fx-color-pulse 0.8s ease-out forwards;
+}
+
+@keyframes fx-color-pulse {
+  0% { opacity: 0; }
+  30% { opacity: 0.55; }
+  100% { opacity: 0; }
+}
+
+.fx-direction {
+  position: fixed;
+  left: 50%;
+  top: 44%;
+  transform: translate(-50%, -50%);
+  font-size: clamp(4rem, 20vmin, 13rem);
+  color: var(--accent);
+  animation: fx-spin 0.7s ease-out forwards;
+}
+
+@keyframes fx-spin {
+  0% { opacity: 0; transform: translate(-50%, -50%) rotate(0) scale(0.5); }
+  25% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -50%) rotate(360deg) scale(1.5); }
+}
+
+.fx-uno {
+  position: fixed;
+  left: 50%;
+  top: 42%;
+  transform: translate(-50%, -50%);
+  font-weight: 900;
+  font-size: clamp(3rem, 16vmin, 11rem);
+  letter-spacing: 0.08em;
+  color: #fde68a;
+  text-shadow: 0 0 40px rgba(245, 158, 11, 0.65);
+  animation: fx-uno-pop 1.05s cubic-bezier(0.2, 1.5, 0.4, 1) forwards;
+}
+
+@keyframes fx-uno-pop {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.3); }
+  20% { opacity: 1; }
+  70% { transform: translate(-50%, -50%) scale(1.12); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.28); }
+}
+
+.fx-penalty {
+  position: fixed;
+  transform: translate(-50%, -50%);
+  font-weight: 900;
+  font-size: clamp(2rem, 7vmin, 4.5rem);
+  color: #fca5a5;
+  text-shadow: 0 0 20px rgba(248, 113, 113, 0.5);
+  animation: fx-penalty-move 0.95s ease-out forwards;
+}
+
+@keyframes fx-penalty-move {
+  0% { opacity: 0; transform: translate(-50%, 34px) scale(0.6); }
+  25% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -48px) scale(1.2); }
+}
+
+.meta-chip.spin { animation: chip-spin 0.65s ease-out; }
+
+@keyframes chip-spin {
+  0% { transform: rotateX(0); }
+  100% { transform: rotateX(360deg); }
+}
+
+.player-rows li.just-skipped { animation: skip-flash 0.7s ease-out; }
+
+@keyframes skip-flash {
+  0%, 100% { box-shadow: none; }
+  30% { box-shadow: inset 0 0 0 2px #f87171; background: rgba(248, 113, 113, 0.22); }
+}
+
+.anim-layer.confetti::before {
+  content: '';
+  position: fixed;
+  left: 50%;
+  top: 45%;
+  width: 42vmin;
+  height: 42vmin;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, #ef4444, #eab308, #22c55e, #3b82f6, #ef4444);
+  opacity: 0;
+  filter: blur(2px);
+  animation: victory-burst 0.9s ease-out forwards;
+}
+
+@keyframes victory-burst {
+  0% { opacity: 0.75; transform: translate(-50%, -50%) scale(0.1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(2.6); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fly-card,
+  .fx-color,
+  .fx-direction,
+  .fx-uno,
+  .fx-penalty { display: none !important; }
+  .discard-pop,
+  .meta-chip.spin,
+  .player-rows li.just-skipped,
+  .anim-layer.confetti::before { animation: none !important; }
+}
