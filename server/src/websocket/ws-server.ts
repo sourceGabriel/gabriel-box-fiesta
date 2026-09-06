@@ -25,6 +25,7 @@ export class PartyServer {
   private readonly clients = new Map<WebSocket, ClientCtx>();
   private readonly hostConnections = new Set<WebSocket>();
   private readonly playerConnections = new Map<string, Set<WebSocket>>();
+  private readonly disconnectTimers = new Map<string, NodeJS.Timeout>();
 
   private readonly http = createServer((req, res) => {
     const url = new URL(req.url ?? '/', `http://${req.headers.host}`);
@@ -71,7 +72,10 @@ export class PartyServer {
     maxPayload: 16 * 1024,
   });
 
-  constructor(private readonly port = 3001) {
+  constructor(
+    private readonly port = 3001,
+    private readonly disconnectGraceMs = 30_000,
+  ) {
     this.startedPort = port;
     this.wss.on('connection', (socket) => this.onConnection(socket));
     this.timerInterval = setInterval(() => this.tickTimers(), 500);
@@ -93,6 +97,10 @@ export class PartyServer {
 
   async stop(): Promise<void> {
     clearInterval(this.timerInterval);
+    for (const timer of this.disconnectTimers.values()) {
+      clearTimeout(timer);
+    }
+    this.disconnectTimers.clear();
     for (const socket of this.clients.keys()) {
       socket.close();
     }
@@ -137,11 +145,11 @@ export class PartyServer {
           set.delete(socket);
           if (set.size === 0) {
             this.playerConnections.delete(ctx.playerId);
-            this.roomManager.getRoom().disconnectPlayer(ctx.playerId, Date.now());
-            this.broadcast('PLAYER_LEFT', { playerId: ctx.playerId });
+            const playerId = ctx.playerId;
+            this.roomManager.getRoom().markDisconnected(playerId, Date.now());
             this.broadcastRoomState();
-            this.broadcastOwnerChanged();
             this.pushGameState();
+            this.scheduleDisconnectFinalize(playerId);
           }
         }
       }
@@ -237,6 +245,7 @@ export class PartyServer {
       }
 
       const player = room.reconnect(message.payload.sessionToken, Date.now());
+      this.clearDisconnectTimer(player.id);
       ctx.role = 'player';
       ctx.playerId = player.id;
       const playerSockets = this.playerConnections.get(player.id) ?? new Set<WebSocket>();
@@ -299,6 +308,7 @@ export class PartyServer {
     if (message.type === 'KICK_PLAYER') {
       this.assertOwner(ctx.playerId, ctx.role);
       const targetPlayerId = message.payload.targetPlayerId;
+      this.clearDisconnectTimer(targetPlayerId);
       room.kickPlayer(targetPlayerId);
       this.playerConnections.delete(targetPlayerId);
       this.broadcast('PLAYER_LEFT', { playerId: targetPlayerId });
@@ -406,6 +416,31 @@ export class PartyServer {
 
   private broadcastOwnerChanged(): void {
     this.broadcast('OWNER_CHANGED', { ownerPlayerId: this.roomManager.getRoom().ownerPlayerId });
+  }
+
+  private scheduleDisconnectFinalize(playerId: string): void {
+    this.clearDisconnectTimer(playerId);
+    const timer = setTimeout(() => {
+      this.disconnectTimers.delete(playerId);
+      const ownershipChanged = this.roomManager.getRoom().finalizeDisconnect(playerId);
+      this.broadcast('PLAYER_LEFT', { playerId });
+      if (ownershipChanged) {
+        this.broadcastOwnerChanged();
+      }
+      this.broadcastRoomState();
+    }, this.disconnectGraceMs);
+    if (typeof timer.unref === 'function') {
+      timer.unref();
+    }
+    this.disconnectTimers.set(playerId, timer);
+  }
+
+  private clearDisconnectTimer(playerId: string): void {
+    const timer = this.disconnectTimers.get(playerId);
+    if (timer) {
+      clearTimeout(timer);
+      this.disconnectTimers.delete(playerId);
+    }
   }
 
   private broadcast<T extends Parameters<PartyServer['send']>[1]>(type: T, payload: Parameters<PartyServer['send']>[2]): void {

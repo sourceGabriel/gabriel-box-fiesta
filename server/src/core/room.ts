@@ -84,7 +84,8 @@ export class Room {
     return player;
   }
 
-  disconnectPlayer(playerId: string, now: number): void {
+  /** Marks a player as offline. Keeps their identity/hand; does NOT transfer ownership yet. */
+  markDisconnected(playerId: string, now: number): void {
     const player = this.players.get(playerId);
     if (!player) {
       return;
@@ -92,11 +93,20 @@ export class Room {
     player.connected = false;
     player.lastSeenAt = now;
     this.game?.setPlayerConnected(playerId, false);
+  }
 
-    if (this.ownerPlayerId === playerId) {
-      const replacement = [...this.players.values()].find((candidate) => candidate.connected && candidate.id !== playerId);
-      this.ownerPlayerId = replacement?.id ?? null;
+  /**
+   * Called after the disconnect grace window. If the player is still offline and was the owner,
+   * hands ownership to another connected player. Returns true when ownership actually changed.
+   */
+  finalizeDisconnect(playerId: string): boolean {
+    const player = this.players.get(playerId);
+    if (!player || player.connected || this.ownerPlayerId !== playerId) {
+      return false;
     }
+    const replacement = [...this.players.values()].find((candidate) => candidate.connected && candidate.id !== playerId);
+    this.ownerPlayerId = replacement?.id ?? null;
+    return true;
   }
 
   startGame(requestedBy: string | null): void {

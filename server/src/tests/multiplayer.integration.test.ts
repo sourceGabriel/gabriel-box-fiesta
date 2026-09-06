@@ -62,7 +62,7 @@ describe('multiplayer integration', () => {
   });
 
   it('supports host/player join, owner transfer, and player reconnection', async () => {
-    server = new PartyServer(0);
+    server = new PartyServer(0, 50); // short disconnect grace for the test
     await server.start();
     const roomCode = server.getRoomCode();
     const port = server.getPort();
@@ -99,6 +99,45 @@ describe('multiplayer integration', () => {
     );
     const rejoined = await waitForMessage(p1Reconnect, 'ROOM_JOINED');
     expect(rejoined.payload.playerId).toBe(p1Joined.payload.playerId);
+
+    host.close();
+    p2.close();
+    p1Reconnect.close();
+  });
+
+  it('keeps ownership when the owner reconnects within the grace window', async () => {
+    server = new PartyServer(0, 2000);
+    await server.start();
+    const roomCode = server.getRoomCode();
+    const port = server.getPort();
+
+    const host = new WebSocket(`ws://127.0.0.1:${port}/ws`);
+    await new Promise<void>((resolve) => host.once('open', () => resolve()));
+    host.send(makeMessage('JOIN_ROOM', { roomCode, playerName: 'HOST', role: 'host' }));
+    await waitForMessage(host, 'ROOM_JOINED');
+
+    const p1 = new WebSocket(`ws://127.0.0.1:${port}/ws`);
+    await new Promise<void>((resolve) => p1.once('open', () => resolve()));
+    p1.send(makeMessage('JOIN_ROOM', { roomCode, playerName: 'Alice', role: 'player' }));
+    const p1Joined = await waitForMessage(p1, 'ROOM_JOINED');
+
+    const p2 = new WebSocket(`ws://127.0.0.1:${port}/ws`);
+    await new Promise<void>((resolve) => p2.once('open', () => resolve()));
+    p2.send(makeMessage('JOIN_ROOM', { roomCode, playerName: 'Bob', role: 'player' }));
+    await waitForMessage(p2, 'ROOM_JOINED');
+
+    p1.close();
+    const p1Reconnect = new WebSocket(`ws://127.0.0.1:${port}/ws`);
+    await new Promise<void>((resolve) => p1Reconnect.once('open', () => resolve()));
+    p1Reconnect.send(makeMessage('RECONNECT_SESSION', { roomCode, sessionToken: p1Joined.payload.sessionToken, role: 'player' }));
+    await waitForMessage(p1Reconnect, 'ROOM_JOINED');
+
+    const stillOwner = await waitForMessageWhere(
+      p1Reconnect,
+      'ROOM_STATE',
+      (message) => message.payload.players.every((player) => player.connected),
+    );
+    expect(stillOwner.payload.ownerPlayerId).toBe(p1Joined.payload.playerId);
 
     host.close();
     p2.close();
