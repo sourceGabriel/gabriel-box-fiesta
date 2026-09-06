@@ -1,6 +1,6 @@
 import type { FC } from 'react';
 import type { Send } from '../shell/messages';
-import type { BufferedEvent, ShellPlayer } from '../shell/useRoomConnection';
+import type { BufferedEvent, LiveReaction, ShellPlayer } from '../shell/useRoomConnection';
 
 /**
  * What every game's host view receives from the shell. `publicState` is opaque
@@ -12,6 +12,8 @@ export interface HostGameViewProps {
   events: BufferedEvent[];
   players: ShellPlayer[];
   connected: boolean;
+  /** Emoji reactions currently on screen (auto-expire). Game-agnostic. */
+  reactions: LiveReaction[];
   /** Room/owner commands: send('END_GAME'), send('NEXT_ROUND'), send('KICK_PLAYER', { targetPlayerId }), … */
   send: Send;
 }

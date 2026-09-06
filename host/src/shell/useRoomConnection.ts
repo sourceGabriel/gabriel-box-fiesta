@@ -4,6 +4,9 @@ import { makeMessage, serverOrigin, wsOrigin, type Send } from './messages';
 
 export type ShellPlayer = { id: string; name: string; connected: boolean };
 export type BufferedEvent = { seq: number; event: unknown };
+export type LiveReaction = { key: number; playerId: string; reaction: string; at: number };
+
+const REACTION_TTL_MS = 4000;
 
 export interface RoomConnection {
   roomCode: string;
@@ -21,6 +24,8 @@ export interface RoomConnection {
   publicState: unknown | null;
   /** Ordered game events since the current game started (capped). Monotonic `seq`. */
   events: BufferedEvent[];
+  /** Emoji reactions currently on screen (auto-expire after a few seconds). */
+  reactions: LiveReaction[];
   send: Send;
 }
 
@@ -41,6 +46,8 @@ export function useRoomConnection(): RoomConnection {
   const [activeGameId, setActiveGameId] = useState<string | null>(null);
   const [publicState, setPublicState] = useState<unknown | null>(null);
   const [events, setEvents] = useState<BufferedEvent[]>([]);
+  const [reactions, setReactions] = useState<LiveReaction[]>([]);
+  const reactionKeyRef = useRef(0);
 
   // Fetch the room code (with retry until the server is up).
   useEffect(() => {
@@ -127,6 +134,13 @@ export function useRoomConnection(): RoomConnection {
             setPublicState(null);
             setEvents([]);
             break;
+          case 'REACTION': {
+            const key = (reactionKeyRef.current += 1);
+            const entry: LiveReaction = { key, ...message.payload };
+            setReactions((current) => [...current, entry]);
+            setTimeout(() => setReactions((current) => current.filter((r) => r.key !== key)), REACTION_TTL_MS);
+            break;
+          }
           case 'ERROR':
             setLastError(message.payload.message);
             break;
@@ -161,6 +175,7 @@ export function useRoomConnection(): RoomConnection {
     activeGameId,
     publicState,
     events,
+    reactions,
     send,
   };
 }

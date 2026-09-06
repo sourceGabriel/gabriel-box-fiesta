@@ -26,6 +26,9 @@ export type ActionSpec = {
   target: boolean;
 };
 
+/** Emoji reactions offered on the controller (sent as generic REACTION). */
+export const REACTION_EMOJIS = ['👍', '😂', '😮', '😡', '🤔', '🧂', '🔥', '🎭'] as const;
+
 export const ACTIONS: ActionSpec[] = [
   { type: 'Income', label: 'Renda', detail: '+1 moeda', cost: 0, target: false },
   { type: 'ForeignAid', label: 'Ajuda Externa', detail: '+2 · bloqueável por Duque', cost: 0, target: false },

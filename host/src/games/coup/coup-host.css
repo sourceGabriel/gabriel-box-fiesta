@@ -208,7 +208,40 @@
 }
 .result-actions { display: flex; gap: 0.6rem; justify-content: center; flex-wrap: wrap; }
 
+/* ---------- reactions ---------- */
+.coup-reactions {
+  position: fixed;
+  right: clamp(1rem, 3vw, 2.5rem);
+  bottom: clamp(1rem, 3vh, 2.5rem);
+  z-index: 40;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 0.4rem;
+  pointer-events: none;
+}
+.coup-reaction-bubble {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.8rem 0.4rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(22, 29, 41, 0.92);
+  border: 1px solid var(--line);
+  animation: coup-react-in 0.28s ease-out;
+}
+.coup-reaction-emoji { font-size: 1.5rem; }
+.coup-reaction-who { font-size: 0.8rem; color: var(--muted); }
+
+@keyframes coup-react-in {
+  0% { opacity: 0; transform: translateY(8px) scale(0.8); }
+  100% { opacity: 1; transform: none; }
+}
+
 @media (max-aspect-ratio: 9/10), (max-width: 820px) {
   .coup-body { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) auto; overflow-y: auto; }
   .coup-side { max-height: 42dvh; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coup-reaction-bubble { animation: none; }
 }

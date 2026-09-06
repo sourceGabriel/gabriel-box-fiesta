@@ -101,3 +101,14 @@ The project is currently between the room lifecycle phase and the actual host ga
 - Both UNO views import from `@party/ui/uno-cards`; crops stay at repo root (`../../uno_card_sheet_crops/`). 55 PNGs still emitted per app; browser smoke: host board + mobile hand show real card art.
 - **Fase C done.** `@party/ui` = tokens + components + sounds + uno-cards; no duplicated frontend code between the apps. §47 "UNO" name kept (`BrandMark.text` = single rename point).
 - Next: **Fase D** (integrate game #2 — repo pending from user).
+
+## 2026-09-06 — Fase D (branch `feature/coupzin`) — Coup as game #2 (classic)
+- **D1** `shared/src/models/coup.ts` + `shared/src/games/coup/events.ts` (types-only; string values == server enum values).
+- **D2** `server/src/games/coup/` ported from `Jogos/Coup/src/engine/` classic-only (no Reformation): `deck`/`player`/`game` (injected `ctx.random`/`ctx.now`), `action-resolver`, `coup-game.ts` (`CoupGame implements PausableGame, TurnTimedGame` — absorbs the standalone `GameEngine`; no `setTimeout`, one deadline via `getTimer()`/`onTurnTimeout()`; 1-influence forced losses auto-resolve), `action-schema.ts` (zod, 9 intents), `plugin.ts`. Registry +1. `coup-game.test.ts` (27) + integration Coup path. **56 → 57 server tests** (D5 adds 1).
+- **D3** `host/src/games/coup/` (`CoupHostView` + `CoupCover` + `describeEvent` + `coupCards` + css). Registry +1.
+- **D4** `mobile/src/games/coup/` (`CoupControllerView` — one prompt per `pendingDecision` + `HowToPlay` overlay). Registry +1.
+- **D5** generic emoji reactions: `SEND_REACTION`/`REACTION` in `shared/protocol` + `ws-server` rebroadcast (1.2s cooldown) + `reactions: LiveReaction[]` in both `useRoomConnection` + threaded to game views. Coup UI: controller emoji bar + TV/controller bubbles. `multiplayer.integration.test.ts` +1.
+- **§52 proof held:** the game touched zero `core/`/`ws-server`/shell/`shared/protocol` files; only D5 (a platform feature) touched protocol + shells.
+- Live smoke (host + 2 phones): full Coup match incl. bluff→challenge→reveal→influence-loss→turn-advance, pause/resume, 2-player endgame, game-over overlay, "Nova partida", reaction bubble on TV. No errors. server tsc + host/mobile oxlint + build (5 ws) green.
+- **Deferred from v1:** D6 polish (sound-map, card-flip anim), bots (needs platform "virtual player" concept — Coup's `BotBrain` is ~1100 lines pure TS), Reformation expansion.
+- Committed as 5 commits (D1–D5) on `feature/coupzin`.

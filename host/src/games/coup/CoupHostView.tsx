@@ -26,7 +26,7 @@ function InfluenceCard({ character, revealed }: { character: keyof typeof CHARAC
   );
 }
 
-export function CoupHostView({ publicState, events, players, connected, send }: HostGameViewProps) {
+export function CoupHostView({ publicState, events, players, connected, reactions, send }: HostGameViewProps) {
   const pub = publicState as CoupPublicState;
   const seenSeqRef = useRef(0);
   const [feed, setFeed] = useState<{ seq: number; text: string }[]>([]);
@@ -104,6 +104,15 @@ export function CoupHostView({ publicState, events, players, connected, send }: 
 
   return (
     <main className="host-shell host-game coup-host">
+      <div className="coup-reactions" aria-hidden="true">
+        {reactions.slice(-6).map((r) => (
+          <div key={r.key} className="coup-reaction-bubble">
+            <span className="coup-reaction-emoji">{r.reaction}</span>
+            <span className="coup-reaction-who">{nameOf(r.playerId)}</span>
+          </div>
+        ))}
+      </div>
+
       {paused ? (
         <Overlay label="Partida pausada">
           <p className="eyebrow">Partida pausada</p>

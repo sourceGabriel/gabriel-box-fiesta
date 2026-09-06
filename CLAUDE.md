@@ -18,7 +18,7 @@ Local (LAN, no internet, no accounts, in-memory) "Jackbox-style" party-game plat
 - Change history + rationale: `docs/CHANGELOG.md` · Gap vs spec: `docs/repository-gap-review.md` · Short log: `.copilot/logs/changes-log.md`
 
 ## Current state (2026-09-06)
-UNO MVP **complete and validated** (Fases 1–10 + mobile visual overhaul). Server tests: **28 green**. Build: 4 workspaces green. Branch: **`feature/coup-ou-coupa`**.
+UNO MVP **complete and validated** (Fases 1–10 + mobile visual overhaul). **Coup added as game #2** (Fase D, classic ruleset). Server tests: **57 green**. Build: 4 workspaces green. Branch: **`feature/coupzin`** (D1–D5, off `feature/coup-ou-coupa`).
 
 **Fase A (game-agnostic core, §52) — COMPLETE:**
 - ✅ **A1** — `shared/src/games/` generic contract (`GameMeta`, `GameStatus`, `LifecycleEvent`) + `GAME_ACTION`/`SELECT_GAME`/`GAME_CATALOG`/`LIFECYCLE_EVENT` messages.
@@ -35,10 +35,19 @@ UNO MVP **complete and validated** (Fases 1–10 + mobile visual overhaul). Serv
 - ✅ **C4** — `cardArt.ts` (host + mobile copies) → `ui/src/uno-cards.ts` (`@party/ui/uno-cards`); `ui/src/assets.d.ts` ambient `*.png`. Card crops stay at repo root.
 
 **Fase C complete.** `@party/ui` = tokens + components + sounds + uno-cards; no duplicated frontend code between host and mobile.
-- §47 decision: **keep the "UNO" name** for now (`BrandMark` parametrized, default "UNO"); "Box Fiesta" is the platform mark.
-**Next: Fase D** — integrate the user's second game. D1 comparative analysis of that repo → mapping table (before code); D2 `server/src/games/<id>/` plugin + 1 line in `GAMES`; D3 `host`/`mobile` `games/<id>/` views + 1 line in each registry; D4 theme + tests. (Repo pending from the user.)
+- §47 decision: **keep the "UNO" name** for now (`BrandMark` parametrized, default "UNO"); "Box Fiesta" is the platform mark. Coup kept as **"Coup"** (same deferral).
 
-**Active plan:** `C:\Users\gabri\.claude\plans\antes-dos-proximos-passos-elegant-clover.md` — Fase A→D.
+**Fase D — Coup as game #2 (classic ruleset), ported from `C:\Users\gabri\Documents\workspace\Jogos\Coup`:**
+- ✅ **D1** — `shared/src/models/coup.ts` (`CoupPublicState`/`CoupPrivateState`/`CoupCharacter`/`CoupActionType`/`CoupPhase`/`CoupDecision`/…) + `shared/src/games/coup/events.ts` (`CoupGameEvent`). Types-only.
+- ✅ **D2** — `server/src/games/coup/` (`deck`/`player`/`game`/`action-resolver`/`coup-game`/`action-schema`/`constants`/`types`): the standalone repo's `src/engine/` ported classic-only (no Reformation), RNG/clock injected, all `setTimeout` replaced by one `getTimer()`/`onTurnTimeout()` deadline. `CoupGame implements PausableGame, TurnTimedGame`. 1 line in `GAMES`. `coup-game.test.ts` (27) + integration path. **No `core/`/`ws-server`/shell/protocol changes** (§52 proof holds).
+- ✅ **D3** — `host/src/games/coup/` (`CoupHostView` + `CoupCover` + `describeEvent` + `coupCards` + css). 1 line in `HOST_GAMES`.
+- ✅ **D4** — `mobile/src/games/coup/` (`CoupControllerView` — one prompt per `pendingDecision` + `HowToPlay` overlay). 1 line in `CONTROLLER_GAMES`.
+- ✅ **D5** — generic emoji reactions: `SEND_REACTION`/`REACTION` in `shared/protocol` + `ws-server` rebroadcast (1.2s cooldown) + `reactions` in both `useRoomConnection` + `*GameViewProps`. Reusable by UNO later.
+- 🔜 **D6 (optional polish)** — Coup `sound-map.ts`, card-flip animation.
+- **Deferred from v1:** bots (needs a platform "virtual player" concept — `BotBrain` is ~1100 lines pure TS, portable later) and the **Reformation** expansion (Inquisitor/factions/Convert/Embezzle/Examine).
+- Coup timers: 15s challenge/block windows, 30s turn/decision. Every phase exposes its deadline via `getTimer()`; `onTurnTimeout()` auto-resolves (all-passed / auto-Income / forced random Coup / keep-first-N / lose-first-influence). Single-influence forced losses auto-resolve server-side.
+
+**Active plan:** `C:\Users\gabri\.claude\plans\em-paralelo-ao-que-purring-moler.md` — Fase D (Coup). Earlier plan `antes-dos-proximos-passos-elegant-clover.md` covered Fase A→C.
 Locked decisions:
 - Do **Fase A (agnostic core) before finishing Fase 11** — deliberate reorder (2nd game blocked on the abstraction).
 - **One React shell per role** + games as in-bundle modules in a static registry. No per-game apps.
@@ -58,6 +67,8 @@ Monorepo, npm workspaces: `server` · `shared` (**types-only, no runtime, no zod
 | WS gateway (`GAME_ACTION` routing, dedupe, rate-limit, 16KB cap, reconnect, capability-gated tick) | `server/src/websocket/ws-server.ts` |
 | Wire protocol (envelope, zod validation) | `shared/src/protocol/messages.ts` + `server/src/websocket/protocol.ts` |
 | UNO engine (~640 lines) + plugin + action zod | `server/src/games/uno/{uno-game,rules,cards,types,plugin,action-schema}.ts` |
+| Coup engine (classic) + plugin + action zod | `server/src/games/coup/{coup-game,action-resolver,game,player,deck,constants,types,plugin,action-schema}.ts` (ported from `Jogos/Coup/src/engine/`) |
+| Emoji reactions (generic) | `SEND_REACTION`/`REACTION` in `shared/src/protocol/messages.ts` + `ws-server.ts` rebroadcast; `reactions` in both `useRoomConnection` + game-view props |
 | Host UI (shell + game module) | `host/src/shell/` (`useRoomConnection`, `AttractScreen`, `CatalogScreen`, `LobbyScreen`, `messages`, `shell.css`) + `host/src/games/{types,registry}.ts` (`HOST_GAMES[id] = { View, Cover }`) + `host/src/games/uno/` (`UnoHostView`, `UnoCover`, …) + `App.tsx` (flow machine) |
 | Mobile UI (shell + game module, after A4) | `mobile/src/shell/` (`session`, `useRoomConnection`, `MobileHeader`, `JoinScreen`, `WaitingScreen`, `shell.css`) + `mobile/src/games/{types,registry}.ts` + `mobile/src/games/uno/` + thin `App.tsx` + `index.css` (theme/tokens) |
 | Card PNGs | `uno_card_sheet_crops/` (repo root, 57 files); mapped by `ui/src/uno-cards.ts` (`@party/ui/uno-cards`) |

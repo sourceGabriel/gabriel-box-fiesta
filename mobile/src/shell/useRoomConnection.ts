@@ -11,6 +11,9 @@ import {
 } from './session';
 
 export type ShellPlayer = { id: string; name: string; connected: boolean };
+export type LiveReaction = { key: number; playerId: string; reaction: string; at: number };
+
+const REACTION_TTL_MS = 4000;
 
 export interface RoomConnection {
   roomCode: string;
@@ -27,6 +30,8 @@ export interface RoomConnection {
   /** Latest GAME_STATE_PUBLIC / PLAYER_STATE_PRIVATE payloads — opaque; the game view casts them. */
   publicState: unknown | null;
   privateState: unknown | null;
+  /** Emoji reactions currently on screen (auto-expire). Game-agnostic. */
+  reactions: LiveReaction[];
   send: Send;
   /** Join the room (or silently resume an existing session for this name). */
   joinOrReconnect: (identity: { playerName: string; avatar: string }) => void;
@@ -43,6 +48,8 @@ export function useRoomConnection(): RoomConnection {
   const [activeGameId, setActiveGameId] = useState<string | null>(null);
   const [publicState, setPublicState] = useState<unknown | null>(null);
   const [privateState, setPrivateState] = useState<unknown | null>(null);
+  const [reactions, setReactions] = useState<LiveReaction[]>([]);
+  const reactionKeyRef = useRef(0);
 
   const socketRef = useRef<WebSocket | null>(null);
   const pendingSessionStorageKeyRef = useRef<string | null>(null);
@@ -142,6 +149,13 @@ export function useRoomConnection(): RoomConnection {
             setPublicState(null);
             setPrivateState(null);
             break;
+          case 'REACTION': {
+            const key = (reactionKeyRef.current += 1);
+            const entry: LiveReaction = { key, ...message.payload };
+            setReactions((current) => [...current, entry]);
+            setTimeout(() => setReactions((current) => current.filter((r) => r.key !== key)), REACTION_TTL_MS);
+            break;
+          }
           case 'ERROR':
             if (/INVALID_SESSION|PLAYER_NOT_FOUND/.test(message.payload.message)) {
               clearStoredSession(activeSessionKeyRef.current, roomCodeRef.current);
@@ -219,6 +233,7 @@ export function useRoomConnection(): RoomConnection {
     activeGameId,
     publicState,
     privateState,
+    reactions,
     send,
     joinOrReconnect,
   };

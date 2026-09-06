@@ -56,6 +56,7 @@ function App() {
         playerId={conn.playerId}
         connected={conn.connected}
         roomCode={conn.roomCode}
+        reactions={conn.reactions}
         send={conn.send}
       />
     );

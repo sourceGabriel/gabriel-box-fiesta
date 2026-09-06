@@ -49,6 +49,7 @@ function App() {
         events={conn.events}
         players={conn.players}
         connected={conn.connected}
+        reactions={conn.reactions}
         send={conn.send}
       />
     );

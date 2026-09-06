@@ -18,6 +18,7 @@ type ClientCtx = {
   seenMessageIds: Set<string>;
   rateWindowStart: number;
   rateCount: number;
+  lastReactionAt: number;
 };
 
 export class PartyServer {
@@ -124,6 +125,7 @@ export class PartyServer {
       seenMessageIds: new Set(),
       rateWindowStart: Date.now(),
       rateCount: 0,
+      lastReactionAt: 0,
     });
 
     socket.on('message', async (data) => {
@@ -340,6 +342,16 @@ export class PartyServer {
     if (message.type === 'GAME_ACTION') {
       room.applyGameAction(ctx.playerId, message.payload.action);
       this.flushAndPublishState();
+      return;
+    }
+
+    if (message.type === 'SEND_REACTION') {
+      // Game-agnostic: light cooldown, then rebroadcast to the whole room.
+      if (now - ctx.lastReactionAt < 1200) {
+        return;
+      }
+      ctx.lastReactionAt = now;
+      this.broadcast('REACTION', { playerId: ctx.playerId, reaction: message.payload.reaction, at: now });
       return;
     }
 

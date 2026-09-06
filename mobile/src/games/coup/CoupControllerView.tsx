@@ -3,13 +3,13 @@ import type { CoupCharacter, CoupPrivateState, CoupPublicState } from '@party/sh
 import { Button, Timer } from '@party/ui';
 import { MobileHeader } from '../../shell/MobileHeader';
 import type { ControllerGameViewProps } from '../types';
-import { ACTIONS, ACTION_LABEL, CHARACTER_META } from './coupCards';
+import { ACTIONS, ACTION_LABEL, CHARACTER_META, REACTION_EMOJIS } from './coupCards';
 import { HowToPlay } from './HowToPlay';
 import './coup-controller.css';
 
 const charLabel = (c: CoupCharacter | null | undefined): string => (c ? (CHARACTER_META[c]?.label ?? c) : '');
 
-export function CoupControllerView({ publicState, privateState, playerId, connected, roomCode, send }: ControllerGameViewProps) {
+export function CoupControllerView({ publicState, privateState, playerId, connected, roomCode, reactions, send }: ControllerGameViewProps) {
   const pub = publicState as CoupPublicState;
   const priv = privateState as CoupPrivateState;
 
@@ -251,8 +251,25 @@ export function CoupControllerView({ publicState, privateState, playerId, connec
               ))}
             </ul>
           </section>
+
+          <section className="coup-reactions-bar" aria-label="Reações">
+            {REACTION_EMOJIS.map((e) => (
+              <button key={e} type="button" onClick={() => send('SEND_REACTION', { reaction: e })}>
+                {e}
+              </button>
+            ))}
+          </section>
         </>
       )}
+
+      <div className="coup-reaction-feed" aria-live="polite">
+        {reactions.slice(-4).map((r) => (
+          <div key={r.key} className="coup-reaction-pop">
+            <span>{r.reaction}</span>
+            <small>{nameOf(r.playerId)}</small>
+          </div>
+        ))}
+      </div>
     </>
   );
 }

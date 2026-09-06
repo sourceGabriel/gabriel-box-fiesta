@@ -193,6 +193,56 @@
   color: #08110a;
 }
 
+/* ---------- reactions ---------- */
+.coup-reactions-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  justify-content: center;
+  padding: 0.6rem;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+.coup-reactions-bar button {
+  font-size: 1.4rem;
+  line-height: 1;
+  padding: 0.4rem 0.6rem;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+}
+.coup-reaction-feed {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 1rem;
+  z-index: 40;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  gap: 0.35rem;
+  pointer-events: none;
+}
+.coup-reaction-pop {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(22, 29, 41, 0.94);
+  border: 1px solid var(--line);
+  animation: coup-react-in 0.25s ease-out;
+}
+.coup-reaction-pop span { font-size: 1.3rem; }
+.coup-reaction-pop small { color: var(--muted); font-size: 0.75rem; }
+
+@keyframes coup-react-in {
+  0% { opacity: 0; transform: translateY(8px) scale(0.8); }
+  100% { opacity: 1; transform: none; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .coup-banner-strip.is-live { box-shadow: none; }
+  .coup-reaction-pop { animation: none; }
 }

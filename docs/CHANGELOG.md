@@ -289,5 +289,36 @@
 ### Fase C — complete
 `@party/ui` now holds: design tokens (`tokens.css`), components (`BrandMark`/`Button`/`Panel`/`Overlay`/`Timer`/`QrPanel`/`PlayerRoster` + `components.css`), synthesized sounds (`sound.ts`), and the UNO card-art map (`uno-cards`). No duplicated frontend code between the two apps. §47: the "UNO" name is kept — `BrandMark.text` is the single rename point.
 
+## 2026-09-06 — Fase D / PR D1: `shared` contract for Coup (types-only)
+### Added
+- `shared/src/models/coup.ts` — `CoupCharacter` (5 classic), `CoupActionType` (7 classic), `CoupPhase`, `CoupInfluence`, `CoupPublicPlayer`, `CoupPendingAction`, `CoupPendingBlock`, `CoupChallengeWindow`, `CoupRevealOutcome`, `CoupPublicState`, `CoupDecision`, `CoupPrivateState`. String values match the server engine's internal enums verbatim.
+- `shared/src/games/coup/events.ts` — `CoupGameEvent` union (mirrors `UnoGameEvent`). `shared/src/index.ts` +2 exports.
+
+## 2026-09-06 — Fase D / PR D2: Coup engine + plugin (classic ruleset)
+### Added
+- `server/src/games/coup/` — classic Coup ported from the standalone repo's `src/engine/` (no Reformation): `deck`/`player`/`game` (RNG/clock injected), `action-resolver` (`ResolverResult` + `SideEffect`), `coup-game.ts` (`CoupGame implements PausableGame, TurnTimedGame` — absorbs the standalone `GameEngine`; no `setTimeout`, one deadline via `getTimer()`/`onTurnTimeout()`; per-player projection + single `pendingDecision`; emits `CoupGameEvent`s; single-influence forced losses auto-resolve), `action-schema.ts` (zod, 9 intents), `plugin.ts` (`coupPlugin`, 2–6p, `{ rounds:false, turnTimer:true, pause:true }`).
+- `server/src/games/registry.ts` — 1 import + 1 entry. `DEFAULT_GAME_ID` stays `uno`.
+- `server/src/tests/coup-game.test.ts` (27) + a Coup path in `multiplayer.integration.test.ts`. **Server tests: 56 green (was 28).**
+- No changes to `core/`, `ws-server.ts`, `shared/protocol`, or either frontend shell (§52). Coup timers reuse `TurnTimedGame` — every phase (action / challenge / block / block-challenge / influence-loss / exchange) exposes its deadline; `onTurnTimeout()` auto-resolves.
+
+## 2026-09-06 — Fase D / PR D3: Coup host (TV) view
+### Added
+- `host/src/games/coup/` — `CoupHostView` (seat table with coins + face-down/revealed influence cards, phase banner, challenge-reveal strip, event feed, game-over/pause `Overlay`, owner pause/kick/end), `CoupCover` (inline SVG), `describeEvent.ts` (PT-BR feed), `coupCards.ts` (character emoji/colour + action labels — no image assets, §47 deferred, name kept "Coup"), `coup-host.css`.
+- `host/src/games/registry.ts` — 1 import + 1 entry.
+
+## 2026-09-06 — Fase D / PR D4: Coup mobile controller
+### Added
+- `mobile/src/games/coup/` — `CoupControllerView` (one prompt at a time from `pendingDecision`: action grid → target sub-screen, challenge/pass, block/pass, block-challenge/pass, influence-loss picker, exchange keep-picker; forced-Coup + cost disables with reasons), `HowToPlay` overlay (static rules), `coupCards.ts`, `coup-controller.css`.
+- `mobile/src/games/registry.ts` — 1 import + 1 entry.
+
+## 2026-09-06 — Fase D / PR D5: generic emoji reactions (platform)
+### Added
+- `shared/src/protocol/messages.ts` — `SEND_REACTION { reaction }` (client→server) + `REACTION { playerId; reaction; at }` (server→client). Game-agnostic.
+- `server/src/websocket/protocol.ts` — `SEND_REACTION` zod (`reaction` 1–16 chars). `ws-server.ts` — handler: 1.2s per-socket cooldown, rebroadcast `REACTION` to the whole room.
+- `host` + `mobile` `useRoomConnection` — `reactions: LiveReaction[]` (auto-expire 4s); passed to game views via `HostGameViewProps` / `ControllerGameViewProps`. Coup UI: emoji bar on the controller, floating bubbles on TV + controller.
+- `server/src/tests/multiplayer.integration.test.ts` — reaction rebroadcast + oversized-payload rejection. **Server tests: 57 green.**
+- D5 is a small platform addition (touches `shared/protocol` + `ws-server` + both shells) — deliberately generic so UNO can adopt it later.
+- Live smoke (host + 2 phones): catalog shows both games → Coup lobby → bluffed Tax → challenge → reveal overlay + feed → influence loss → turn advance → pause/resume → 2-player endgame → game-over overlay → "Nova partida" → reaction bubble on TV. No console/server errors.
+
 ## Next planned change
-- **Fase D** — integrate the user's second game. D1: comparative analysis of that repo (stack, server-authoritative?, turn model, hidden info, end condition) → a mapping table, *before* any code. D2: `server/src/games/<id>/` plugin + one line in `GAMES`. D3: `host/src/games/<id>/` + `mobile/src/games/<id>/` views + one line in each registry. D4: theme + tests. (Repo pending from the user.)
+- **Fase D / D6 (polish, optional)** — Coup `sound-map.ts` (reuse `@party/ui` `getSounds()`), card-flip animation on reveal. Then **bots** (needs a platform "virtual player" concept — `BotBrain` is ~1100 lines pure TS, portable later) and the **Reformation** expansion, both deferred from v1.

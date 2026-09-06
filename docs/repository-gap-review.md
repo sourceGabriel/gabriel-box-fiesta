@@ -1,9 +1,16 @@
 # Revisão do repositório: lacunas em relação ao prompt mestre
 
-_Atualizado em 2026-09-06 (branch `feature/coup-ou-coupa`, após Fase A (A1→A5) + Fase B + Fase C (C1–C4, completa))._
+_Atualizado em 2026-09-06 (branch `feature/coupzin`, após Fase A + B + C + Fase D (Coup, D1–D5))._
 
 ## Resumo executivo
-O MVP jogável do UNO (§53) está **completo e validado**: host mostra a mesa em tempo real, partida completa com cartas especiais, coringa com escolha de cor, UNO!, denúncia, placar acumulado entre rodadas, fim de partida, pausar/continuar, reconexão de jogador e transferência de owner. **27 testes de servidor verdes**; build dos 4 workspaces verde.
+O MVP jogável do UNO (§53) está **completo e validado**. **Coup entrou como jogo #2** (Fase D, regras clássicas): engine portada de `Jogos/Coup/src/engine/` (sem a expansão Reformation, sem bots), view de TV + controlador mobile, tela "Como jogar". **57 testes de servidor verdes**; build dos 4 workspaces verde. **Prova §52 confirmada na prática:** adicionar o Coup não tocou `core/`, `ws-server.ts`, os shells nem `shared/protocol` — a fatia D5 (reações emoji) é infra genérica de plataforma, não do jogo.
+
+**Fase D (Coup) — v1 COMPLETA:**
+- ✅ **D1** `shared/src/models/coup.ts` + `shared/src/games/coup/events.ts` (types-only).
+- ✅ **D2** `server/src/games/coup/` (engine clássica portada; RNG/relógio injetados; timers via `TurnTimedGame`) + registry + 27 testes.
+- ✅ **D3** `host/src/games/coup/` (TV) · ✅ **D4** `mobile/src/games/coup/` (controlador + "Como jogar").
+- ✅ **D5** reações emoji genéricas (`SEND_REACTION`/`REACTION`).
+- 🔜 **D6** polimento opcional (sons, animação de flip). **Deferidos:** bots (precisa de "jogador virtual" na plataforma), expansão Reformation.
 
 **Fase A (núcleo agnóstico, §52) — COMPLETA:**
 - ✅ **A1** — contrato genérico em `shared/` (`GameMeta`, `GameStatus`, `LifecycleEvent`, mensagens `GAME_ACTION`/`SELECT_GAME`/`GAME_CATALOG`).

@@ -23,6 +23,7 @@ const clientSchema = z.discriminatedUnion('type', [
   base.extend({ type: z.literal('PAUSE_GAME'), payload: z.object({}) }),
   base.extend({ type: z.literal('RESUME_GAME'), payload: z.object({}) }),
   base.extend({ type: z.literal('KICK_PLAYER'), payload: z.object({ targetPlayerId: z.string().min(1) }) }),
+  base.extend({ type: z.literal('SEND_REACTION'), payload: z.object({ reaction: z.string().min(1).max(16) }) }),
   base.extend({ type: z.literal('PING'), payload: z.object({}) }),
 ]);
 

@@ -11,6 +11,7 @@ export type ClientMessageType =
   | 'PAUSE_GAME'
   | 'RESUME_GAME'
   | 'KICK_PLAYER'
+  | 'SEND_REACTION'
   | 'PING';
 
 export type ServerMessageType =
@@ -27,6 +28,7 @@ export type ServerMessageType =
   | 'PLAYER_STATE_PRIVATE'
   | 'GAME_EVENT'
   | 'LIFECYCLE_EVENT'
+  | 'REACTION'
   | 'ERROR'
   | 'PONG';
 
@@ -51,6 +53,8 @@ export type ClientMessage =
   | Envelope<'PAUSE_GAME', {}>
   | Envelope<'RESUME_GAME', {}>
   | Envelope<'KICK_PLAYER', { targetPlayerId: string }>
+  /** Generic emoji reaction — the server rebroadcasts it to the room as REACTION. */
+  | Envelope<'SEND_REACTION', { reaction: string }>
   | Envelope<'PING', {}>;
 
 export type ServerMessage =
@@ -68,5 +72,7 @@ export type ServerMessage =
   | Envelope<'PLAYER_STATE_PRIVATE', { gameId: string; state: unknown; stateVersion: number }>
   | Envelope<'GAME_EVENT', { gameId: string; event: unknown; stateVersion: number }>
   | Envelope<'LIFECYCLE_EVENT', { event: LifecycleEvent; stateVersion: number }>
+  /** Someone in the room sent an emoji reaction. Game-agnostic; views render it however they like. */
+  | Envelope<'REACTION', { playerId: string; reaction: string; at: number }>
   | Envelope<'ERROR', { code: string; message: string; recoverable: boolean }>
   | Envelope<'PONG', {}>;

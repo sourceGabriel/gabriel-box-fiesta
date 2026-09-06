@@ -519,4 +519,38 @@ describe('multiplayer integration', () => {
     p2.close();
     p3.close();
   });
+
+  it('rebroadcasts emoji reactions to the whole room and rejects oversized ones', async () => {
+    server = new PartyServer(0);
+    await server.start();
+    const roomCode = server.getRoomCode();
+    const port = server.getPort();
+
+    const host = await connect(port);
+    host.send(makeMessage('JOIN_ROOM', { roomCode, playerName: 'HOST', role: 'host' }));
+    await waitForMessage(host, 'ROOM_JOINED');
+
+    const p1 = await connect(port);
+    p1.send(makeMessage('JOIN_ROOM', { roomCode, playerName: 'Alice', role: 'player' }));
+    const p1Joined = await waitForMessage(p1, 'ROOM_JOINED');
+    const p2 = await connect(port);
+    p2.send(makeMessage('JOIN_ROOM', { roomCode, playerName: 'Bob', role: 'player' }));
+    await waitForMessage(p2, 'ROOM_JOINED');
+
+    const onHost = waitForMessage(host, 'REACTION');
+    const onP2 = waitForMessage(p2, 'REACTION');
+    p1.send(makeMessage('SEND_REACTION', { reaction: '🔥' }));
+    const hostSaw = await onHost;
+    expect(hostSaw.payload.reaction).toBe('🔥');
+    expect(hostSaw.payload.playerId).toBe(p1Joined.payload.playerId);
+    expect((await onP2).payload.reaction).toBe('🔥');
+
+    const rejected = waitForMessage(p1, 'ERROR');
+    p1.send(makeMessage('SEND_REACTION', { reaction: 'x'.repeat(64) }));
+    expect((await rejected).payload.message).toBeTruthy();
+
+    host.close();
+    p1.close();
+    p2.close();
+  });
 });
