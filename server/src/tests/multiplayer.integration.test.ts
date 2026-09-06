@@ -448,4 +448,75 @@ describe('multiplayer integration', () => {
     p1.close();
     p2.close();
   });
+
+  it('runs Coup: SELECT_GAME + START_GAME, private hands isolated, generic GAME_ACTION routed', async () => {
+    server = new PartyServer(0);
+    await server.start();
+    const roomCode = server.getRoomCode();
+    const port = server.getPort();
+
+    const host = await connect(port);
+    const catalogPromise = waitForMessage(host, 'GAME_CATALOG');
+    host.send(makeMessage('JOIN_ROOM', { roomCode, playerName: 'HOST', role: 'host' }));
+    await waitForMessage(host, 'ROOM_JOINED');
+
+    const catalog = await catalogPromise;
+    expect(catalog.payload.games.map((game) => game.id)).toEqual(expect.arrayContaining(['uno', 'coup']));
+
+    const reselected = waitForMessageWhere(host, 'GAME_CATALOG', (m) => m.payload.selectedGameId === 'coup');
+    host.send(makeMessage('SELECT_GAME', { gameId: 'coup' }));
+    await reselected;
+
+    const p1 = await connect(port);
+    p1.send(makeMessage('JOIN_ROOM', { roomCode, playerName: 'Alice', role: 'player' }));
+    const p1Joined = await waitForMessage(p1, 'ROOM_JOINED');
+    const p2 = await connect(port);
+    p2.send(makeMessage('JOIN_ROOM', { roomCode, playerName: 'Bob', role: 'player' }));
+    const p2Joined = await waitForMessage(p2, 'ROOM_JOINED');
+    const p3 = await connect(port);
+    p3.send(makeMessage('JOIN_ROOM', { roomCode, playerName: 'Cara', role: 'player' }));
+    await waitForMessage(p3, 'ROOM_JOINED');
+
+    const firstPublic = waitForMessage(host, 'GAME_STATE_PUBLIC');
+    const started = waitForMessage(host, 'GAME_STARTED');
+    host.send(makeMessage('START_GAME', { gameId: 'coup' }));
+    expect((await started).payload.gameId).toBe('coup');
+    const pub = (await firstPublic).payload.state as {
+      phase: string;
+      currentPlayerId: string;
+      players: { id: string; influenceCount: number; coins: number }[];
+    };
+    expect(pub.phase).toBe('awaiting_action');
+    expect(pub.players.every((pl) => pl.influenceCount === 2 && pl.coins === 2)).toBe(true);
+
+    // Each controller sees only its own 2 influences.
+    const priv1 = (await waitForMessage(p1, 'PLAYER_STATE_PRIVATE')).payload.state as {
+      influences: { character: string | null }[];
+    };
+    expect(priv1.influences).toHaveLength(2);
+    expect(priv1.influences.every((i) => i.character !== null)).toBe(true);
+
+    // The current player takes Income via the generic GAME_ACTION verb.
+    const currentId = pub.currentPlayerId;
+    const currentWs = currentId === p1Joined.payload.playerId ? p1 : currentId === p2Joined.payload.playerId ? p2 : p3;
+    currentWs.send(makeMessage('GAME_ACTION', { action: { kind: 'declare_action', action: 'Income' } }));
+    const advanced = await waitForMessageWhere(
+      host,
+      'GAME_STATE_PUBLIC',
+      (m) => (m.payload.state as { currentPlayerId: string }).currentPlayerId !== currentId,
+    );
+    const advState = advanced.payload.state as { players: { id: string; coins: number }[] };
+    expect(advState.players.find((pl) => pl.id === currentId)!.coins).toBe(3);
+
+    // A malformed Coup action is rejected without crashing the room.
+    const otherWs = currentWs === p1 ? p2 : p1;
+    const actionError = waitForMessage(otherWs, 'ERROR');
+    otherWs.send(makeMessage('GAME_ACTION', { action: { kind: 'garbage' } }));
+    expect((await actionError).payload.message).toMatch(/INVALID_ACTION/i);
+
+    host.close();
+    p1.close();
+    p2.close();
+    p3.close();
+  });
 });

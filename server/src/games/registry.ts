@@ -1,6 +1,7 @@
 import type { GameMeta } from '@party/shared';
 import type { GamePlugin } from '../core/game-plugin';
 import { unoPlugin } from './uno/plugin';
+import { coupPlugin } from './coup/plugin';
 
 /**
  * The platform's game catalog. Adding a game = one import + one entry here.
@@ -8,6 +9,7 @@ import { unoPlugin } from './uno/plugin';
  */
 export const GAMES: Readonly<Record<string, GamePlugin>> = {
   [unoPlugin.meta.id]: unoPlugin,
+  [coupPlugin.meta.id]: coupPlugin,
 };
 
 export const DEFAULT_GAME_ID = unoPlugin.meta.id;
