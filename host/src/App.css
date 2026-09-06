@@ -558,6 +558,29 @@ ul, ol {
   color: #fff;
 }
 
+.event-feed {
+  margin: 0;
+  padding: 0.6rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.02);
+  display: grid;
+  gap: 0.3rem;
+  max-height: 22vh;
+  overflow-y: auto;
+}
+
+.event-feed li {
+  font-size: 0.85em;
+  color: #cbd5e1;
+  line-height: 1.3;
+}
+
+.event-feed li:last-child {
+  color: var(--text);
+  font-weight: 600;
+}
+
 .side-actions {
   display: grid;
   gap: 0.5rem;

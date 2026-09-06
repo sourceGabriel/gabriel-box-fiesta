@@ -1,9 +1,39 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { ServerMessage, UnoPublicState } from '@party/shared';
+import type { GameEvent, ServerMessage, UnoCard, UnoPublicState } from '@party/shared';
 import { getCardArt, getCardBackArt } from './cardArt';
 import './App.css';
 
 type PlayerView = { id: string; name: string; connected: boolean; handCount: number };
+
+const COLOR_LABEL: Record<string, string> = { red: 'vermelho', yellow: 'amarelo', green: 'verde', blue: 'azul', wild: 'coringa' };
+
+const cardText = (card: UnoCard): string => {
+  const color = COLOR_LABEL[card.color] ?? card.color;
+  if (card.type === 'number') return `${color} ${card.value}`;
+  if (card.type === 'draw_two') return `${color} +2`;
+  if (card.type === 'skip') return `${color} bloqueio`;
+  if (card.type === 'reverse') return `${color} inverte`;
+  if (card.type === 'wild_draw_four') return 'coringa +4';
+  return 'coringa';
+};
+
+const describeEvent = (event: GameEvent, nameOf: (id: string) => string): string | null => {
+  switch (event.type) {
+    case 'round_started': return `Rodada ${event.round} começou`;
+    case 'card_played': return `${nameOf(event.playerId)} jogou ${cardText(event.card)}`;
+    case 'card_drawn': return `${nameOf(event.playerId)} comprou ${event.count} carta${event.count === 1 ? '' : 's'}`;
+    case 'color_changed': return `Cor mudou para ${COLOR_LABEL[event.color] ?? event.color}`;
+    case 'direction_changed': return `Sentido invertido`;
+    case 'player_skipped': return `${nameOf(event.playerId)} perdeu a vez`;
+    case 'uno_called': return `🔥 ${nameOf(event.playerId)} gritou UNO!`;
+    case 'uno_penalty_applied': return `${nameOf(event.playerId)} pagou +${event.count} por não dizer UNO`;
+    case 'round_finished': return `🏁 ${nameOf(event.winnerPlayerId)} venceu a rodada (+${event.roundScore})`;
+    case 'game_finished': return `🏆 ${nameOf(event.gameWinnerPlayerId)} venceu a partida!`;
+    case 'game_paused': return `⏸ Partida pausada`;
+    case 'game_resumed': return `▶ Partida retomada`;
+    default: return null;
+  }
+};
 
 const serverOrigin = import.meta.env.VITE_SERVER_ORIGIN ?? `${window.location.protocol}//${window.location.hostname}:3001`;
 const wsOrigin = serverOrigin.replace('http', 'ws');
@@ -35,6 +65,8 @@ function App() {
   const [lastError, setLastError] = useState('');
   const [connected, setConnected] = useState(false);
   const [revealDrawPile, setRevealDrawPile] = useState(false);
+  const [feedEvents, setFeedEvents] = useState<{ seq: number; event: GameEvent }[]>([]);
+  const feedSeq = useRef(0);
 
   useEffect(() => {
     let mounted = true;
@@ -111,8 +143,19 @@ function App() {
           case 'GAME_STATE_PUBLIC':
             setPublicState(message.payload.state);
             break;
+          case 'GAME_EVENT': {
+            const line = describeEvent(message.payload.event, () => '');
+            if (line !== null) {
+              setFeedEvents((current) => [...current, { seq: (feedSeq.current += 1), event: message.payload.event }].slice(-8));
+            }
+            break;
+          }
+          case 'GAME_STARTED':
+            setFeedEvents([]);
+            break;
           case 'GAME_ENDED':
             setPublicState(null);
+            setFeedEvents([]);
             break;
           case 'ERROR':
             setLastError(message.payload.message);
@@ -164,6 +207,12 @@ function App() {
   const onlineCount = boardPlayers.filter((player) => player.connected).length;
   const unoCaller = boardPlayers.find((player) => player.calledUno && player.handCount === 1);
   const unoForgot = boardPlayers.find((player) => player.unoChallengeable);
+  const feedLines = useMemo(() => {
+    const nameOf = (id: string) => boardPlayers.find((player) => player.id === id)?.name ?? '—';
+    return feedEvents
+      .map(({ seq, event }) => ({ seq, text: describeEvent(event, nameOf) }))
+      .filter((line): line is { seq: number; text: string } => line.text !== null);
+  }, [feedEvents, boardPlayers]);
 
   const handleEndGame = () => {
     socketRef.current?.send(JSON.stringify(makeMessage('END_GAME', {})));
@@ -380,6 +429,14 @@ function App() {
               </li>
             ))}
           </ul>
+          {feedLines.length > 0 ? (
+            <ul className="event-feed" aria-live="polite">
+              {feedLines.map((line) => (
+                <li key={line.seq}>{line.text}</li>
+              ))}
+            </ul>
+          ) : null}
+
           <div className="side-actions">
             <button type="button" className="ghost-button" onClick={() => handlePauseToggle(paused)}>
               {paused ? '▶ Continuar' : '⏸ Pausar'}
