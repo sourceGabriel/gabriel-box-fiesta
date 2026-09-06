@@ -76,3 +76,9 @@ The project is currently between the room lifecycle phase and the actual host ga
 - Tests: `room.test.ts` +1 (endGame → accepting_players + selectedGameId kept + play-again/switch work). **28 server tests green.** Builds + host/mobile oxlint + server tsc green; browser smoke of the full loop passed.
 - Decisions applied: QR only on lobby, attract advances manually, UNO cover generated as inline SVG. No new wire messages.
 - Next: **Fase C** (`@party/ui` design system + synth Web Audio sounds; folds in Fase 11 §47).
+
+## 2026-09-06 — Fase C / PR C1 (branch `feature/coup-ou-coupa`)
+- New workspace `ui/` (`@party/ui`) — cross-app React/CSS/audio home; consumed as source by Vite; added to root `workspaces`; `host`+`mobile` get `file:../ui` dep.
+- `ui/src/tokens.css` — single source of design tokens; imported per app in `main.tsx`. Resolved host/mobile token divergence (canonical `--panel #161d29`, `--panel-2 #1d2634`, `--line #2b3646`, `--muted #94a3b8`).
+- `host`/`mobile` `index.css` keep only the reset (+ mobile keeps its gradient + `--uno-*`). Builds (5 ws) + lints + 28 server tests green; browser smoke visually unchanged.
+- Next: C2 (shared components), C3 (synth sounds), C4 (consolidate `cardArt.ts`). §47 "UNO" name kept.

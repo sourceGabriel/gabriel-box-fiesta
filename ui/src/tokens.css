@@ -1,0 +1,39 @@
+/**
+ * @party/ui — single source of design tokens for the host (TV) and mobile
+ * (phone) apps. Import once per app (in main.tsx, before the app's index.css):
+ *   import '@party/ui/tokens.css';
+ *
+ * Game-specific tokens (e.g. UNO's card colours) stay in that game's module.
+ */
+:root {
+  color-scheme: dark;
+
+  /* surfaces */
+  --bg: #0b0f17;
+  --panel: #161d29;
+  --panel-2: #1d2634;
+  --line: #2b3646;
+  --line-soft: rgba(255, 255, 255, 0.06);
+
+  /* text */
+  --text: #f1f5f9;
+  --muted: #94a3b8;
+
+  /* accents */
+  --accent: #f59e0b;
+  --good: #22c55e;
+  --danger: #f87171;
+
+  /* shape */
+  --radius: 14px;
+  --radius-lg: 20px;
+  --radius-pill: 999px;
+  --shadow-lg: 0 30px 80px rgba(0, 0, 0, 0.45);
+
+  /* type */
+  --font: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

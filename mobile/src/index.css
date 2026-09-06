@@ -1,24 +1,16 @@
+/* Mobile (phone) global reset + theme. Shared design tokens come from
+   `@party/ui/tokens.css` (imported in main.tsx). UNO-specific colours stay here
+   until they move into the UNO game module. */
+
 :root {
-  color-scheme: dark;
+  /* alias kept for existing rules */
+  --bg-0: var(--bg);
 
-  --bg-0: #0b0f17;
-  --panel: #161d29;
-  --panel-2: #1d2634;
-  --line: #2b3646;
-  --line-soft: rgba(255, 255, 255, 0.06);
-  --text: #f1f5f9;
-  --muted: #93a1b5;
-  --accent: #f59e0b;
-  --good: #22c55e;
-
+  /* UNO card colours (game-specific) */
   --uno-red: #ef4444;
   --uno-yellow: #eab308;
   --uno-green: #22c55e;
   --uno-blue: #3b82f6;
-
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
 * {

@@ -1,20 +1,5 @@
-/* Global reset + design tokens for the host (TV) app. Screen-specific styles
-   live in host/src/shell/shell.css and host/src/games/<id>/*.css. */
-
-:root {
-  --bg: #0b0f17;
-  --panel: #141a24;
-  --panel-2: #1b2330;
-  --line: #2a3444;
-  --text: #f1f5f9;
-  --muted: #94a3b8;
-  --accent: #f59e0b;
-
-  color-scheme: dark;
-  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+/* Host (TV) global reset. Design tokens come from `@party/ui/tokens.css`
+   (imported in main.tsx). Screen styles live in shell/*.css and games/<id>/*.css. */
 
 * {
   box-sizing: border-box;

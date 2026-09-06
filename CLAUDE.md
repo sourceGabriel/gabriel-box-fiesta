@@ -28,7 +28,11 @@ UNO MVP **complete and validated** (Fases 1–10 + mobile visual overhaul). Serv
 - ✅ **A5** — protocol cleanup (**breaking wire**): 5 legacy UNO verbs removed — only `GAME_ACTION` remains. `GAME_STATE_PUBLIC`/`PLAYER_STATE_PRIVATE`/`GAME_EVENT` are now `{ gameId, state|event: unknown, stateVersion }`; `GAME_STARTED` is `{ gameId }`; `ROOM_STATE.players[]` dropped `handCount`. `shared/events/game-events.ts` → `shared/src/games/uno/events.ts` (`UnoGameEvent`, 4 dead variants dropped). `Direction`/`Phase` moved from `models/common.ts` → `models/uno.ts` (`Direction`, `UnoPhase`). Frontends resolve `activeGameId` from `payload.gameId`; the UNO controller emits `GAME_ACTION`.
 **Fase B — COMPLETE:** 3-screen host flow — `shell/AttractScreen` ("Box Fiesta" wordmark, manual advance, no QR) → `shell/CatalogScreen` (game grid + `HOST_GAMES[id].Cover` art, keyboard + click, no QR) → `LobbyScreen` (QR here only, "Trocar de jogo" → catalog, "Iniciar {game}"). `App.tsx` runs a `flow` state machine; in-game wins; `END_GAME` → back to that game's lobby. `Room.endGame()` → `accepting_players` keeping `selectedGameId`; `ws-server` re-broadcasts `GAME_CATALOG` on `END_GAME`. Mobile: `GAME_ENDED` → waiting (session kept); `WaitingScreen` shows game name + tagline. No new wire messages.
 
-Next: **Fase C** (`@party/ui` design system + synthesized Web Audio sounds; retrofit host + mobile; folds in Fase 11 §47 — the "UNO" name + cover become the platform's own), then **D** (integrate game #2).
+**Fase C — in progress** (`@party/ui` design system + synthesized Web Audio sounds; retrofit host + mobile):
+- ✅ **C1** — `ui/` workspace + `ui/src/tokens.css` (single source of design tokens, imported in each `main.tsx`); host/mobile token divergence resolved; `index.css` of each app now reset-only. Consumed as source by Vite (no build).
+- 🔜 **C2** components (`Panel`/`Button`/`BrandMark`/`PlayerList`/`QrPanel`/`TimerRing`/`ResultOverlay`) + retrofit · **C3** `ui/src/sound.ts` synth sounds + per-game `sound-map` · **C4** consolidate `cardArt.ts`.
+- §47 decision: **keep the "UNO" name** for now (`BrandMark` parametrized, default "UNO"); "Box Fiesta" is the platform mark.
+Then **D** (integrate game #2 — repo TBD from the user).
 
 **Active plan:** `C:\Users\gabri\.claude\plans\antes-dos-proximos-passos-elegant-clover.md` — Fase A→D.
 Locked decisions:
@@ -38,10 +42,11 @@ Locked decisions:
 - `handleAction(playerId, action)` · server keeps orchestrating state push (optional `tick(now)` capability, no `pushCallback` in plugins) · core reads a `getStatus()` projection, never parses game events · inject `GameContext.random` (fixes the `Math.random` shuffle).
 
 ## Architecture map
-Monorepo, npm workspaces: `server` · `shared` (**types-only, no runtime, no zod**) · `host` (Vite/React, port 5173) · `mobile` (Vite/React, port 5174). Server port 3001. Transport = raw `ws` (**do not adopt Socket.io**).
+Monorepo, npm workspaces: `server` · `shared` (**types-only, no runtime, no zod**) · `ui` (`@party/ui` — cross-app tokens/components/sounds; consumed as source by Vite) · `host` (Vite/React, port 5173) · `mobile` (Vite/React, port 5174). Server port 3001. Transport = raw `ws` (**do not adopt Socket.io**).
 
 | Concern | Where |
 |---|---|
+| Design tokens (shared) | `ui/src/tokens.css` — imported in each app's `main.tsx`. Game-specific colours (`--uno-*`) stay in that game's module. |
 | Plugin contract | `server/src/core/game-plugin.ts` (`GamePlugin`, `GameInstance`, `GameContext`, `TurnTimedGame`/`RoundedGame`/`PausableGame`/`TickingGame`, `isX()` guards) |
 | Game registry | `server/src/games/registry.ts` (`GAMES` map — add a game = 1 import + 1 entry) |
 | Room / player / owner / reconnect / 30s grace / `selectGame`/`startGame(gameId)` | `server/src/core/room.ts` (game-agnostic after A2) |

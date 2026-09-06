@@ -21,6 +21,7 @@
   "workspaces": [
     "server",
     "shared",
+    "ui",
     "host",
     "mobile"
   ]

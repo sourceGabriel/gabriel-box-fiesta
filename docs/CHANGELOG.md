@@ -220,5 +220,20 @@
 ### Why
 - The platform vision (§52) needs a game picker and a place to land after a match, not a single fused lobby. No new wire messages — reuses `END_GAME` / `START_GAME` / `SELECT_GAME` / `GAME_CATALOG`.
 
+## 2026-09-06 — Fase C / PR C1: `@party/ui` workspace + unified design tokens
+### Added
+- New workspace **`ui/` (`@party/ui`)** — the home for cross-app React/CSS/audio (`shared/` stays types-only). `main: src/index.ts`, consumed **as source** by Vite (no build step; `build`/`lint` = `tsc --noEmit`). Added to root `workspaces` (after `shared`); `host` + `mobile` get `"@party/ui": "file:../ui"`.
+- **`ui/src/tokens.css`** — single source of design tokens: `--bg`, `--panel`, `--panel-2`, `--line`, `--line-soft`, `--text`, `--muted`, `--accent`, `--good`, `--danger`, `--radius*`, `--shadow-lg`, `--font` (+ `color-scheme: dark` and font smoothing on `:root`). Imported once per app in `main.tsx` before its `index.css`.
+
+### Changed
+- Resolved the token divergence between the two apps — canonical values: `--panel #161d29` (was host `#141a24`), `--panel-2 #1d2634` (was host `#1b2330`), `--line #2b3646` (was host `#2a3444`), `--muted #94a3b8` (was mobile `#93a1b5`); `--bg` / `--text` / `--accent` were already equal.
+- `host/src/index.css` and `mobile/src/index.css` no longer define shared tokens — just the reset (+ mobile keeps its body gradient and the UNO card colours `--uno-*`, plus a `--bg-0: var(--bg)` alias for existing rules).
+
+### Tests
+- Builds (5 workspaces incl. `ui`), oxlint (host + mobile), server `tsc`, 28 server tests green. Browser smoke: host attract / catalog / lobby and mobile join render unchanged; tokens resolve from `@party/ui`.
+
+### Why
+- First Fase C step: one place for tokens, so C2 (shared components) and C3 (sounds) have a foundation and the two apps stop drifting apart visually.
+
 ## Next planned change
-- **Fase C** — shared `@party/ui` (design tokens + components + synthesized Web Audio sounds), retrofit host + mobile; folds in Fase 11 (§47 own visual identity — the "UNO" name and cover become the platform's own). `cardArt.ts` (duplicated host/mobile) consolidates here.
+- **Fase C / C2** — `@party/ui` components (`Panel`, `Button`, `BrandMark`, `PlayerList`, `QrPanel`, `TimerRing`, `ResultOverlay`); retrofit both shells + the shared bits of the UNO views. Then **C3** (synthesized Web Audio sounds — `ui/src/sound.ts` + per-game `sound-map`), **C4** (consolidate `cardArt.ts`). §47: the "UNO" name stays for now (`BrandMark` is parametrized, default "UNO").
