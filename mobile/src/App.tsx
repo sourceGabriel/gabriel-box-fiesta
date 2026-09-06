@@ -31,6 +31,7 @@ const getRoomCodeFromPath = (): string => {
 };
 
 const avatarOptions = ['🙂', '😎', '🎉', '🔥', '🕺', '🤠', '😺', '🐼'];
+const COLOR_PT: Record<string, string> = { red: 'Vermelho', yellow: 'Amarelo', green: 'Verde', blue: 'Azul' };
 
 const activeSessionStorageKey = (roomCode: string): string => `activeSession:${roomCode.toUpperCase()}`;
 
@@ -224,6 +225,11 @@ function App() {
   const iAmChallengeable = Boolean(
     publicState?.players.find((player) => player.id === playerId)?.unoChallengeable,
   );
+  const myName = rosterPlayers.find((player) => player.id === playerId)?.name
+    ?? `${selectedAvatar} ${playerName.trim() || 'Você'}`;
+  const currentName = rosterPlayers.find((player) => player.id === publicState?.currentPlayerId)?.name ?? '—';
+  const activeColor = publicState?.currentColor ?? null;
+  const sentido = publicState?.direction === -1 ? '↺ anti-horário' : '↻ horário';
 
   const joinOrReconnect = (): void => {
     if (!socketRef.current || !roomCode || !playerName.trim()) {
@@ -312,7 +318,7 @@ function App() {
         </div>
         {playing ? (
           <div className={`header-timer ${myTurn ? 'is-turn' : ''}`}>
-            <span className="label">{myTurn ? 'Sua vez' : 'Aguarde'}</span>
+            <span className="label">Tempo</span>
             <strong>{timerLabel}</strong>
           </div>
         ) : null}
@@ -320,40 +326,65 @@ function App() {
 
       {!hasJoined ? (
         <section className="join-panel">
-          <h2>Entrar na sala</h2>
-          <input
-            value={roomCode}
-            onChange={(event) => setRoomCode(event.target.value.toUpperCase())}
-            placeholder="Código da sala"
-            autoCapitalize="characters"
-          />
-          <input
-            value={playerName}
-            onChange={(event) => setPlayerName(event.target.value)}
-            placeholder="Seu nome"
-            maxLength={20}
-          />
-          <div className="avatar-picker" aria-label="Escolha um avatar">
-            {avatarOptions.map((avatar) => (
-              <button
-                key={avatar}
-                type="button"
-                className={`avatar-option ${selectedAvatar === avatar ? 'selected' : ''}`}
-                onClick={() => setSelectedAvatar(avatar)}
-              >
-                {avatar}
-              </button>
-            ))}
+          <div className="join-hero">
+            <span className="wordmark">UNO</span>
+            <p>Entre na sala e pegue seu celular como controle.</p>
           </div>
+
+          <label className="field">
+            <span className="field-label">Código da sala</span>
+            <input
+              className="code-input"
+              value={roomCode}
+              onChange={(event) => setRoomCode(event.target.value.toUpperCase())}
+              placeholder="ABCD"
+              autoCapitalize="characters"
+              maxLength={6}
+            />
+          </label>
+
+          <label className="field">
+            <span className="field-label">Seu nome</span>
+            <input
+              value={playerName}
+              onChange={(event) => setPlayerName(event.target.value)}
+              placeholder="Como querem te chamar?"
+              maxLength={20}
+            />
+          </label>
+
+          <div className="field">
+            <span className="field-label">Seu avatar</span>
+            <div className="avatar-picker" aria-label="Escolha um avatar">
+              {avatarOptions.map((avatar) => (
+                <button
+                  key={avatar}
+                  type="button"
+                  className={`avatar-option ${selectedAvatar === avatar ? 'selected' : ''}`}
+                  onClick={() => setSelectedAvatar(avatar)}
+                >
+                  {avatar}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <p className="join-preview">
+            Vai entrar como <strong>{selectedAvatar} {playerName.trim() || '...'}</strong>
+          </p>
+
           <button className="primary-button" disabled={!canSubmitJoin} onClick={joinOrReconnect} type="button">
-            Entrar
+            {connected ? 'Entrar na sala' : 'Conectando…'}
           </button>
         </section>
       ) : !gameStarted ? (
         <section className="waiting-panel">
           <div className="waiting-badge">{selectedAvatar}</div>
-          <h2>Você está na sala</h2>
-          <p className="hint">Aguardando o anfitrião iniciar a partida…</p>
+          <h2>Tudo pronto!</h2>
+          <p className="you-are">Você entrou como <strong>{myName}</strong></p>
+          <p className="hint dots">
+            Aguardando o anfitrião iniciar<span>.</span><span>.</span><span>.</span>
+          </p>
         </section>
       ) : paused ? (
         <section className="waiting-panel">
@@ -363,9 +394,26 @@ function App() {
         </section>
       ) : null}
 
-      {(hasJoined || rosterPlayers.length > 0) ? (
+      {playing ? (
+        <section className={`turn-banner ${myTurn ? 'is-mine' : ''}`}>
+          {myTurn ? 'Sua vez de jogar' : <>Vez de <strong>{currentName}</strong></>}
+        </section>
+      ) : null}
+
+      {playing ? (
+        <section className={`mesa color-${activeColor ?? 'neutral'}`}>
+          <img className="mesa-card" src={getCardArt(publicState?.topDiscard)} alt="Carta no descarte" />
+          <div className="mesa-tags">
+            <span className={`color-chip dot-${activeColor ?? 'neutral'}`}>{activeColor ? COLOR_PT[activeColor] : '—'}</span>
+            {publicState && publicState.pendingDraw > 0 ? <span className="pending-chip">Comprar +{publicState.pendingDraw}</span> : null}
+            <span className="sentido-chip">{sentido}</span>
+          </div>
+        </section>
+      ) : null}
+
+      {(hasJoined || rosterPlayers.length > 0) && !roundOver ? (
         <section className="players-panel">
-          <h2>Jogadores{rosterPlayers.length ? ` (${rosterPlayers.length})` : ''}</h2>
+          <h2>Jogadores{rosterPlayers.length ? ` · ${rosterPlayers.length}` : ''}</h2>
           <div className="player-list">
             {rosterPlayers.map((player) => (
               <div
@@ -373,7 +421,7 @@ function App() {
                 className={`player-pill ${player.id === playerId ? 'is-me' : ''} ${player.id === publicState?.currentPlayerId ? 'is-turn' : ''}`}
               >
                 <span>{player.name}</span>
-                <small>{player.handCount} cartas</small>
+                {gameStarted ? <small>{player.handCount}</small> : null}
               </div>
             ))}
           </div>
@@ -382,17 +430,20 @@ function App() {
 
       {roundOver ? (
         <section className="result-panel">
-          <h2>{gameOver ? `🏆 ${resultWinnerName} venceu a partida` : `Rodada encerrada — ${resultWinnerName} zerou a mão`}</h2>
+          <h2>{gameOver ? `🏆 ${resultWinnerName} venceu a partida!` : `${resultWinnerName} zerou a mão`}</h2>
           <ol className="result-scoreboard">
             {scoreboard.map((player, index) => (
-              <li key={player.id} className={index === 0 ? 'leader' : ''}>
-                <span>{index + 1}. {player.name}</span>
-                <strong>{player.score}</strong>
+              <li
+                key={player.id}
+                className={`${index === 0 ? 'leader' : ''} ${player.id === playerId ? 'is-me' : ''}`}
+              >
+                <span>{index + 1}º · {player.name}</span>
+                <strong>{player.score} pts</strong>
               </li>
             ))}
           </ol>
           <p className="hint">
-            {gameOver ? 'Partida encerrada. Aguarde o anfitrião iniciar uma nova.' : 'Aguarde o anfitrião iniciar a próxima rodada.'}
+            {gameOver ? 'Aguarde o anfitrião iniciar uma nova partida.' : 'Aguarde o anfitrião iniciar a próxima rodada.'}
           </p>
         </section>
       ) : null}
@@ -402,7 +453,7 @@ function App() {
           {iAmChallengeable ? (
             <section className="uno-alert self">
               <strong>Você está com 1 carta!</strong>
-              <span>Toque em UNO! antes que alguém denuncie.</span>
+              <span>Toque em UNO! antes que denunciem.</span>
             </section>
           ) : null}
 
@@ -427,13 +478,13 @@ function App() {
           <section className="hand-panel">
             <div className="hand-head">
               <h2>Suas cartas</h2>
-              <span className="hand-status">{myTurn ? 'Sua vez de jogar' : 'Aguardando sua vez'}</span>
+              <span className="hand-count">{myHandCount} na mão</span>
             </div>
-            <p className="hint">Toque para selecionar. Cartas com borda verde podem ser jogadas agora.</p>
             <div className="cards">
               {(privateState?.hand ?? []).map((card: UnoCard) => {
                 const selected = selectedCardId === card.id;
                 const playable = !!privateState?.selectableCardIds.includes(card.id);
+                const label = card.type === 'number' ? `${card.color} ${card.value}` : `${card.color} ${card.type}`;
                 return (
                   <button
                     key={card.id}
@@ -441,9 +492,9 @@ function App() {
                     disabled={!canAct || !myTurn || !playable}
                     onClick={() => setSelectedCardId(selected ? null : card.id)}
                     type="button"
-                    aria-label={card.type === 'number' ? `${card.color} ${card.value}` : `${card.color} ${card.type}`}
+                    aria-label={label}
                   >
-                    <img className="uno-card-image" src={getCardArt(card)} alt={card.type === 'number' ? `${card.color} ${card.value}` : `${card.color} ${card.type}`} />
+                    <img className="uno-card-image" src={getCardArt(card)} alt={label} />
                   </button>
                 );
               })}
@@ -451,20 +502,21 @@ function App() {
           </section>
 
           <section className="actions-panel">
-            <div className="action-row">
-              <button className="action-button action-green" disabled={!canAct || !myTurn || !selectedCard} onClick={playCard} type="button">
-                Jogar
-              </button>
-              <button className="action-button action-blue" disabled={!canAct || !myTurn} onClick={drawCard} type="button">
-                Comprar
-              </button>
+            {myHandCount === 1 ? (
               <button
-                className={`action-button action-red ${myHandCount === 1 && iAmChallengeable ? 'is-live' : ''}`}
-                disabled={myHandCount !== 1}
+                className={`action-button action-red ${iAmChallengeable ? 'is-live' : ''}`}
                 onClick={callUno}
                 type="button"
               >
-                UNO!
+                UNO! — gritar agora
+              </button>
+            ) : null}
+            <div className="action-row">
+              <button className="action-button action-green" disabled={!canAct || !myTurn || !selectedCard} onClick={playCard} type="button">
+                {selectedCard ? <>Jogar <img className="play-mini" src={getCardArt(selectedCard)} alt="" /></> : 'Escolha uma carta'}
+              </button>
+              <button className="action-button action-blue" disabled={!canAct || !myTurn} onClick={drawCard} type="button">
+                Comprar
               </button>
             </div>
           </section>
@@ -482,9 +534,10 @@ function App() {
                   type="button"
                   className={`color-swatch swatch-${color} ${chosenColor === color ? 'selected' : ''}`}
                   onClick={() => setChosenColor(color)}
-                  aria-label={color}
                   aria-pressed={chosenColor === color}
-                />
+                >
+                  {COLOR_PT[color]}
+                </button>
               ))}
             </div>
             <button type="button" className="primary-button" onClick={confirmColor}>Confirmar</button>
