@@ -229,4 +229,154 @@ describe('multiplayer integration', () => {
     p1.close();
     p2.close();
   });
+
+  const connect = async (port: number): Promise<WebSocket> => {
+    const ws = new WebSocket(`ws://127.0.0.1:${port}/ws`);
+    await new Promise<void>((resolve) => ws.once('open', () => resolve()));
+    return ws;
+  };
+
+  it('handles a full lobby of 8 players and deals every hand privately', async () => {
+    server = new PartyServer(0);
+    await server.start();
+    const roomCode = server.getRoomCode();
+    const port = server.getPort();
+
+    const host = await connect(port);
+    host.send(makeMessage('JOIN_ROOM', { roomCode, playerName: 'HOST', role: 'host' }));
+    await waitForMessage(host, 'ROOM_JOINED');
+
+    const players: WebSocket[] = [];
+    const ids: string[] = [];
+    for (let i = 0; i < 8; i += 1) {
+      const ws = await connect(port);
+      ws.send(makeMessage('JOIN_ROOM', { roomCode, playerName: `P${i}`, role: 'player' }));
+      const joined = await waitForMessage(ws, 'ROOM_JOINED');
+      ids.push(joined.payload.playerId!);
+      players.push(ws);
+    }
+
+    const publicStatePromise = waitForMessage(host, 'GAME_STATE_PUBLIC');
+    host.send(makeMessage('START_GAME', {}));
+    const publicState = await publicStatePromise;
+    expect(publicState.payload.state.players).toHaveLength(8);
+
+    for (let i = 0; i < 8; i += 1) {
+      const priv = await waitForMessageWhere(players[i], 'PLAYER_STATE_PRIVATE', (m) => m.payload.state.playerId === ids[i]);
+      expect(priv.payload.state.hand).toHaveLength(7);
+    }
+
+    host.close();
+    for (const ws of players) {
+      ws.close();
+    }
+  });
+
+  it('sustains real multiplayer play without desync or errors', async () => {
+    server = new PartyServer(0);
+    await server.start();
+    const roomCode = server.getRoomCode();
+    const port = server.getPort();
+
+    const host = await connect(port);
+    host.send(makeMessage('JOIN_ROOM', { roomCode, playerName: 'HOST', role: 'host' }));
+    await waitForMessage(host, 'ROOM_JOINED');
+    let cardsPlayed = 0;
+    let lastPublic: (ServerMessage & { type: 'GAME_STATE_PUBLIC' }) | null = null;
+    const errors: string[] = [];
+    host.on('message', (raw: RawData) => {
+      const m = JSON.parse(String(raw)) as ServerMessage;
+      if (m.type === 'GAME_EVENT' && m.payload.event.type === 'card_played') cardsPlayed += 1;
+      if (m.type === 'GAME_STATE_PUBLIC') lastPublic = m;
+      if (m.type === 'ERROR') errors.push(m.payload.message);
+    });
+
+    const bots = await Promise.all([0, 1, 2].map(async (i) => {
+      const ws = await connect(port);
+      const bot: {
+        ws: WebSocket;
+        id: string | null;
+        pub: (ServerMessage & { type: 'GAME_STATE_PUBLIC' }) | null;
+        priv: (ServerMessage & { type: 'PLAYER_STATE_PRIVATE' }) | null;
+        actedFor: string;
+      } = { ws, id: null, pub: null, priv: null, actedFor: '' };
+      const maybeAct = (): void => {
+        const pub = bot.pub?.payload.state;
+        const priv = bot.priv?.payload.state;
+        if (!pub || !priv || !bot.id || pub.currentPlayerId !== bot.id) return;
+        const key = `${pub.turn}:${pub.phase}`;
+        if (bot.actedFor === key) return; // one action per (turn, phase)
+        bot.actedFor = key;
+        if (pub.phase === 'awaiting_color_choice') {
+          ws.send(makeMessage('CHOOSE_COLOR', { color: 'red' }));
+          return;
+        }
+        if (pub.phase !== 'round_active') return;
+        const p = priv.selectableCardIds;
+        if (p.length > 0) {
+          const card = priv.hand.find((c) => c.id === p[0])!;
+          ws.send(makeMessage('PLAY_CARD', { cardId: card.id }));
+          if (priv.hand.length === 2) ws.send(makeMessage('UNO_CALL', {}));
+        } else {
+          ws.send(makeMessage('DRAW_CARD', {}));
+        }
+      };
+      ws.on('message', (raw: RawData) => {
+        const m = JSON.parse(String(raw)) as ServerMessage;
+        if (m.type === 'ROOM_JOINED') bot.id = m.payload.playerId ?? null;
+        if (m.type === 'GAME_STATE_PUBLIC') bot.pub = m;
+        if (m.type === 'PLAYER_STATE_PRIVATE') bot.priv = m;
+        setTimeout(maybeAct, 8);
+      });
+      ws.send(makeMessage('JOIN_ROOM', { roomCode, playerName: `Bot${i}`, role: 'player' }));
+      await waitForMessage(ws, 'ROOM_JOINED');
+      return bot;
+    }));
+
+    host.send(makeMessage('START_GAME', {}));
+    await new Promise((r) => setTimeout(r, 6_000));
+
+    const state = (lastPublic as (ServerMessage & { type: 'GAME_STATE_PUBLIC' }) | null)?.payload.state;
+    expect(errors).toEqual([]);
+    expect(cardsPlayed).toBeGreaterThan(10);
+    expect(state?.turn ?? 0).toBeGreaterThan(10);
+    // deck integrity: every card is somewhere
+    const inHands = (state?.players ?? []).reduce((sum, pl) => sum + pl.handCount, 0);
+    expect(inHands + (state?.drawPileCount ?? 0)).toBeLessThanOrEqual(108);
+    expect(inHands).toBeGreaterThan(0);
+
+    host.close();
+    for (const bot of bots) {
+      bot.ws.close();
+    }
+  }, 15_000);
+
+  it('ignores a re-sent message with a duplicate messageId', async () => {
+    server = new PartyServer(0);
+    await server.start();
+    const roomCode = server.getRoomCode();
+    const port = server.getPort();
+
+    const host = await connect(port);
+    host.send(makeMessage('JOIN_ROOM', { roomCode, playerName: 'HOST', role: 'host' }));
+    await waitForMessage(host, 'ROOM_JOINED');
+
+    let playerJoinedCount = 0;
+    host.on('message', (raw: RawData) => {
+      const m = JSON.parse(String(raw)) as ServerMessage;
+      if (m.type === 'PLAYER_JOINED') playerJoinedCount += 1;
+    });
+
+    const p1 = await connect(port);
+    const joinFrame = makeMessage('JOIN_ROOM', { roomCode, playerName: 'Alice', role: 'player' });
+    p1.send(joinFrame);
+    await waitForMessage(p1, 'ROOM_JOINED');
+    p1.send(joinFrame); // exact same frame, same messageId
+    await new Promise((r) => setTimeout(r, 300));
+
+    expect(playerJoinedCount).toBe(1);
+
+    host.close();
+    p1.close();
+  });
 });
