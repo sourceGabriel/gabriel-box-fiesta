@@ -128,6 +128,35 @@ describe('UnoGame', () => {
     expect(game.getState().hands.p1.length).toBe(beforeCount + 2);
   });
 
+  it('rejects a player challenging their own UNO', () => {
+    const game = new UnoGame(players, 'ABCD');
+    game.start();
+    const state = (game as unknown as { state: ReturnType<UnoGame['getState']> }).state;
+    state.unoWindow.p1 = state.turn + 2;
+
+    expect(() => game.handleAction({ type: 'uno_challenge', playerId: 'p1', targetPlayerId: 'p1' })).toThrow(/INVALID_CHALLENGE/);
+  });
+
+  it('flags unoChallengeable in the public state until UNO is called', () => {
+    const game = new UnoGame(players, 'ABCD');
+    game.start();
+    const state = (game as unknown as { state: ReturnType<UnoGame['getState']> }).state;
+
+    state.discardPile = [numberCard('top', 'red', 5)];
+    state.currentColor = 'red';
+    state.currentPlayerId = 'p1';
+    state.hands.p1 = [numberCard('keep', 'red', 1), numberCard('drop', 'red', 3)];
+
+    game.handleAction({ type: 'play_card', playerId: 'p1', cardId: 'drop' });
+
+    const p1Public = game.getPublicState().players.find((player) => player.id === 'p1')!;
+    expect(p1Public.handCount).toBe(1);
+    expect(p1Public.unoChallengeable).toBe(true);
+
+    game.handleAction({ type: 'uno_call', playerId: 'p1' });
+    expect(game.getPublicState().players.find((player) => player.id === 'p1')!.unoChallengeable).toBe(false);
+  });
+
   const forceWin = (game: UnoGame, winnerId: string): void => {
     const state = (game as unknown as { state: ReturnType<UnoGame['getState']> }).state;
     state.hands.p1 = [{ id: 'x-p1', color: 'red', type: 'number', value: 9 }];

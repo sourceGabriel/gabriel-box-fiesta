@@ -485,6 +485,35 @@ ul, ol {
   color: #fde68a;
 }
 
+.p-tag.danger {
+  background: rgba(248, 113, 113, 0.28);
+  color: #fecaca;
+  border: 1px solid rgba(248, 113, 113, 0.55);
+}
+
+.uno-shout {
+  margin: 0;
+  font-size: clamp(1rem, 2.4vmin, 1.8rem);
+  font-weight: 800;
+  padding: 0.35em 1em;
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.16);
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  color: #fde68a;
+}
+
+.uno-shout.forgot {
+  background: rgba(248, 113, 113, 0.16);
+  border-color: rgba(248, 113, 113, 0.5);
+  color: #fecaca;
+  animation: uno-shout-pulse 0.9s ease-in-out infinite;
+}
+
+@keyframes uno-shout-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.03); }
+}
+
 .p-score {
   font-size: 0.8em;
   color: var(--muted);

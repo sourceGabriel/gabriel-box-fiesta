@@ -196,6 +196,7 @@ export class UnoGame implements Game<UnoFullState, UnoAction, GameEvent, UnoPubl
         break;
       }
       case 'uno_challenge': {
+        assertCondition(action.playerId !== action.targetPlayerId, 'INVALID_CHALLENGE', 'Cannot challenge yourself');
         const deadlineTurn = this.state.unoWindow[action.targetPlayerId];
         assertCondition(deadlineTurn !== null, 'NO_UNO_WINDOW', 'Target has no UNO challenge window');
         assertCondition(this.state.turn <= deadlineTurn, 'UNO_WINDOW_EXPIRED', 'UNO challenge window closed');
@@ -231,7 +232,14 @@ export class UnoGame implements Game<UnoFullState, UnoAction, GameEvent, UnoPubl
     return {
       phase: this.state.phase,
       roomCode: this.state.roomCode,
-      players: this.state.playersOrder.map((playerId) => this.state.players[playerId]),
+      players: this.state.playersOrder.map((playerId) => {
+        const base = this.state.players[playerId];
+        const deadline = this.state.unoWindow[playerId];
+        return {
+          ...base,
+          unoChallengeable: base.handCount === 1 && !base.calledUno && deadline !== null && this.state.turn <= deadline,
+        };
+      }),
       currentPlayerId: this.state.currentPlayerId,
       direction: this.state.direction,
       currentColor: this.state.currentColor,

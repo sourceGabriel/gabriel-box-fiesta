@@ -159,8 +159,11 @@ function App() {
   const timerLabel = timerSeconds === null ? '—' : `${timerSeconds}s`;
   const directionLabel = publicState?.direction === -1 ? '↺ anti-horário' : '↻ horário';
   // During a game the authoritative per-player data (hand counts, scores, connection) comes from the public state.
-  const boardPlayers = publicState?.players ?? players.map((player) => ({ ...player, score: 0, calledUno: false }));
+  const boardPlayers = publicState?.players
+    ?? players.map((player) => ({ ...player, score: 0, calledUno: false, unoChallengeable: false }));
   const onlineCount = boardPlayers.filter((player) => player.connected).length;
+  const unoCaller = boardPlayers.find((player) => player.calledUno && player.handCount === 1);
+  const unoForgot = boardPlayers.find((player) => player.unoChallengeable);
 
   const handleEndGame = () => {
     socketRef.current?.send(JSON.stringify(makeMessage('END_GAME', {})));
@@ -316,6 +319,12 @@ function App() {
           </div>
 
           <p className="turn-banner">Vez de <strong>{currentPlayerName}</strong></p>
+
+          {unoForgot ? (
+            <p className="uno-shout forgot">⚠️ {unoForgot.name} esqueceu de dizer UNO!</p>
+          ) : unoCaller ? (
+            <p className="uno-shout">🔥 {unoCaller.name} está em UNO!</p>
+          ) : null}
         </section>
 
         <aside className="side-zone">
@@ -331,7 +340,11 @@ function App() {
                 {publicState.currentPlayerId === player.id && publicState.pendingDraw > 0
                   ? <span className="p-tag">+{publicState.pendingDraw}</span>
                   : null}
-                {player.handCount === 1 ? <span className="p-tag uno">UNO</span> : null}
+                {player.unoChallengeable
+                  ? <span className="p-tag danger">SEM UNO</span>
+                  : player.calledUno && player.handCount === 1
+                    ? <span className="p-tag uno">UNO!</span>
+                    : null}
                 <span className="p-score">{player.score} pts</span>
                 <span className="p-hand">{player.handCount}</span>
                 <button

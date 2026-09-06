@@ -19,10 +19,15 @@ export type UnoPlayerState = {
   score: number;
 };
 
+export type UnoPublicPlayer = UnoPlayerState & {
+  /** True while this player holds exactly one card, never called UNO, and the challenge window is still open. */
+  unoChallengeable: boolean;
+};
+
 export type UnoPublicState = {
   phase: Phase;
   roomCode: string;
-  players: UnoPlayerState[];
+  players: UnoPublicPlayer[];
   currentPlayerId: PlayerId | null;
   direction: Direction;
   currentColor: Exclude<UnoColor, 'wild'> | null;

@@ -214,6 +214,13 @@ function App() {
   );
   // Live hand counts / turn come from the public state during a game; fall back to the lobby roster.
   const rosterPlayers = publicState?.players ?? roomPlayers;
+  const challengeableOpponents = (publicState?.players ?? []).filter(
+    (player) => player.unoChallengeable && player.id !== playerId,
+  );
+  const myHandCount = privateState?.hand.length ?? 0;
+  const iAmChallengeable = Boolean(
+    publicState?.players.find((player) => player.id === playerId)?.unoChallengeable,
+  );
 
   const joinOrReconnect = (): void => {
     if (!socketRef.current || !roomCode || !playerName.trim()) {
@@ -282,6 +289,13 @@ function App() {
       return;
     }
     socketRef.current.send(JSON.stringify(makeMessage('UNO_CALL', {})));
+  };
+
+  const challengeUno = (targetPlayerId: string): void => {
+    if (!socketRef.current) {
+      return;
+    }
+    socketRef.current.send(JSON.stringify(makeMessage('UNO_CHALLENGE', { targetPlayerId })));
   };
 
   return (
@@ -375,6 +389,31 @@ function App() {
 
       {playing ? (
         <>
+          {iAmChallengeable ? (
+            <section className="uno-alert self">
+              <strong>Você está com 1 carta!</strong>
+              <span>Toque em UNO! antes que alguém denuncie.</span>
+            </section>
+          ) : null}
+
+          {challengeableOpponents.length > 0 ? (
+            <section className="uno-alert">
+              <strong>Esqueceram o UNO!</strong>
+              <div className="challenge-row">
+                {challengeableOpponents.map((opponent) => (
+                  <button
+                    key={opponent.id}
+                    type="button"
+                    className="challenge-button"
+                    onClick={() => challengeUno(opponent.id)}
+                  >
+                    Denunciar {opponent.name}
+                  </button>
+                ))}
+              </div>
+            </section>
+          ) : null}
+
           <section className="hand-panel">
             <div className="hand-head">
               <h2>Suas cartas</h2>
@@ -423,7 +462,12 @@ function App() {
               <button className="action-button action-blue" disabled={!myTurn} onClick={drawCard} type="button">
                 Comprar
               </button>
-              <button className="action-button action-red" disabled={(privateState?.hand.length ?? 0) !== 1} onClick={callUno} type="button">
+              <button
+                className={`action-button action-red ${myHandCount === 1 && iAmChallengeable ? 'is-live' : ''}`}
+                disabled={myHandCount !== 1}
+                onClick={callUno}
+                type="button"
+              >
                 UNO!
               </button>
             </div>

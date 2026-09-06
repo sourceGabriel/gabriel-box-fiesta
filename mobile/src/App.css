@@ -399,6 +399,55 @@
   background: linear-gradient(135deg, #3b82f6, #1d4ed8);
 }
 
+.action-button.is-live {
+  animation: uno-pulse 1s ease-in-out infinite;
+}
+
+@keyframes uno-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.55); }
+  50% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+}
+
+.uno-alert {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: 12px;
+  border: 1px solid rgba(248, 113, 113, 0.5);
+  background: rgba(248, 113, 113, 0.12);
+  text-align: center;
+}
+
+.uno-alert.self {
+  border-color: rgba(251, 191, 36, 0.55);
+  background: rgba(251, 191, 36, 0.14);
+}
+
+.uno-alert strong {
+  font-size: 0.95rem;
+}
+
+.uno-alert span {
+  font-size: 0.8rem;
+  opacity: 0.85;
+}
+
+.challenge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  justify-content: center;
+}
+
+.challenge-button {
+  background: linear-gradient(135deg, #ef4444, #b91c1c);
+  color: #fff;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.85rem;
+}
+
 button,
 input,
 select {
