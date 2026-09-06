@@ -29,23 +29,6 @@ ul, ol {
   font-size: clamp(14px, 1.4vmin, 20px);
 }
 
-.brand-mark {
-  display: inline-block;
-  font-weight: 900;
-  letter-spacing: 0.12em;
-  line-height: 1.2;
-  padding: 0.08em 0.04em;
-  font-size: clamp(1.6rem, 3.2vmin, 3rem);
-  background: linear-gradient(135deg, #fbbf24, #ef4444);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.brand-mark.xl {
-  font-size: clamp(2.6rem, 8vmin, 6rem);
-}
-
 .hint {
   color: var(--muted);
 }
@@ -118,122 +101,12 @@ ul, ol {
   text-align: left;
 }
 
-.lobby-qr {
-  display: grid;
-  justify-items: center;
-  gap: 0.5rem;
-}
-
-.lobby-qr img,
-.qr-skeleton {
-  width: clamp(180px, 26vmin, 320px);
-  aspect-ratio: 1;
-  border-radius: 14px;
-  background: #fff;
-  object-fit: contain;
-  padding: 0.5rem;
-}
-
-.qr-skeleton {
-  background: repeating-linear-gradient(45deg, #1b2330, #1b2330 10px, #222c3b 10px, #222c3b 20px);
-}
-
-.lobby-code {
-  font-size: clamp(1.8rem, 5vmin, 3.4rem);
-  font-weight: 900;
-  letter-spacing: 0.22em;
-}
-
-.lobby-url {
-  color: #93b4ff;
-  font-size: 0.8em;
-  overflow-wrap: anywhere;
-  max-width: clamp(180px, 26vmin, 320px);
-}
-
-.lobby-players {
-  align-self: stretch;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: var(--panel-2);
-  padding: clamp(0.85rem, 2vmin, 1.4rem);
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  min-height: 0;
-}
-
-.lobby-players ul {
-  display: grid;
-  gap: 0.4rem;
-  overflow: auto;
-}
-
-.lobby-players li {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.55rem 0.8rem;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.03);
-}
-
 .lobby-cta {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 1rem;
   flex-wrap: wrap;
-}
-
-.start-button {
-  border: none;
-  border-radius: 14px;
-  padding: 0.9em 1.8em;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: #fff;
-  background: linear-gradient(135deg, #f59e0b, #ef4444);
-  cursor: pointer;
-  font-size: 1em;
-}
-
-.start-button:disabled {
-  background: linear-gradient(135deg, #374151, #1f2937);
-  color: #9ca3af;
-  cursor: not-allowed;
-}
-
-.ghost-button {
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 0.9em 1.5em;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  color: #e2e8f0;
-  background: var(--panel-2);
-  cursor: pointer;
-  font-size: 0.95em;
-}
-
-/* ---------- Platform wordmark (attract / catalog) ---------- */
-.platform-mark {
-  display: inline-block;
-  font-weight: 900;
-  letter-spacing: 0.04em;
-  line-height: 1;
-  font-size: clamp(3rem, 10vmin, 8rem);
-  background: linear-gradient(120deg, #f472b6, #fbbf24 45%, #34d399 75%, #60a5fa);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.platform-mark.sm {
-  font-size: clamp(1.1rem, 2.6vmin, 1.9rem);
-  letter-spacing: 0.08em;
 }
 
 /* ---------- Attract ---------- */

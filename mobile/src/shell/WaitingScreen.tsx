@@ -1,3 +1,4 @@
+import { PlayerRoster } from '@party/ui';
 import { MobileHeader } from './MobileHeader';
 import type { ShellPlayer } from './useRoomConnection';
 
@@ -39,16 +40,12 @@ export function WaitingScreen({
       </section>
 
       {players.length > 0 ? (
-        <section className="players-panel">
-          <h2>Jogadores · {players.length}</h2>
-          <div className="player-list">
-            {players.map((player) => (
-              <div key={player.id} className={`player-pill ${player.id === playerId ? 'is-me' : ''}`}>
-                <span>{player.name}</span>
-              </div>
-            ))}
-          </div>
-        </section>
+        <PlayerRoster
+          layout="pills"
+          title={`Jogadores · ${players.length}`}
+          players={players}
+          meId={playerId ?? undefined}
+        />
       ) : null}
     </>
   );

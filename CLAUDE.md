@@ -30,7 +30,8 @@ UNO MVP **complete and validated** (Fases 1–10 + mobile visual overhaul). Serv
 
 **Fase C — in progress** (`@party/ui` design system + synthesized Web Audio sounds; retrofit host + mobile):
 - ✅ **C1** — `ui/` workspace + `ui/src/tokens.css` (single source of design tokens, imported in each `main.tsx`); host/mobile token divergence resolved; `index.css` of each app now reset-only. Consumed as source by Vite (no build).
-- 🔜 **C2** components (`Panel`/`Button`/`BrandMark`/`PlayerList`/`QrPanel`/`TimerRing`/`ResultOverlay`) + retrofit · **C3** `ui/src/sound.ts` synth sounds + per-game `sound-map` · **C4** consolidate `cardArt.ts`.
+- ✅ **C2** — `@party/ui` components + `components.css`: `BrandMark` (game/platform variant — §47 rename point), `Button`, `Panel`, `Overlay`, `Timer`, `QrPanel`, `PlayerRoster`. Retrofitted host Attract/Catalog/Lobby/`UnoHostView` + mobile Join/Waiting/`UnoControllerView`; ~116 lines of duplicated CSS removed. `optimizeDeps.exclude: ['@party/ui']` in both vite configs.
+- 🔜 **C3** `ui/src/sound.ts` synth Web Audio sounds + per-game `sound-map` · **C4** consolidate `cardArt.ts`.
 - §47 decision: **keep the "UNO" name** for now (`BrandMark` parametrized, default "UNO"); "Box Fiesta" is the platform mark.
 Then **D** (integrate game #2 — repo TBD from the user).
 
@@ -46,7 +47,7 @@ Monorepo, npm workspaces: `server` · `shared` (**types-only, no runtime, no zod
 
 | Concern | Where |
 |---|---|
-| Design tokens (shared) | `ui/src/tokens.css` — imported in each app's `main.tsx`. Game-specific colours (`--uno-*`) stay in that game's module. |
+| Shared UI (`@party/ui`) | `ui/src/tokens.css` (design tokens) + `ui/src/components/` (`BrandMark`, `Button`, `Panel`, `Overlay`, `Timer`, `QrPanel`, `PlayerRoster`) + `ui/src/components.css`. Both CSS files imported in each app's `main.tsx`. Game-specific colours (`--uno-*`) stay in that game's module. |
 | Plugin contract | `server/src/core/game-plugin.ts` (`GamePlugin`, `GameInstance`, `GameContext`, `TurnTimedGame`/`RoundedGame`/`PausableGame`/`TickingGame`, `isX()` guards) |
 | Game registry | `server/src/games/registry.ts` (`GAMES` map — add a game = 1 import + 1 entry) |
 | Room / player / owner / reconnect / 30s grace / `selectGame`/`startGame(gameId)` | `server/src/core/room.ts` (game-agnostic after A2) |

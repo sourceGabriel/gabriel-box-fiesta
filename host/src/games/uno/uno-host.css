@@ -39,33 +39,6 @@
   white-space: nowrap;
 }
 
-.turn-timer {
-  display: grid;
-  justify-items: center;
-  gap: 0.1rem;
-  padding: 0.4rem 1rem;
-  border-radius: 12px;
-  background: var(--panel-2);
-  border: 1px solid var(--line);
-  min-width: 5rem;
-}
-
-.turn-timer span {
-  font-size: 0.7em;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--muted);
-}
-
-.turn-timer strong {
-  font-size: clamp(1.4rem, 3vmin, 2.2rem);
-  font-weight: 900;
-  color: var(--accent);
-}
-
-.turn-timer.is-low strong {
-  color: #f87171;
-}
 
 /* ---------- Game: body ---------- */
 .host-body {
@@ -321,28 +294,14 @@
   filter: grayscale(1);
 }
 
-.kick-button,
-.ghost-button,
-.danger-button {
-  border-radius: 10px;
-  border: 1px solid var(--line);
-  background: var(--panel-2);
-  color: #e2e8f0;
-  cursor: pointer;
-  padding: 0.5em 0.9em;
-  font-weight: 700;
-}
-
 .kick-button {
-  padding: 0.3em 0.55em;
-  border-color: rgba(248, 113, 113, 0.35);
+  border-radius: 10px;
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  background: var(--panel-2);
   color: #fca5a5;
-}
-
-.danger-button {
-  border-color: rgba(248, 113, 113, 0.45);
-  background: linear-gradient(135deg, rgba(127, 29, 29, 0.85), rgba(69, 10, 10, 0.75));
-  color: #fff;
+  cursor: pointer;
+  padding: 0.3em 0.55em;
+  font-weight: 700;
 }
 
 .event-feed {
@@ -373,41 +332,12 @@
   gap: 0.5rem;
 }
 
-/* ---------- Result overlay ---------- */
-.result-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1.5rem;
-  background: rgba(4, 6, 12, 0.75);
-  backdrop-filter: blur(5px);
-}
-
-.result-card {
-  width: min(460px, 92vw);
-  display: flex;
-  flex-direction: column;
-  gap: 0.9rem;
-  padding: 1.75rem;
-  border-radius: 18px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
-  text-align: center;
-}
-
-.result-card .eyebrow {
+/* ---------- Result overlay content (the shell is @party/ui's Overlay) ---------- */
+.eyebrow {
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.1em;
   font-size: 0.8rem;
-}
-
-.result-card h2 {
-  font-size: 1.6rem;
 }
 
 .result-scoreboard {

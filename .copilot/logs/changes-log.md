@@ -82,3 +82,10 @@ The project is currently between the room lifecycle phase and the actual host ga
 - `ui/src/tokens.css` — single source of design tokens; imported per app in `main.tsx`. Resolved host/mobile token divergence (canonical `--panel #161d29`, `--panel-2 #1d2634`, `--line #2b3646`, `--muted #94a3b8`).
 - `host`/`mobile` `index.css` keep only the reset (+ mobile keeps its gradient + `--uno-*`). Builds (5 ws) + lints + 28 server tests green; browser smoke visually unchanged.
 - Next: C2 (shared components), C3 (synth sounds), C4 (consolidate `cardArt.ts`). §47 "UNO" name kept.
+
+## 2026-09-06 — Fase C / PR C2 (branch `feature/coup-ou-coupa`)
+- New `ui/src/components/` + `components.css`: `BrandMark` (game/platform variant — §47 rename point), `Button`, `Panel`, `Overlay`, `Timer` (warn + active glow), `QrPanel`, `PlayerRoster` (list/pills).
+- Retrofit: host Attract/Catalog/Lobby + `UnoHostView` (BrandMark, Timer, Overlay, Button); mobile Join/Waiting + `UnoControllerView` (Timer, Button).
+- Removed ~116 lines of now-duplicated CSS across host `shell.css`/`uno-host.css` and mobile `shell.css`/`uno-controller.css`. `vite.config` both got `optimizeDeps.exclude: ['@party/ui']`.
+- Builds (5 ws) + host/mobile oxlint + server tsc + 28 tests green; browser smoke of every screen unchanged.
+- Next: C3 (synth sounds), C4 (consolidate cardArt).

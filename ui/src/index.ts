@@ -1,8 +1,9 @@
 /**
  * @party/ui — shared design system for @party/host and @party/mobile.
  *
- * - Design tokens: `import '@party/ui/tokens.css'` (see src/tokens.css).
- * - Components + synthesized sounds are added in later Fase C PRs and re-exported here.
+ * - Design tokens: `import '@party/ui/tokens.css'` (src/tokens.css).
+ * - Component styles: `import '@party/ui/components.css'` (src/components.css).
+ * - Both are imported once per app in main.tsx, before the app's own index.css.
  */
 
-export {};
+export * from './components';

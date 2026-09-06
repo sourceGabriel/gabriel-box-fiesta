@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { UnoGameEvent, UnoPublicState } from '@party/shared';
+import { BrandMark, Button, Overlay, Timer } from '@party/ui';
 import type { HostGameViewProps } from '../types';
 import { getCardArt, getCardBackArt } from './cardArt';
 import { describeEvent } from './describeEvent';
@@ -105,7 +106,6 @@ export function UnoHostView({ publicState, events, players, connected, send }: H
   );
 
   const timerSeconds = state.timer ? Math.max(0, Math.ceil(state.timer.remainingMs / 1000)) : null;
-  const timerLabel = timerSeconds === null ? '—' : `${timerSeconds}s`;
   const directionLabel = state.direction === -1 ? '↺ anti-horário' : '↻ horário';
 
   const scoreboard = useMemo(() => [...state.players].sort((a, b) => b.score - a.score), [state.players]);
@@ -163,56 +163,49 @@ export function UnoHostView({ publicState, events, players, connected, send }: H
       {roundOverPhase && !showResult ? <div className="anim-layer confetti" aria-hidden="true" /> : null}
 
       {paused ? (
-        <div className="result-overlay" role="dialog" aria-live="polite">
-          <div className="result-card">
-            <p className="eyebrow">Partida pausada</p>
-            <h2>⏸ Aguardando o anfitrião</h2>
-            <div className="result-actions">
-              <button type="button" className="start-button" onClick={() => send('RESUME_GAME', {})}>Continuar</button>
-              <button type="button" className="danger-button" onClick={() => send('END_GAME', {})}>Encerrar</button>
-            </div>
+        <Overlay label="Partida pausada">
+          <p className="eyebrow">Partida pausada</p>
+          <h2>⏸ Aguardando o anfitrião</h2>
+          <div className="result-actions">
+            <Button variant="primary" onClick={() => send('RESUME_GAME', {})}>Continuar</Button>
+            <Button variant="danger" onClick={() => send('END_GAME', {})}>Encerrar</Button>
           </div>
-        </div>
+        </Overlay>
       ) : null}
 
       {showResult && (roundOver || gameOver) ? (
-        <div className="result-overlay" role="dialog" aria-live="polite">
-          <div className="result-card">
-            <p className="eyebrow">{gameOver ? 'Fim da partida' : `Rodada ${state.round}`}</p>
-            <h2>{gameOver ? `🏆 ${gameWinnerName} venceu!` : `${roundWinnerName} zerou a mão`}</h2>
-            <ol className="result-scoreboard">
-              {scoreboard.map((player, index) => (
-                <li key={player.id} className={index === 0 ? 'leader' : ''}>
-                  <span>{index + 1}. {player.name}</span>
-                  <strong>{player.score}</strong>
-                </li>
-              ))}
-            </ol>
-            <p className="result-target">Meta: {state.targetScore} pts</p>
-            <div className="result-actions">
-              {gameOver ? (
-                <>
-                  <button type="button" className="start-button" onClick={() => send('START_GAME', {})}>Nova partida</button>
-                  <button type="button" className="danger-button" onClick={() => send('END_GAME', {})}>Encerrar</button>
-                </>
-              ) : (
-                <button type="button" className="start-button" onClick={() => send('NEXT_ROUND', {})}>Próxima rodada</button>
-              )}
-            </div>
+        <Overlay label="Resultado da rodada">
+          <p className="eyebrow">{gameOver ? 'Fim da partida' : `Rodada ${state.round}`}</p>
+          <h2>{gameOver ? `🏆 ${gameWinnerName} venceu!` : `${roundWinnerName} zerou a mão`}</h2>
+          <ol className="result-scoreboard">
+            {scoreboard.map((player, index) => (
+              <li key={player.id} className={index === 0 ? 'leader' : ''}>
+                <span>{index + 1}. {player.name}</span>
+                <strong>{player.score}</strong>
+              </li>
+            ))}
+          </ol>
+          <p className="result-target">Meta: {state.targetScore} pts</p>
+          <div className="result-actions">
+            {gameOver ? (
+              <>
+                <Button variant="primary" onClick={() => send('START_GAME', {})}>Nova partida</Button>
+                <Button variant="danger" onClick={() => send('END_GAME', {})}>Encerrar</Button>
+              </>
+            ) : (
+              <Button variant="primary" onClick={() => send('NEXT_ROUND', {})}>Próxima rodada</Button>
+            )}
           </div>
-        </div>
+        </Overlay>
       ) : null}
 
       <header className="host-topbar">
         <div className="brand">
-          <span className="brand-mark">UNO</span>
+          <BrandMark text="UNO" size="md" />
           <span className="brand-sub">Sala {state.roomCode} · Rodada {state.round}</span>
           {!connected ? <span className="conn-pill">reconectando…</span> : null}
         </div>
-        <div className={`turn-timer ${timerSeconds !== null && timerSeconds <= 8 ? 'is-low' : ''}`}>
-          <span>Tempo</span>
-          <strong>{timerLabel}</strong>
-        </div>
+        <Timer seconds={timerSeconds} />
       </header>
 
       <div className="host-body">
@@ -305,13 +298,13 @@ export function UnoHostView({ publicState, events, players, connected, send }: H
           ) : null}
 
           <div className="side-actions">
-            <button type="button" className="ghost-button" onClick={() => send(paused ? 'RESUME_GAME' : 'PAUSE_GAME', {})}>
+            <Button variant="ghost" onClick={() => send(paused ? 'RESUME_GAME' : 'PAUSE_GAME', {})}>
               {paused ? '▶ Continuar' : '⏸ Pausar'}
-            </button>
-            <button type="button" className="ghost-button" onClick={() => setRevealDrawPile((current) => !current)}>
+            </Button>
+            <Button variant="ghost" onClick={() => setRevealDrawPile((current) => !current)}>
               {revealDrawPile ? 'Ocultar monte' : 'Revelar monte'}
-            </button>
-            <button type="button" className="danger-button" onClick={() => send('END_GAME', {})}>Encerrar partida</button>
+            </Button>
+            <Button variant="danger" onClick={() => send('END_GAME', {})}>Encerrar partida</Button>
           </div>
         </aside>
       </div>

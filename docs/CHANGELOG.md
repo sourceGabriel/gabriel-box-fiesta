@@ -235,5 +235,28 @@
 ### Why
 - First Fase C step: one place for tokens, so C2 (shared components) and C3 (sounds) have a foundation and the two apps stop drifting apart visually.
 
+## 2026-09-06 — Fase C / PR C2: `@party/ui` components + retrofit
+### Added
+- **`ui/src/components/`** + `ui/src/components.css` (`@party/ui/components.css`, imported per app in `main.tsx`):
+  - `BrandMark` — the wordmark; `variant="game"` (amber→red, e.g. "UNO") / `variant="platform"` ("Box Fiesta" multicolour), `size` sm/md/lg/xl. §47: the game text is a prop.
+  - `Button` — `variant` primary / success / ghost / danger.
+  - `Panel` — surface treatment (bg + hairline border + radius), `className` passthrough.
+  - `Overlay` — full-screen dimmed modal shell + centred card.
+  - `Timer` — labelled countdown chip; red at ≤ `warnAt`s, `active` glow ("your turn"), `null` → "—".
+  - `QrPanel` — QR image (or skeleton) + room code + join URL, with the safe-data-URI guard.
+  - `PlayerRoster` — simple `{name, connected}` list; `layout` list (host lobby) / pills (mobile waiting).
+
+### Changed
+- **host**: `AttractScreen` / `CatalogScreen` use `BrandMark` (platform); `LobbyScreen` uses `BrandMark` + `QrPanel` + `PlayerRoster` + `Button`; `UnoHostView` topbar uses `BrandMark` + `Timer`, the paused / result overlays use `Overlay` + `Button`, side-actions use `Button`.
+- **mobile**: `JoinScreen` uses `BrandMark` + `Button`; `WaitingScreen` roster uses `PlayerRoster` (pills); `UnoControllerView` header uses `Timer` (`active={myTurn}`), colour-modal confirm uses `Button`.
+- Removed the now-duplicated CSS: host `shell.css` lost `.brand-mark` / `.platform-mark` / `.start-button` / `.ghost-button` / `.lobby-qr*` / `.lobby-code` / `.lobby-url` / `.qr-skeleton` / `.lobby-players*`; host `uno-host.css` lost `.turn-timer*` / `.result-overlay` / `.result-card*` (kept `.result-scoreboard*` / `.eyebrow` as overlay *content*); mobile `shell.css` lost `.wordmark` / `.primary-button*`; mobile `uno-controller.css` lost `.header-timer*`. Net −116 CSS lines.
+- Both `vite.config.ts` got `optimizeDeps.exclude: ['@party/ui']` so Vite transforms the linked source instead of pre-bundling it.
+
+### Tests
+- Builds (5 workspaces), oxlint (host + mobile), server `tsc`, 28 server tests green. Browser smoke: attract / catalog / lobby / mobile join / in-game (host board + Timer, mobile controller + Timer glow) / paused Overlay — all render unchanged.
+
+### Why
+- One implementation of each recurring widget; the two apps now share the wordmark, buttons, timer, QR panel and roster instead of four near-copies. The `BrandMark` `text` prop is the single §47 rename point.
+
 ## Next planned change
-- **Fase C / C2** — `@party/ui` components (`Panel`, `Button`, `BrandMark`, `PlayerList`, `QrPanel`, `TimerRing`, `ResultOverlay`); retrofit both shells + the shared bits of the UNO views. Then **C3** (synthesized Web Audio sounds — `ui/src/sound.ts` + per-game `sound-map`), **C4** (consolidate `cardArt.ts`). §47: the "UNO" name stays for now (`BrandMark` is parametrized, default "UNO").
+- **Fase C / C3** — `ui/src/sound.ts` (`createSounds(ctx?)` → `cardPlay` / `draw` / `turn` / `win` / `error` / `select`, synthesized Web Audio, no assets) + `host/src/games/uno/sound-map.ts` (UNO event → sound); `AudioContext` unlock on first gesture; a smoke test with a fake context. Then **C4** (consolidate `cardArt.ts`).

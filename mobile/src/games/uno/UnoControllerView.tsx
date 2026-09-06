@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { UnoCard, UnoPrivatePlayerState, UnoPublicState } from '@party/shared';
+import { Button, Timer } from '@party/ui';
 import { MobileHeader } from '../../shell/MobileHeader';
 import type { ControllerGameViewProps } from '../types';
 import { getCardArt } from './cardArt';
@@ -20,7 +21,7 @@ export function UnoControllerView({ publicState, privateState, playerId, connect
     [priv, selectedCardId],
   );
   // The server pushes state ~2x/s and computes remainingMs itself, so we never read the phone clock.
-  const timerLabel = pub.timer ? `${Math.max(0, Math.ceil(pub.timer.remainingMs / 1000))}s` : '--';
+  const timerSeconds = pub.timer ? Math.max(0, Math.ceil(pub.timer.remainingMs / 1000)) : null;
 
   const gameOver = pub.phase === 'game_finished';
   const paused = pub.phase === 'paused';
@@ -59,12 +60,7 @@ export function UnoControllerView({ publicState, privateState, playerId, connect
   return (
     <>
       <MobileHeader roomCode={roomCode} connected={connected}>
-        {playing ? (
-          <div className={`header-timer ${myTurn ? 'is-turn' : ''}`}>
-            <span className="label">Tempo</span>
-            <strong>{timerLabel}</strong>
-          </div>
-        ) : null}
+        {playing ? <Timer seconds={timerSeconds} active={myTurn} /> : null}
       </MobileHeader>
 
       {paused ? (
@@ -221,7 +217,7 @@ export function UnoControllerView({ publicState, privateState, playerId, connect
                 </button>
               ))}
             </div>
-            <button type="button" className="primary-button" onClick={confirmColor}>Confirmar</button>
+            <Button variant="success" className="color-confirm" onClick={confirmColor}>Confirmar</Button>
           </div>
         </div>
       ) : null}

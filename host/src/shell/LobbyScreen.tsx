@@ -1,6 +1,5 @@
-import { useMemo } from 'react';
 import type { GameMeta } from '@party/shared';
-import { SAFE_QR_PREFIX } from './messages';
+import { BrandMark, Button, PlayerRoster, QrPanel } from '@party/ui';
 import type { ShellPlayer } from './useRoomConnection';
 
 interface LobbyScreenProps {
@@ -35,48 +34,28 @@ export function LobbyScreen({
   const maxPlayers = selected?.maxPlayers ?? 8;
   const canStart = onlineCount >= minPlayers && onlineCount <= maxPlayers;
 
-  const safeQr = useMemo(
-    () => (joinQrDataUrl?.startsWith(SAFE_QR_PREFIX) ? joinQrDataUrl : undefined),
-    [joinQrDataUrl],
-  );
-
   return (
     <main className="host-shell host-lobby">
       <div className="lobby-card">
         <div className="lobby-title">
-          <span className="brand-mark xl">{selected?.name ?? 'Jogo'}</span>
+          <BrandMark text={selected?.name ?? 'Jogo'} size="xl" />
           {selected?.tagline ? <p>{selected.tagline}</p> : <p>Escaneie o QR code ou digite o código no celular para entrar.</p>}
         </div>
 
         <div className="lobby-grid">
-          <div className="lobby-qr">
-            {safeQr ? <img src={safeQr} alt="QR code da sala" /> : <div className="qr-skeleton" aria-hidden="true" />}
-            <p className="lobby-code">{roomCode || '----'}</p>
-            {joinUrl ? <p className="lobby-url">{joinUrl}</p> : null}
-          </div>
-
-          <div className="lobby-players">
-            <h2>Jogadores ({players.length})</h2>
-            {players.length === 0 ? (
-              <p className="hint">Ninguém entrou ainda.</p>
-            ) : (
-              <ul>
-                {players.map((player) => (
-                  <li key={player.id}>
-                    <span>{player.name}</span>
-                    <span className={`conn-dot ${player.connected ? 'on' : 'off'}`} aria-hidden="true" />
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+          <QrPanel dataUrl={joinQrDataUrl} code={roomCode} url={joinUrl} />
+          <PlayerRoster
+            layout="list"
+            title={`Jogadores (${players.length})`}
+            players={players}
+          />
         </div>
 
         <div className="lobby-cta">
-          <button className="ghost-button" type="button" onClick={onChangeGame}>Trocar de jogo</button>
-          <button className="start-button" disabled={!connected || !canStart} onClick={onStart} type="button">
+          <Button variant="ghost" onClick={onChangeGame}>Trocar de jogo</Button>
+          <Button variant="primary" disabled={!connected || !canStart} onClick={onStart}>
             {canStart ? `Iniciar ${selected?.name ?? 'partida'}` : `Aguardando ${minPlayers}+ jogadores`}
-          </button>
+          </Button>
           <span className="status-chip">{connected ? `${onlineCount} online` : 'offline'}</span>
         </div>
 

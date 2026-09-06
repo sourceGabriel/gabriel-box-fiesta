@@ -1,5 +1,6 @@
 import { useEffect, useState, type FC } from 'react';
 import type { GameMeta } from '@party/shared';
+import { BrandMark } from '@party/ui';
 
 interface CatalogScreenProps {
   catalog: GameMeta[];
@@ -56,7 +57,7 @@ export function CatalogScreen({
   return (
     <main className="host-shell catalog-screen">
       <header className="catalog-head">
-        <span className="platform-mark sm">{platformName}</span>
+        <BrandMark text={platformName} variant="platform" size="sm" />
         <h1>Escolha um jogo</h1>
       </header>
 

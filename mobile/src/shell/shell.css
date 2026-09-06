@@ -86,20 +86,6 @@ h2 {
 }
 
 /* ---------- join screen ---------- */
-.wordmark {
-  display: block;
-  font-weight: 900;
-  font-size: 2.6rem;
-  letter-spacing: 0.14em;
-  line-height: 1;
-  padding: 0.06em 0.04em;
-  text-align: center;
-  background: linear-gradient(135deg, #fbbf24, #ef4444 70%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
 .join-panel {
   padding: 1.25rem 1.1rem;
 }
@@ -191,27 +177,12 @@ h2 {
   color: var(--text);
 }
 
-.primary-button {
-  border: none;
-  border-radius: 13px;
-  padding: 0.95rem;
-  font-weight: 900;
+/* The join CTA and the colour-modal confirm are full-width @party/ui buttons. */
+.join-submit,
+.color-confirm {
+  width: 100%;
+  padding-block: 0.95rem;
   font-size: 1rem;
-  letter-spacing: 0.02em;
-  color: #08110a;
-  background: linear-gradient(135deg, #34d399, #16a34a);
-  box-shadow: 0 10px 24px rgba(22, 163, 74, 0.28);
-  transition: transform 0.12s ease, opacity 0.12s ease;
-}
-
-.primary-button:active:not(:disabled) {
-  transform: translateY(1px) scale(0.99);
-}
-
-.primary-button:disabled {
-  background: linear-gradient(135deg, #334155, #1e293b);
-  color: var(--muted);
-  box-shadow: none;
 }
 
 /* ---------- waiting screen ---------- */

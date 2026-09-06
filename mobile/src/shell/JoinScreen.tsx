@@ -1,3 +1,4 @@
+import { BrandMark, Button } from '@party/ui';
 import { MobileHeader } from './MobileHeader';
 
 const AVATAR_OPTIONS = ['🙂', '😎', '🎉', '🔥', '🕺', '🤠', '😺', '🐼'];
@@ -33,7 +34,7 @@ export function JoinScreen({
 
       <section className="join-panel">
         <div className="join-hero">
-          <span className="wordmark">{brandName}</span>
+          <BrandMark text={brandName} size="md" />
           <p>Entre na sala e pegue seu celular como controle.</p>
         </div>
 
@@ -79,9 +80,9 @@ export function JoinScreen({
           Vai entrar como <strong>{avatar} {playerName.trim() || '...'}</strong>
         </p>
 
-        <button className="primary-button" disabled={!canSubmit} onClick={onJoin} type="button">
+        <Button variant="success" className="join-submit" disabled={!canSubmit} onClick={onJoin}>
           {connected ? 'Entrar na sala' : 'Conectando…'}
-        </button>
+        </Button>
       </section>
     </>
   );

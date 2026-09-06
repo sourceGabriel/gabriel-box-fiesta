@@ -1,0 +1,297 @@
+/**
+ * @party/ui component styles. Import once per app in main.tsx (after tokens.css):
+ *   import '@party/ui/components.css';
+ */
+
+/* ---------- BrandMark ---------- */
+.ui-brand {
+  display: inline-block;
+  font-weight: 900;
+  line-height: 1.1;
+  padding: 0.06em 0.04em;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.ui-brand--game {
+  letter-spacing: 0.12em;
+  background-image: linear-gradient(135deg, #fbbf24, #ef4444);
+}
+
+.ui-brand--platform {
+  letter-spacing: 0.05em;
+  background-image: linear-gradient(120deg, #f472b6, #fbbf24 45%, #34d399 75%, #60a5fa);
+}
+
+.ui-brand--sm { font-size: clamp(1.1rem, 2.6vmin, 1.9rem); letter-spacing: 0.08em; }
+.ui-brand--md { font-size: clamp(1.6rem, 3.2vmin, 3rem); }
+.ui-brand--lg { font-size: clamp(3rem, 10vmin, 8rem); }
+.ui-brand--xl { font-size: clamp(2.6rem, 8vmin, 6rem); }
+
+/* ---------- Button ---------- */
+.ui-btn {
+  border: none;
+  border-radius: var(--radius);
+  padding: 0.9em 1.8em;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  font-size: 1em;
+  cursor: pointer;
+  transition: transform 0.12s ease, opacity 0.12s ease;
+}
+
+.ui-btn:active:not(:disabled) {
+  transform: translateY(1px) scale(0.99);
+}
+
+.ui-btn--primary {
+  text-transform: uppercase;
+  color: #fff;
+  background: linear-gradient(135deg, #f59e0b, #ef4444);
+}
+
+.ui-btn--primary:disabled {
+  background: linear-gradient(135deg, #374151, #1f2937);
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.ui-btn--success {
+  color: #08110a;
+  background: linear-gradient(135deg, #34d399, #16a34a);
+  box-shadow: 0 10px 24px rgba(22, 163, 74, 0.28);
+}
+
+.ui-btn--success:disabled {
+  background: linear-gradient(135deg, #334155, #1e293b);
+  color: var(--muted);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.ui-btn--ghost {
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: #e2e8f0;
+  font-weight: 700;
+  font-size: 0.95em;
+  padding: 0.9em 1.5em;
+}
+
+.ui-btn--danger {
+  border: 1px solid rgba(248, 113, 113, 0.45);
+  background: linear-gradient(135deg, rgba(127, 29, 29, 0.85), rgba(69, 10, 10, 0.75));
+  color: #fff;
+}
+
+.ui-btn--ghost:disabled,
+.ui-btn--danger:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ---------- Panel ---------- */
+.ui-panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+/* ---------- Overlay ---------- */
+.ui-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(4, 6, 12, 0.75);
+  backdrop-filter: blur(5px);
+}
+
+.ui-overlay-card {
+  width: min(460px, 92vw);
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 1.75rem;
+  border-radius: var(--radius-lg);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+  text-align: center;
+}
+
+.ui-overlay-card h2 {
+  margin: 0;
+  font-size: 1.6rem;
+}
+
+/* ---------- Timer ---------- */
+.ui-timer {
+  display: grid;
+  justify-items: center;
+  gap: 0.1rem;
+  padding: 0.4rem 1rem;
+  border-radius: 12px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  min-width: 5rem;
+}
+
+.ui-timer-label {
+  font-size: 0.7em;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.ui-timer strong {
+  font-size: clamp(1.3rem, 3vmin, 2.2rem);
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+
+.ui-timer.is-low {
+  border-color: rgba(248, 113, 113, 0.5);
+}
+
+.ui-timer.is-low strong {
+  color: #f87171;
+}
+
+.ui-timer.is-active {
+  border-color: var(--accent);
+  background: rgba(245, 158, 11, 0.14);
+  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.35), 0 0 22px rgba(245, 158, 11, 0.25);
+}
+
+/* ---------- QrPanel ---------- */
+.ui-qr {
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+}
+
+.ui-qr img,
+.ui-qr-skeleton {
+  width: clamp(180px, 26vmin, 320px);
+  aspect-ratio: 1;
+  border-radius: 14px;
+  background: #fff;
+  object-fit: contain;
+  padding: 0.5rem;
+}
+
+.ui-qr-skeleton {
+  background: repeating-linear-gradient(45deg, #1b2330, #1b2330 10px, #222c3b 10px, #222c3b 20px);
+}
+
+.ui-qr-code {
+  margin: 0;
+  font-size: clamp(1.8rem, 5vmin, 3.4rem);
+  font-weight: 900;
+  letter-spacing: 0.22em;
+}
+
+.ui-qr-url {
+  margin: 0;
+  color: #93b4ff;
+  font-size: 0.8em;
+  overflow-wrap: anywhere;
+  max-width: clamp(180px, 26vmin, 320px);
+}
+
+/* ---------- PlayerRoster ---------- */
+.ui-roster ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ui-roster-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.ui-conn-dot {
+  width: 0.6em;
+  height: 0.6em;
+  border-radius: 999px;
+  flex: none;
+}
+
+.ui-conn-dot.on { background: #34d399; }
+.ui-conn-dot.off { background: #6b7280; }
+
+/* list layout — host lobby */
+.ui-roster--list {
+  align-self: stretch;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel-2);
+  padding: clamp(0.85rem, 2vmin, 1.4rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  min-height: 0;
+}
+
+.ui-roster--list ul {
+  display: grid;
+  gap: 0.4rem;
+  overflow: auto;
+}
+
+.ui-roster--list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.55rem 0.8rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* pills layout — mobile waiting */
+.ui-roster--pills {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1rem;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.ui-roster--pills .ui-roster-title {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.ui-roster--pills ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.ui-roster--pills li {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.4rem 0.8rem;
+  background: var(--panel-2);
+  font-size: 0.9rem;
+}
+
+.ui-roster--pills li.is-me {
+  border-color: rgba(96, 165, 250, 0.6);
+  background: rgba(59, 130, 246, 0.14);
+}

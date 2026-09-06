@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { BrandMark } from '@party/ui';
 
 interface AttractScreenProps {
   roomCode: string;
@@ -25,7 +26,7 @@ export function AttractScreen({
   return (
     <main className="host-shell attract-screen" onClick={onStart} role="button" tabIndex={0}>
       <div className="attract-body">
-        <span className="platform-mark">{platformName}</span>
+        <BrandMark text={platformName} variant="platform" size="lg" />
         <p className="attract-tag">Festa de jogos na sua TV</p>
 
         <div className="attract-room">
