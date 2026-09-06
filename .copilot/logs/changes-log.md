@@ -48,3 +48,9 @@ The project is currently between the room lifecycle phase and the actual host ga
 - `CLAUDE.md`: added a "Working efficiently" section; validation block references `/validate` and stops hardcoding the test count. (The "Current state / Fase A" section stays — kept in full by the user.)
 - `.gitignore`: un-ignore `.claude/launch.json`; ignore `.claude/settings.local.json`.
 - Config only — no app code touched. Goal: fewer permission prompts, no accidental token-heavy reads, type errors caught in the same turn.
+
+## 2026-09-06 — Fase A / PR A4 (branch `feature/coup-ou-coupa`)
+- New: `mobile/src/shell/` — `session.ts` (reconnect subsystem, extracted verbatim: same localStorage key formats + recovery), `useRoomConnection.ts` (WS + backoff + `RECONNECT_SESSION` + token persistence + `joinOrReconnect`), `messages.ts`, `MobileHeader.tsx`, `JoinScreen.tsx`, `WaitingScreen.tsx` (shows selected game name), `shell.css`. `publicState`/`privateState` opaque.
+- New: `mobile/src/games/{types,registry}.ts` (`ControllerGameViewProps`, `CONTROLLER_GAMES = { uno: UnoControllerView }`) + `mobile/src/games/uno/` (`UnoControllerView.tsx` — still emits the legacy UNO verbs, `cardArt.ts` moved, `uno-controller.css`).
+- `mobile/src/App.tsx` → ~70-line dispatcher (`JoinScreen` → `WaitingScreen` until `privateState && publicState && registered game` → controller view; renders the error toast). Shell now handles `GAME_CATALOG` + `GAME_STARTED`; infers active game on mid-game reconnect.
+- Removed template `mobile/src/assets/`. No wire change. Builds + host/mobile lint + server tsc + 27 server tests green; browser smoke (join / waiting / play / mid-game reload / waiting reload) passed.

@@ -131,5 +131,25 @@
 ### Why
 - Every permission prompt is a round-trip and every accidental read of `package-lock.json` (~25k tokens) or a card PNG is wasted context. The deny/allow lists and the terse/subagent defaults cut token use per session; the `Stop` typecheck catches errors in one turn instead of a fix-up pass; the commands collapse multi-turn rituals into one.
 
+## 2026-09-06 — Fase A, PR A4: mobile split into shell (+ session subsystem) + `games/uno/` (no wire change)
+### Added
+- `mobile/src/shell/` — the game-agnostic phone controller:
+  - `session.ts` — the reconnect subsystem, extracted verbatim: `activeSessionStorageKey` / `sessionKeyFor` / `readStoredSessionKey` / `readToken` / `writeToken` / `rememberActiveSession` / `clearStoredSession`. Same two localStorage entries per room (`activeSession:<ROOM>` → key, `session:<ROOM>:<name>` → signed token), same key formats.
+  - `useRoomConnection.ts` — owns the WebSocket (auto-reconnect + backoff), `RECONNECT_SESSION` on open when a token is held, token persistence on `ROOM_JOINED`, `INVALID_SESSION`/`PLAYER_NOT_FOUND` recovery, and `joinOrReconnect({ playerName, avatar })`. Exposes `{ roomCode, setRoomCode, playerId, connected, error, roomPlayers, catalog, selectedGameId, activeGameId, publicState, privateState, send, joinOrReconnect }`. `publicState`/`privateState` opaque.
+  - `messages.ts` (`makeMessage`, `getRoomCodeFromPath`, `Send`), `MobileHeader.tsx` (room + reconnecting pill, `children` slot for the game's timer), `JoinScreen.tsx`, `WaitingScreen.tsx` (shows the selected game's name from the catalog), `shell.css`.
+- `mobile/src/games/{types,registry}.ts` — `ControllerGameViewProps` (`{ publicState, privateState, playerId, connected, roomCode, send }`), `CONTROLLER_GAMES = { uno: UnoControllerView }`.
+- `mobile/src/games/uno/` — `UnoControllerView.tsx` (table strip + hand + actions + UNO/challenge + result + colour modal + paused; still emits the legacy verbs `PLAY_CARD`/`DRAW_CARD`/`CHOOSE_COLOR`/`UNO_CALL`/`UNO_CHALLENGE`), `cardArt.ts` (moved), `uno-controller.css`.
+
+### Changed
+- `mobile/src/App.tsx` → ~70-line dispatcher: `JoinScreen` until `playerId`, `WaitingScreen` until `privateState && publicState && a registered game`, else the game's controller view. Renders the shared error toast. No UNO knowledge.
+- Removed the leftover template `mobile/src/assets/`. `mobile/src/index.css` (already a proper mobile-first base since 2026-09-05) unchanged.
+- New (existing server messages the flat app ignored): the shell handles `GAME_CATALOG` (catalog + selected game) and `GAME_STARTED` (sets the active game); on a mid-game reconnect it infers the active game from the selection when the first state arrives.
+
+### Tests
+- `mobile` has no unit tests. Builds (mobile, root), oxlint (host + mobile), server `tsc --noEmit`, and the 27 server tests all green. Browser smoke: join → waiting (with game name) → host starts → controller board → play a card (state propagates to both phones + host) → reload a phone mid-game (session resumes, board restored) → reload while waiting (silently resumes as the same player). No wire change.
+
+### Why
+- The phone controller's connection + session/reconnect chrome is now a reusable shell; a second game is one `CONTROLLER_GAMES` entry + one view module. The reconnect subsystem — the client's most delicate part — was moved without changing any key format, message, or recovery path.
+
 ## Next planned change
-- Fase A, PR A4: mobile shell + session/reconnect subsystem + `mobile/src/games/uno/` (no wire change). Then A5 (drop the legacy UNO verbs, generic `{ gameId, state }` payloads).
+- Fase A, PR A5 (breaking wire): drop the 5 legacy UNO client verbs (only `GAME_ACTION` remains), retype `GAME_STATE_PUBLIC`/`PLAYER_STATE_PRIVATE`/`GAME_EVENT` to `{ gameId, state/event: unknown }`, `GAME_STARTED` → `{ gameId }`; delete `shared/events/game-events.ts` → `shared/games/uno/events.ts`; move `Direction`/`Phase` to `models/uno.ts`.

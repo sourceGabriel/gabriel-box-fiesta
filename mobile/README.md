@@ -34,7 +34,23 @@ npm run -w mobile lint    # oxlint
 
 ## Estrutura
 
-Hoje `src/App.tsx` é um componente único. O subsistema de sessão/reconexão
-(`activeSessionStorageKey`, `joinOrReconnect`, recuperação de `INVALID_SESSION`) é
-genérico e será extraído para `src/shell/session.ts` na Fase A4 do plano; a view
-do UNO vira `src/games/uno/UnoControllerView.tsx`.
+- `src/App.tsx` — dispatcher fino: `JoinScreen` até entrar, `WaitingScreen` até o
+  jogo começar (com estado público + privado), depois a view do jogo ativo.
+- `src/shell/` — parte **genérica** (nenhum conhecimento de jogo):
+  - `session.ts` — subsistema de sessão/reconexão: chaves `activeSession:<SALA>` e
+    `session:<SALA>:<nome>` no localStorage, `readStoredSessionKey` / `readToken` /
+    `writeToken` / `rememberActiveSession` / `clearStoredSession`.
+  - `useRoomConnection.ts` — WebSocket (reconexão + backoff), `RECONNECT_SESSION` no
+    open, persistência de token no `ROOM_JOINED`, recuperação de
+    `INVALID_SESSION`/`PLAYER_NOT_FOUND`, `joinOrReconnect({ playerName, avatar })`.
+    Expõe `{ roomCode, playerId, connected, error, roomPlayers, catalog,
+    selectedGameId, activeGameId, publicState, privateState, send, … }` —
+    `publicState`/`privateState` opacos.
+  - `MobileHeader.tsx`, `JoinScreen.tsx`, `WaitingScreen.tsx` (mostra o nome do
+    jogo selecionado), `messages.ts`, `shell.css`.
+- `src/games/{types,registry}.ts` — `ControllerGameViewProps` e
+  `CONTROLLER_GAMES = { uno: UnoControllerView }`. Adicionar um jogo = 1 import + 1
+  entrada.
+- `src/games/uno/` — `UnoControllerView.tsx` (mão, mesa, ações, modal de cor,
+  UNO/denúncia, resultado, pausa), `cardArt.ts`, `uno-controller.css`.
+- `src/index.css` — reset + design tokens (`--panel`, `--accent`, `--uno-*`, …).

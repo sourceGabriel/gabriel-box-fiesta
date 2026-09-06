@@ -1,0 +1,51 @@
+import { MobileHeader } from './MobileHeader';
+import type { ShellPlayer } from './useRoomConnection';
+
+interface WaitingScreenProps {
+  roomCode: string;
+  connected: boolean;
+  avatar: string;
+  myName: string;
+  players: ShellPlayer[];
+  playerId: string | null;
+  /** Name of the game the host has selected, shown so players know what's starting. */
+  gameName?: string;
+}
+
+export function WaitingScreen({
+  roomCode,
+  connected,
+  avatar,
+  myName,
+  players,
+  playerId,
+  gameName,
+}: WaitingScreenProps) {
+  return (
+    <>
+      <MobileHeader roomCode={roomCode} connected={connected} />
+
+      <section className="waiting-panel">
+        <div className="waiting-badge">{avatar}</div>
+        <h2>Tudo pronto!</h2>
+        <p className="you-are">Você entrou como <strong>{myName}</strong></p>
+        <p className="hint dots">
+          Aguardando o anfitrião iniciar{gameName ? ` ${gameName}` : ''}<span>.</span><span>.</span><span>.</span>
+        </p>
+      </section>
+
+      {players.length > 0 ? (
+        <section className="players-panel">
+          <h2>Jogadores · {players.length}</h2>
+          <div className="player-list">
+            {players.map((player) => (
+              <div key={player.id} className={`player-pill ${player.id === playerId ? 'is-me' : ''}`}>
+                <span>{player.name}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
+    </>
+  );
+}
