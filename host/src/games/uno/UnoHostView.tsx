@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { UnoGameEvent, UnoPublicState } from '@party/shared';
-import { BrandMark, Button, Overlay, Timer } from '@party/ui';
+import { BrandMark, Button, getSounds, Overlay, Timer } from '@party/ui';
 import type { HostGameViewProps } from '../types';
 import { getCardArt, getCardBackArt } from './cardArt';
 import { describeEvent } from './describeEvent';
+import { soundForEvent } from './sound-map';
 import { ANIMATION_MS, centre, flyStyle, isAnimated, REDUCED_MOTION, type ActiveAnim } from './animations';
 import './uno-host.css';
 
@@ -16,6 +17,8 @@ const formatCardLabel = (card: NonNullable<UnoPublicState['topDiscard']>): strin
 export function UnoHostView({ publicState, events, players, connected, send }: HostGameViewProps) {
   const state = publicState as UnoPublicState;
 
+  const sounds = useMemo(() => getSounds(), []);
+  const [soundOn, setSoundOn] = useState(() => sounds.isEnabled());
   const [revealDrawPile, setRevealDrawPile] = useState(false);
   const [animQueue, setAnimQueue] = useState<{ seq: number; event: UnoGameEvent }[]>([]);
   const [anim, setAnim] = useState<ActiveAnim | null>(null);
@@ -37,6 +40,13 @@ export function UnoHostView({ publicState, events, players, connected, send }: H
       return;
     }
     seenSeqRef.current = events[events.length - 1].seq;
+
+    // Sound follows the events, not the animation queue (and ignores reduced-motion).
+    for (const { event } of fresh) {
+      const name = soundForEvent(event as UnoGameEvent);
+      if (name) sounds.play(name);
+    }
+
     if (REDUCED_MOTION) {
       return;
     }
@@ -46,7 +56,7 @@ export function UnoHostView({ publicState, events, players, connected, send }: H
     if (animated.length > 0) {
       setAnimQueue((current) => [...current, ...animated].slice(-5));
     }
-  }, [events]);
+  }, [events, sounds]);
 
   // Drain the queue one event at a time so animations never overlap or race the board.
   useEffect(() => {
@@ -303,6 +313,13 @@ export function UnoHostView({ publicState, events, players, connected, send }: H
             </Button>
             <Button variant="ghost" onClick={() => setRevealDrawPile((current) => !current)}>
               {revealDrawPile ? 'Ocultar monte' : 'Revelar monte'}
+            </Button>
+            <Button
+              variant="ghost"
+              aria-pressed={soundOn}
+              onClick={() => setSoundOn(sounds.toggle())}
+            >
+              {soundOn ? '🔊 Som ligado' : '🔇 Som desligado'}
             </Button>
             <Button variant="danger" onClick={() => send('END_GAME', {})}>Encerrar partida</Button>
           </div>

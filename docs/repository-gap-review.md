@@ -1,6 +1,6 @@
 # Revisão do repositório: lacunas em relação ao prompt mestre
 
-_Atualizado em 2026-09-06 (branch `feature/coup-ou-coupa`, após a Fase A completa (A1→A5) + Fase B)._
+_Atualizado em 2026-09-06 (branch `feature/coup-ou-coupa`, após Fase A (A1→A5) + Fase B + Fase C C1–C3)._
 
 ## Resumo executivo
 O MVP jogável do UNO (§53) está **completo e validado**: host mostra a mesa em tempo real, partida completa com cartas especiais, coringa com escolha de cor, UNO!, denúncia, placar acumulado entre rodadas, fim de partida, pausar/continuar, reconexão de jogador e transferência de owner. **27 testes de servidor verdes**; build dos 4 workspaces verde.
@@ -30,10 +30,10 @@ O MVP jogável do UNO (§53) está **completo e validado**: host mostra a mesa e
 "Adicionar um jogo novo não deve exigir modificar o núcleo." Feito: `GamePlugin`/`GameInstance` opaco (`server/src/core/game-plugin.ts`), registry `GAMES`, `Room` sem import de UNO, `ws-server` só roteia `GAME_ACTION`, `messages.ts` com payloads `{ gameId, state|event: unknown }`, `UnoGameEvent` em `shared/src/games/uno/events.ts`, `common.ts` só genérico (`Direction`/`UnoPhase` em `models/uno.ts`). Único nome UNO que sobra no `shared`: `models/uno.ts` + `games/uno/events.ts` (ambos escopados) e `unoPlugin.meta.name` (§47, Fase C). Prova: um plugin stub entra tocando só `server/src/games/<id>/` + 1 linha em cada registry.
 
 ### 2) Frontend sem shell multi-jogo + seleção de jogo
-**Resolvido em A3/A4 (shells) + Fase B (seleção):** os dois `App.tsx` são dispatchers finos; o host tem o fluxo de 3 telas `attract → catalog → lobby` (`AttractScreen`/`CatalogScreen`/`LobbyScreen`), arte de capa por jogo (`HOST_GAMES[id].Cover`, SVG inline), navegação teclado + clique; QR só no lobby; fim de jogo (`END_GAME`) → volta pro lobby do mesmo jogo; mobile volta pro waiting (`GAME_ENDED`, sessão mantida). **Fase C (em andamento):** `@party/ui` com tokens unificados (C1 ✅) + componentes `BrandMark`/`Button`/`Panel`/`Overlay`/`Timer`/`QrPanel`/`PlayerRoster`, retrofit dos dois apps, ~116 linhas de CSS duplicado removidas (C2 ✅). Falta: sons sintetizados (C3), consolidar `cardArt.ts` (C4).
+**Resolvido em A3/A4 (shells) + Fase B (seleção):** os dois `App.tsx` são dispatchers finos; o host tem o fluxo de 3 telas `attract → catalog → lobby` (`AttractScreen`/`CatalogScreen`/`LobbyScreen`), arte de capa por jogo (`HOST_GAMES[id].Cover`, SVG inline), navegação teclado + clique; QR só no lobby; fim de jogo (`END_GAME`) → volta pro lobby do mesmo jogo; mobile volta pro waiting (`GAME_ENDED`, sessão mantida). **Fase C (em andamento):** `@party/ui` com tokens unificados (C1 ✅) + componentes `BrandMark`/`Button`/`Panel`/`Overlay`/`Timer`/`QrPanel`/`PlayerRoster`, retrofit dos dois apps, ~116 linhas de CSS duplicado removidas (C2 ✅). sons sintetizados no host (`ui/src/sound.ts` + `sound-map.ts`, C3 ✅). Falta: consolidar `cardArt.ts` (C4).
 
-### 3) Fase 11 — identidade visual completa + sons (§47)
-Mobile já tem identidade "party" própria; host tem visual TV coeso. Falta: sistema de design compartilhado (`@party/ui`), sons (sintetizados via Web Audio, sem assets), e uma identidade de marca própria substituindo o nome "UNO" (adiado por decisão do usuário).
+### 3) Fase 11 — identidade visual completa + sons (§47) — dobrada na Fase C
+`@party/ui` criado (tokens + componentes, C1–C2); sons sintetizados via Web Audio no host, sem assets (C3). **Decisão do usuário:** manter o nome "UNO" por ora — `BrandMark.text` é o ponto único de rename; "Box Fiesta" já é a marca da plataforma. Falta só consolidar `cardArt.ts` (C4).
 
 ### 4) Menores
 - Fluxo "jogar a carta que acabou de comprar" existe no engine (`playDrawnCardId`) mas não está exposto na UI do mobile.
@@ -45,4 +45,4 @@ Mobile já tem identidade "party" própria; host tem visual TV coeso. Falta: sis
 Múltiplas salas, espectadores, contas, banco, cloud — fora de escopo do MVP.
 
 ## Próximo passo
-Executar a **Fase A** do plano `C:\Users\gabri\.claude\plans\antes-dos-proximos-passos-elegant-clover.md`: 5 PRs que tornam o core agnóstico (registry `GamePlugin`, `GameInstance` opaco, `Room` sem import de UNO, mensagem genérica `GAME_ACTION`, shell de frontend por papel + módulo `games/uno/`), mantendo o UNO idêntico e os 25 testes verdes. Depois: Fase B (catálogo/seleção de jogo), Fase C (design system + sons), Fase D (integrar o 2º jogo).
+Fases A + B completas; Fase C em C4 (consolidar `cardArt.ts` em `@party/ui`). Depois: **Fase D** — integrar o 2º jogo do usuário (análise comparativa do repo → `GamePlugin` + views). Plano: `C:\Users\gabri\.claude\plans\antes-dos-proximos-passos-elegant-clover.md`.

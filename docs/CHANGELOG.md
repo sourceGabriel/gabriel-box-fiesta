@@ -258,5 +258,24 @@
 ### Why
 - One implementation of each recurring widget; the two apps now share the wordmark, buttons, timer, QR panel and roster instead of four near-copies. The `BrandMark` `text` prop is the single §47 rename point.
 
+## 2026-09-06 — Fase C / PR C3: synthesized Web Audio sounds
+### Added
+- **`ui/src/sound.ts`** — `@party/ui` sound engine. Every sound is oscillators + a gain envelope, no audio files (§47): `cardPlay`, `draw`, `turn`, `special`, `uno`, `win`, `error`, `select`.
+  - `createSounds(ctx?)` — pure factory (a stub `AudioContext` can be injected for tests); returns `{ …sounds, play(name), unlock(), isEnabled(), setEnabled(on), toggle() }`.
+  - `getSounds()` — the app-wide lazy singleton. Installs a one-time `pointerdown`/`keydown` listener that resumes the (initially suspended) context; `unlock()` forces it.
+  - Mute persists in `localStorage['party:sound']`; SSR / no-Web-Audio → a silent no-op instance.
+- **`host/src/games/uno/sound-map.ts`** — `soundForEvent(UnoGameEvent) → SoundName | null` (card_played→cardPlay, card_drawn→draw, turn_started→turn, color/direction/skip→special, uno_called→uno, uno_penalty_applied→error, round/game_finished→win). Lives in the UNO module.
+
+### Changed
+- `UnoHostView` plays a sound per fresh game event (in the same effect that feeds the animation queue, *before* the reduced-motion guard — sound ≠ motion). New "🔊 Som ligado / 🔇 Som desligado" ghost button in the side actions.
+- `ui/src/index.ts` re-exports `createSounds` / `getSounds`.
+
+### Tests
+- `ui/src/sound.test.ts` (3, with a fake `AudioContext`): every sound plays without throwing and builds oscillators; muted → no audio nodes; `toggle()` flips and reports state. **`ui` now has a real test suite.**
+- Builds (5 workspaces), oxlint (host + mobile), server `tsc`, 28 server tests green. Browser smoke: game start → `turn` sound (2 osc); card played → `cardPlay` + next `turn` (+3 osc); mute button → label flips, `localStorage` set, no further audio nodes.
+
+### Why
+- The TV is the party's shared speaker; the board now has audio feedback, synthesized so there are no asset files to license or ship. Mobile stays silent for now (4 phones chirping = noise) — can get light haptics/ticks later.
+
 ## Next planned change
-- **Fase C / C3** — `ui/src/sound.ts` (`createSounds(ctx?)` → `cardPlay` / `draw` / `turn` / `win` / `error` / `select`, synthesized Web Audio, no assets) + `host/src/games/uno/sound-map.ts` (UNO event → sound); `AudioContext` unlock on first gesture; a smoke test with a fake context. Then **C4** (consolidate `cardArt.ts`).
+- **Fase C / C4** — consolidate `cardArt.ts` (byte-identical between host and mobile bar the import paths) into `@party/ui`. Closes Fase C.

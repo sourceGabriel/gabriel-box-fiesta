@@ -89,3 +89,9 @@ The project is currently between the room lifecycle phase and the actual host ga
 - Removed ~116 lines of now-duplicated CSS across host `shell.css`/`uno-host.css` and mobile `shell.css`/`uno-controller.css`. `vite.config` both got `optimizeDeps.exclude: ['@party/ui']`.
 - Builds (5 ws) + host/mobile oxlint + server tsc + 28 tests green; browser smoke of every screen unchanged.
 - Next: C3 (synth sounds), C4 (consolidate cardArt).
+
+## 2026-09-06 — Fase C / PR C3 (branch `feature/coup-ou-coupa`)
+- `ui/src/sound.ts` — synth Web Audio engine (no files, §47): `createSounds(ctx?)` (test-injectable) + `getSounds()` singleton; sounds `cardPlay`/`draw`/`turn`/`special`/`uno`/`win`/`error`/`select`; one-time gesture listener resumes the ctx; mute persists in `localStorage[party:sound]`; silent no-op fallback.
+- `host/src/games/uno/sound-map.ts` — `soundForEvent(UnoGameEvent)`; wired into `UnoHostView` (per fresh event, before the reduced-motion guard) + a mute ghost button.
+- `ui/src/sound.test.ts` (3 tests, fake AudioContext). Builds (5 ws) + host/mobile oxlint + server tsc + 28 server tests green; browser smoke confirmed oscillators created per event and mute silences them.
+- Mobile stays silent for now. Next: C4 (consolidate `cardArt.ts`) closes Fase C.

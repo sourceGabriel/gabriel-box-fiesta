@@ -7,3 +7,4 @@
  */
 
 export * from './components';
+export { createSounds, getSounds, type Sounds, type SoundName } from './sound';
