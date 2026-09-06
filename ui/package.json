@@ -9,7 +9,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./tokens.css": "./src/tokens.css",
-    "./components.css": "./src/components.css"
+    "./components.css": "./src/components.css",
+    "./uno-cards": "./src/uno-cards.ts"
   },
   "scripts": {
     "build": "tsc --noEmit -p tsconfig.json",

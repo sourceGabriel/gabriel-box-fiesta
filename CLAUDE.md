@@ -28,13 +28,15 @@ UNO MVP **complete and validated** (Fases 1–10 + mobile visual overhaul). Serv
 - ✅ **A5** — protocol cleanup (**breaking wire**): 5 legacy UNO verbs removed — only `GAME_ACTION` remains. `GAME_STATE_PUBLIC`/`PLAYER_STATE_PRIVATE`/`GAME_EVENT` are now `{ gameId, state|event: unknown, stateVersion }`; `GAME_STARTED` is `{ gameId }`; `ROOM_STATE.players[]` dropped `handCount`. `shared/events/game-events.ts` → `shared/src/games/uno/events.ts` (`UnoGameEvent`, 4 dead variants dropped). `Direction`/`Phase` moved from `models/common.ts` → `models/uno.ts` (`Direction`, `UnoPhase`). Frontends resolve `activeGameId` from `payload.gameId`; the UNO controller emits `GAME_ACTION`.
 **Fase B — COMPLETE:** 3-screen host flow — `shell/AttractScreen` ("Box Fiesta" wordmark, manual advance, no QR) → `shell/CatalogScreen` (game grid + `HOST_GAMES[id].Cover` art, keyboard + click, no QR) → `LobbyScreen` (QR here only, "Trocar de jogo" → catalog, "Iniciar {game}"). `App.tsx` runs a `flow` state machine; in-game wins; `END_GAME` → back to that game's lobby. `Room.endGame()` → `accepting_players` keeping `selectedGameId`; `ws-server` re-broadcasts `GAME_CATALOG` on `END_GAME`. Mobile: `GAME_ENDED` → waiting (session kept); `WaitingScreen` shows game name + tagline. No new wire messages.
 
-**Fase C — in progress** (`@party/ui` design system + synthesized Web Audio sounds; retrofit host + mobile):
+**Fase C — COMPLETE** (`@party/ui` design system + synthesized Web Audio sounds; both apps retrofitted):
 - ✅ **C1** — `ui/` workspace + `ui/src/tokens.css` (single source of design tokens, imported in each `main.tsx`); host/mobile token divergence resolved; `index.css` of each app now reset-only. Consumed as source by Vite (no build).
 - ✅ **C2** — `@party/ui` components + `components.css`: `BrandMark` (game/platform variant — §47 rename point), `Button`, `Panel`, `Overlay`, `Timer`, `QrPanel`, `PlayerRoster`. Retrofitted host Attract/Catalog/Lobby/`UnoHostView` + mobile Join/Waiting/`UnoControllerView`; ~116 lines of duplicated CSS removed. `optimizeDeps.exclude: ['@party/ui']` in both vite configs.
 - ✅ **C3** — `ui/src/sound.ts` synth Web Audio (`getSounds()` singleton + `createSounds(ctx?)`; sounds `cardPlay`/`draw`/`turn`/`special`/`uno`/`win`/`error`/`select`; gesture-unlock; mute in `localStorage['party:sound']`). `host/src/games/uno/sound-map.ts` wired into `UnoHostView` + a mute button. `ui/src/sound.test.ts` (3, fake AudioContext). Mobile stays silent.
-- 🔜 **C4** consolidate `cardArt.ts`.
+- ✅ **C4** — `cardArt.ts` (host + mobile copies) → `ui/src/uno-cards.ts` (`@party/ui/uno-cards`); `ui/src/assets.d.ts` ambient `*.png`. Card crops stay at repo root.
+
+**Fase C complete.** `@party/ui` = tokens + components + sounds + uno-cards; no duplicated frontend code between host and mobile.
 - §47 decision: **keep the "UNO" name** for now (`BrandMark` parametrized, default "UNO"); "Box Fiesta" is the platform mark.
-Then **D** (integrate game #2 — repo TBD from the user).
+**Next: Fase D** — integrate the user's second game. D1 comparative analysis of that repo → mapping table (before code); D2 `server/src/games/<id>/` plugin + 1 line in `GAMES`; D3 `host`/`mobile` `games/<id>/` views + 1 line in each registry; D4 theme + tests. (Repo pending from the user.)
 
 **Active plan:** `C:\Users\gabri\.claude\plans\antes-dos-proximos-passos-elegant-clover.md` — Fase A→D.
 Locked decisions:
@@ -58,7 +60,7 @@ Monorepo, npm workspaces: `server` · `shared` (**types-only, no runtime, no zod
 | UNO engine (~640 lines) + plugin + action zod | `server/src/games/uno/{uno-game,rules,cards,types,plugin,action-schema}.ts` |
 | Host UI (shell + game module) | `host/src/shell/` (`useRoomConnection`, `AttractScreen`, `CatalogScreen`, `LobbyScreen`, `messages`, `shell.css`) + `host/src/games/{types,registry}.ts` (`HOST_GAMES[id] = { View, Cover }`) + `host/src/games/uno/` (`UnoHostView`, `UnoCover`, …) + `App.tsx` (flow machine) |
 | Mobile UI (shell + game module, after A4) | `mobile/src/shell/` (`session`, `useRoomConnection`, `MobileHeader`, `JoinScreen`, `WaitingScreen`, `shell.css`) + `mobile/src/games/{types,registry}.ts` + `mobile/src/games/uno/` + thin `App.tsx` + `index.css` (theme/tokens) |
-| Card PNGs | `uno_card_sheet_crops/` (repo root, 54 files) |
+| Card PNGs | `uno_card_sheet_crops/` (repo root, 57 files); mapped by `ui/src/uno-cards.ts` (`@party/ui/uno-cards`) |
 | Tests | `server/src/tests/{uno-game,room,multiplayer.integration}.test.ts` |
 | Per-workspace how-to | `{server,shared,host,mobile}/README.md` |
 

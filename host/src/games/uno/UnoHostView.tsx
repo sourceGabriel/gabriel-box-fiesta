@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { UnoGameEvent, UnoPublicState } from '@party/shared';
 import { BrandMark, Button, getSounds, Overlay, Timer } from '@party/ui';
+import { getCardArt, getCardBackArt } from '@party/ui/uno-cards';
 import type { HostGameViewProps } from '../types';
-import { getCardArt, getCardBackArt } from './cardArt';
 import { describeEvent } from './describeEvent';
 import { soundForEvent } from './sound-map';
 import { ANIMATION_MS, centre, flyStyle, isAnimated, REDUCED_MOTION, type ActiveAnim } from './animations';

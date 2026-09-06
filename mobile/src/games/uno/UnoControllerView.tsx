@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
 import type { UnoCard, UnoPrivatePlayerState, UnoPublicState } from '@party/shared';
 import { Button, Timer } from '@party/ui';
+import { getCardArt } from '@party/ui/uno-cards';
 import { MobileHeader } from '../../shell/MobileHeader';
 import type { ControllerGameViewProps } from '../types';
-import { getCardArt } from './cardArt';
 import './uno-controller.css';
 
 const COLOR_PT: Record<string, string> = { red: 'Vermelho', yellow: 'Amarelo', green: 'Verde', blue: 'Azul' };

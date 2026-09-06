@@ -95,3 +95,9 @@ The project is currently between the room lifecycle phase and the actual host ga
 - `host/src/games/uno/sound-map.ts` — `soundForEvent(UnoGameEvent)`; wired into `UnoHostView` (per fresh event, before the reduced-motion guard) + a mute ghost button.
 - `ui/src/sound.test.ts` (3 tests, fake AudioContext). Builds (5 ws) + host/mobile oxlint + server tsc + 28 server tests green; browser smoke confirmed oscillators created per event and mute silences them.
 - Mobile stays silent for now. Next: C4 (consolidate `cardArt.ts`) closes Fase C.
+
+## 2026-09-06 — Fase C / PR C4 (branch `feature/coup-ou-coupa`) — Fase C complete
+- `host`/`mobile` `games/uno/cardArt.ts` (near-identical) → `ui/src/uno-cards.ts` (`@party/ui/uno-cards`). `getCardBackArt` unified to `wildColor` (host behaviour). `ui/src/assets.d.ts` ambient `*.png`.
+- Both UNO views import from `@party/ui/uno-cards`; crops stay at repo root (`../../uno_card_sheet_crops/`). 55 PNGs still emitted per app; browser smoke: host board + mobile hand show real card art.
+- **Fase C done.** `@party/ui` = tokens + components + sounds + uno-cards; no duplicated frontend code between the apps. §47 "UNO" name kept (`BrandMark.text` = single rename point).
+- Next: **Fase D** (integrate game #2 — repo pending from user).

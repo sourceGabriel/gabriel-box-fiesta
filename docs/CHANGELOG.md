@@ -277,5 +277,17 @@
 ### Why
 - The TV is the party's shared speaker; the board now has audio feedback, synthesized so there are no asset files to license or ship. Mobile stays silent for now (4 phones chirping = noise) — can get light haptics/ticks later.
 
+## 2026-09-06 — Fase C / PR C4: consolidate `cardArt.ts` → `@party/ui` (Fase C complete)
+### Changed
+- `host/src/games/uno/cardArt.ts` and `mobile/src/games/uno/cardArt.ts` (near-identical — 55 card-image imports + `getCardArt` / `getCardBackArt`) collapsed into **`ui/src/uno-cards.ts`**, exposed as `@party/ui/uno-cards`. The one behaviour difference (`getCardBackArt` → `wildColor` on host vs the unused mobile export) resolved to `wildColor` (host's — the colourful "change colour" face is the deck back).
+- `ui/src/assets.d.ts` — ambient `*.png` module declaration so `@party/ui` typechecks the image imports (`ui` tsconfig has no `vite/client`).
+- Card images live at the repo root `uno_card_sheet_crops/` still; `ui/src/uno-cards.ts` imports them at `../../uno_card_sheet_crops/*.png`. `UnoHostView` / `UnoControllerView` import from `@party/ui/uno-cards`.
+
+### Tests
+- Builds (5 workspaces), oxlint (host + mobile), server `tsc`, `ui` (3) + server (28) tests green. Browser smoke: the host board and the mobile hand render real card art (`Wild_Card_Change_Colour.png`, `Red_2.png`, … all `naturalWidth > 0`); Vite emits all 55 PNGs into each app's `dist/assets/`.
+
+### Fase C — complete
+`@party/ui` now holds: design tokens (`tokens.css`), components (`BrandMark`/`Button`/`Panel`/`Overlay`/`Timer`/`QrPanel`/`PlayerRoster` + `components.css`), synthesized sounds (`sound.ts`), and the UNO card-art map (`uno-cards`). No duplicated frontend code between the two apps. §47: the "UNO" name is kept — `BrandMark.text` is the single rename point.
+
 ## Next planned change
-- **Fase C / C4** — consolidate `cardArt.ts` (byte-identical between host and mobile bar the import paths) into `@party/ui`. Closes Fase C.
+- **Fase D** — integrate the user's second game. D1: comparative analysis of that repo (stack, server-authoritative?, turn model, hidden info, end condition) → a mapping table, *before* any code. D2: `server/src/games/<id>/` plugin + one line in `GAMES`. D3: `host/src/games/<id>/` + `mobile/src/games/<id>/` views + one line in each registry. D4: theme + tests. (Repo pending from the user.)
