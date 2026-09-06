@@ -3,7 +3,7 @@ import type { CoupCharacter, CoupPrivateState, CoupPublicState } from '@party/sh
 import { Button, Timer } from '@party/ui';
 import { MobileHeader } from '../../shell/MobileHeader';
 import type { ControllerGameViewProps } from '../types';
-import { ACTIONS, ACTION_LABEL, CHARACTER_META, REACTION_EMOJIS } from './coupCards';
+import { ACTIONS, ACTION_LABEL, CHARACTER_META, REACTION_EMOJIS, getCoupCardArt } from './coupCards';
 import { HowToPlay } from './HowToPlay';
 import './coup-controller.css';
 
@@ -86,7 +86,7 @@ export function CoupControllerView({ publicState, privateState, playerId, connec
                 const meta = inf.character ? CHARACTER_META[inf.character] : null;
                 return (
                   <div key={i} className={`coup-mini ${inf.revealed ? 'is-revealed' : ''}`} style={meta ? { borderColor: meta.color } : undefined}>
-                    <span className="coup-mini-emoji">{meta?.emoji ?? '⚜'}</span>
+                    <img className="coup-mini-art" src={getCoupCardArt(inf.character)} alt={meta?.label ?? ''} draggable={false} />
                     <span className="coup-mini-name">{meta ? meta.label : '—'}</span>
                     {inf.revealed ? <span className="coup-mini-tag">perdida</span> : null}
                   </div>
@@ -300,7 +300,7 @@ function ExchangePrompt({
           const on = selected.includes(i);
           return (
             <button key={i} type="button" className={`coup-ex-card ${on ? 'on' : ''}`} style={{ borderColor: meta.color }} onClick={() => onToggle(i)}>
-              <span className="coup-mini-emoji">{meta.emoji}</span>
+              <img className="coup-mini-art" src={getCoupCardArt(c)} alt={meta.label} draggable={false} />
               <span className="coup-mini-name">{meta.label}</span>
             </button>
           );

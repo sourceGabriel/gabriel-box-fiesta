@@ -320,5 +320,20 @@
 - D5 is a small platform addition (touches `shared/protocol` + `ws-server` + both shells) — deliberately generic so UNO can adopt it later.
 - Live smoke (host + 2 phones): catalog shows both games → Coup lobby → bluffed Tax → challenge → reveal overlay + feed → influence loss → turn advance → pause/resume → 2-player endgame → game-over overlay → "Nova partida" → reaction bubble on TV. No console/server errors.
 
+## 2026-09-06 — Fase D / D6a: Coup real card art
+### Added
+- `coup_card_art/` (repo root) — 6 `.webp` character portraits copied from `C:\Users\gabri\Documents\workspace\Jogos\Coup\public\assets\cards\focus\` (duke, assassin, captain, ambassador, contessa) + `cards/back-v2.webp` (card back). ~380 KB total.
+- `ui/src/coup-cards.ts` → `@party/ui/coup-cards` (mirrors `@party/ui/uno-cards`): `CHARACTER_META` now carries `art`, plus `getCoupCardArt(character)` / `getCoupCardBackArt()`. `ui/package.json` exports `./coup-cards`. `ui/src/assets.d.ts` gained a `*.webp` module declaration.
+### Changed
+- `host/src/games/coup/coupCards.ts` + `mobile/src/games/coup/coupCards.ts` — re-export `CHARACTER_META` from `@party/ui/coup-cards` instead of each defining its own copy (de-dup); app-specific `ACTION_LABEL` / `ACTIONS` / `REACTION_EMOJIS` stay local.
+- `CoupHostView` `InfluenceCard` — renders `<img class="coup-card-art">` (portrait for revealed, art-deco back for hidden) with the name in a bottom gradient; emoji crest dropped. `coup-host.css` `.coup-card` reworked to a positioned image container.
+- `CoupControllerView` — `coup-mini` (my influences) and exchange-prompt cards render the portrait `<img>`; `coup-controller.css` updated (`.coup-mini` / `.coup-ex-card` now `aspect-ratio` image tiles, `.coup-mini-tag` repositioned as an overlay badge). Lose-influence buttons keep the emoji + label (text buttons).
+- `CoupCover` — now fans three real portraits (Contessa / Duke / Captain) behind the "COUP" wordmark instead of plain SVG rects.
+### Why
+- Fulfils the plan's assumed "Arte das cartas: reusar os `.webp`" decision (§11) that D1–D5 had deferred behind emoji placeholders. §47 still deferred — the art is swappable via the one `@party/ui/coup-cards` module.
+### Validation
+- 57 server tests green · host + mobile lint clean · 5-workspace build green (all 6 `.webp` bundled in both apps).
+- Live smoke (host + 2 phones): catalog cover shows portraits → Coup game → controller shows own influences as portraits, host shows card backs → bluffed Tax → challenge → Ana loses Ambassador → **revealed portrait renders face-up on the TV**. No console/server errors.
+
 ## Next planned change
-- **Fase D / D6 (polish, optional)** — Coup `sound-map.ts` (reuse `@party/ui` `getSounds()`), card-flip animation on reveal. Then **bots** (needs a platform "virtual player" concept — `BotBrain` is ~1100 lines pure TS, portable later) and the **Reformation** expansion, both deferred from v1.
+- **Fase D / D6 (remaining polish, optional)** — Coup `sound-map.ts` (reuse `@party/ui` `getSounds()`), card-flip animation on reveal. Then **bots** (needs a platform "virtual player" concept — `BotBrain` is ~1100 lines pure TS, portable later) and the **Reformation** expansion, both deferred from v1.

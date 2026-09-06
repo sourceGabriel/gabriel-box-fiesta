@@ -39,21 +39,50 @@
 
 .coup-me-cards { display: flex; gap: 0.6rem; }
 .coup-mini {
+  position: relative;
   flex: 1;
   min-width: 0;
+  aspect-ratio: 3 / 4;
   border: 2px solid var(--line);
   border-radius: 12px;
   background: var(--panel-2);
-  padding: 0.75rem 0.5rem;
-  display: grid;
-  justify-items: center;
-  gap: 0.25rem;
+  overflow: hidden;
   text-align: center;
 }
 .coup-mini.is-revealed { opacity: 0.5; }
-.coup-mini-emoji { font-size: 1.6rem; }
-.coup-mini-name { font-size: 0.8rem; font-weight: 700; }
-.coup-mini-tag { font-size: 0.65rem; text-transform: uppercase; color: #fca5a5; letter-spacing: 0.06em; }
+.coup-mini-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  user-select: none;
+}
+.coup-mini-name {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 0.3rem 0.2rem 0.25rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #f4e9d4;
+  background: linear-gradient(to top, rgba(6, 9, 15, 0.92), rgba(6, 9, 15, 0.5) 65%, transparent);
+}
+.coup-mini-tag {
+  position: absolute;
+  top: 0.3rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  background: rgba(6, 9, 15, 0.8);
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  color: #fca5a5;
+  letter-spacing: 0.06em;
+}
 
 .coup-table-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
 .coup-tag {
@@ -128,14 +157,25 @@
 
 .coup-exchange { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 0.6rem; }
 .coup-ex-card {
+  position: relative;
+  aspect-ratio: 3 / 4;
   border: 2px solid var(--line);
   border-radius: 12px;
   background: var(--panel-2);
-  padding: 0.75rem 0.4rem;
-  display: grid;
-  justify-items: center;
-  gap: 0.2rem;
+  overflow: hidden;
   color: var(--text);
+}
+.coup-ex-card .coup-mini-art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.coup-ex-card .coup-mini-name {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 0.3rem 0.2rem 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #f4e9d4;
+  background: linear-gradient(to top, rgba(6, 9, 15, 0.92), transparent);
 }
 .coup-ex-card.on { box-shadow: 0 0 0 3px var(--good, #22c55e); }
 

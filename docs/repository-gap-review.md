@@ -10,7 +10,8 @@ O MVP jogável do UNO (§53) está **completo e validado**. **Coup entrou como j
 - ✅ **D2** `server/src/games/coup/` (engine clássica portada; RNG/relógio injetados; timers via `TurnTimedGame`) + registry + 27 testes.
 - ✅ **D3** `host/src/games/coup/` (TV) · ✅ **D4** `mobile/src/games/coup/` (controlador + "Como jogar").
 - ✅ **D5** reações emoji genéricas (`SEND_REACTION`/`REACTION`).
-- 🔜 **D6** polimento opcional (sons, animação de flip). **Deferidos:** bots (precisa de "jogador virtual" na plataforma), expansão Reformation.
+- ✅ **D6a** arte real das cartas — 6 `.webp` (`coup_card_art/`) via `@party/ui/coup-cards` (espelha `uno-cards`); host + controlador + capa renderizam retratos. Emoji era placeholder.
+- 🔜 **D6** restante: sons (`sound-map.ts`), animação de flip. **Deferidos:** bots (precisa de "jogador virtual" na plataforma), expansão Reformation.
 
 **Fase A (núcleo agnóstico, §52) — COMPLETA:**
 - ✅ **A1** — contrato genérico em `shared/` (`GameMeta`, `GameStatus`, `LifecycleEvent`, mensagens `GAME_ACTION`/`SELECT_GAME`/`GAME_CATALOG`).

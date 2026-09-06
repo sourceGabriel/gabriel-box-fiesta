@@ -1,4 +1,6 @@
-/** Coup catalog cover — three fanned influence cards over a crest. Inline SVG, no assets. */
+import { CHARACTER_META } from './coupCards';
+
+/** Coup catalog cover — three fanned character portraits over a dark deco ground. */
 export function CoupCover() {
   return (
     <svg
@@ -14,30 +16,43 @@ export function CoupCover() {
           <stop offset="0" stopColor="#1a1206" />
           <stop offset="1" stopColor="#0b0f17" />
         </linearGradient>
+        <clipPath id="coupCardClip">
+          <rect x="0" y="0" width="96" height="140" rx="12" />
+        </clipPath>
       </defs>
       <rect width="300" height="200" fill="url(#coupBg)" />
 
-      <g transform="rotate(-16 150 110)">
-        <rect x="60" y="34" width="96" height="140" rx="12" fill="#141a24" stroke="#9b59b6" strokeWidth="4" />
+      <g transform="translate(102 30) rotate(-16 48 70)">
+        <g clipPath="url(#coupCardClip)">
+          <image href={CHARACTER_META.Contessa.art} x="-30" y="0" height="140" preserveAspectRatio="xMidYMid slice" />
+        </g>
+        <rect x="0" y="0" width="96" height="140" rx="12" fill="none" stroke="#e74c3c" strokeWidth="4" />
       </g>
-      <g transform="rotate(0 150 104)">
-        <rect x="102" y="24" width="96" height="150" rx="12" fill="#161d29" stroke="#e2b13c" strokeWidth="4" />
+      <g transform="translate(150 20) rotate(16 48 70)">
+        <g clipPath="url(#coupCardClip)">
+          <image href={CHARACTER_META.Captain.art} x="-30" y="0" height="140" preserveAspectRatio="xMidYMid slice" />
+        </g>
+        <rect x="0" y="0" width="96" height="140" rx="12" fill="none" stroke="#2980b9" strokeWidth="4" />
       </g>
-      <g transform="rotate(16 150 110)">
-        <rect x="150" y="34" width="96" height="140" rx="12" fill="#141a24" stroke="#2980b9" strokeWidth="4" />
+      <g transform="translate(126 14)">
+        <g clipPath="url(#coupCardClip)">
+          <image href={CHARACTER_META.Duke.art} x="-30" y="0" height="140" preserveAspectRatio="xMidYMid slice" />
+        </g>
+        <rect x="0" y="0" width="96" height="140" rx="12" fill="none" stroke="#e2b13c" strokeWidth="4" />
       </g>
 
+      <rect x="0" y="150" width="300" height="50" fill="#0b0f17" opacity="0.82" />
       <text
-        x="150" y="112" textAnchor="middle"
+        x="150" y="176" textAnchor="middle"
         fontFamily="Georgia, 'Times New Roman', serif"
-        fontWeight="700" fontSize="46" letterSpacing="3"
-        fill="#f4e9d4" stroke="#0b0f17" strokeWidth="5" paintOrder="stroke"
+        fontWeight="700" fontSize="34" letterSpacing="3"
+        fill="#f4e9d4" stroke="#0b0f17" strokeWidth="4" paintOrder="stroke"
       >
         COUP
       </text>
       <text
-        x="150" y="140" textAnchor="middle"
-        fontFamily="system-ui, sans-serif" fontWeight="600" fontSize="12" letterSpacing="4"
+        x="150" y="192" textAnchor="middle"
+        fontFamily="system-ui, sans-serif" fontWeight="600" fontSize="9" letterSpacing="4"
         fill="#b98b4a"
       >
         BLEFE · DESAFIO

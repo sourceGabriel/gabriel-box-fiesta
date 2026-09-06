@@ -124,3 +124,10 @@ The project is currently between the room lifecycle phase and the actual host ga
 - `.copilot/spec-kit/README.md` + `copilot-operating-standards.md` — roadmap: Fase D ✅ COMPLETE with the D1–D5 breakdown + deferred (bots/Reformation/D6); both plan files listed.
 - `CLAUDE.md` — test count 28→57, 4→5 workspaces, §52-proof line (now "confirmed by Coup"), reference-repos Coup line (ported, not just reference; standalone repo path + `BotBrain` pointer), git-conventions branch history (`feature/coupzin`).
 - Docs-only — no code touched.
+
+## 2026-09-06 — Fase D / D6a: Coup real card art (branch `feature/coupzin`)
+- `coup_card_art/` (repo root): 6 `.webp` portraits from `Jogos/Coup/public/assets/cards/focus/` (duke/assassin/captain/ambassador/contessa) + `back-v2.webp`.
+- `ui/src/coup-cards.ts` → `@party/ui/coup-cards` (mirrors `uno-cards`): `CHARACTER_META` gains `art`, `getCoupCardArt`/`getCoupCardBackArt`. `ui/package.json` +`./coup-cards` export; `assets.d.ts` +`*.webp`.
+- Both `coupCards.ts` re-export `CHARACTER_META` from the ui module (was duplicated). Host `InfluenceCard` + mobile `coup-mini`/exchange cards + `CoupCover` now render portrait `<img>`s; CSS reworked to image tiles.
+- Fulfils the plan §11 "reusar os `.webp`" decision deferred through D1–D5. §47 still deferred (swappable via one module).
+- 57 server tests green · host/mobile lint clean · 5-ws build green (6 `.webp` bundled per app). Live smoke: portraits on catalog cover + controller + revealed-card-on-TV path. No errors.

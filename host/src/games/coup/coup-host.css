@@ -126,27 +126,41 @@
 .coup-hand { display: flex; gap: 0.5rem; }
 
 .coup-card {
+  position: relative;
   width: clamp(58px, 8vmin, 96px);
   aspect-ratio: 3 / 4.2;
   border-radius: 10px;
   border: 2px solid var(--line);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.25rem;
+  overflow: hidden;
   background: var(--panel-2);
   text-align: center;
 }
 
-.coup-card.is-back {
-  background: repeating-linear-gradient(45deg, #1a2230, #1a2230 6px, #212c3d 6px, #212c3d 12px);
-  color: rgba(226, 177, 60, 0.55);
+.coup-card-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  user-select: none;
 }
-.coup-card-crest { font-size: clamp(1.4rem, 3.5vmin, 2.2rem); }
+
+.coup-card.is-back .coup-card-art { opacity: 0.9; }
 .coup-card.is-revealed { background: rgba(255, 255, 255, 0.06); }
-.coup-card-emoji { font-size: clamp(1.3rem, 3vmin, 2rem); }
-.coup-card-name { font-size: 0.7em; font-weight: 700; color: #e2e8f0; }
+.coup-card.is-revealed .coup-card-art { filter: saturate(1.05); }
+
+.coup-card-name {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 0.35em 0.2em 0.3em;
+  font-size: 0.7em;
+  font-weight: 700;
+  color: #f4e9d4;
+  background: linear-gradient(to top, rgba(6, 9, 15, 0.92), rgba(6, 9, 15, 0.55) 60%, transparent);
+}
 
 .coup-out-tag {
   justify-self: start;

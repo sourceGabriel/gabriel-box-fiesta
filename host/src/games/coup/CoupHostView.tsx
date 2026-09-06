@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CoupGameEvent, CoupPublicState } from '@party/shared';
 import { BrandMark, Button, Overlay, Timer } from '@party/ui';
 import type { HostGameViewProps } from '../types';
-import { ACTION_LABEL, CHARACTER_META } from './coupCards';
+import { ACTION_LABEL, CHARACTER_META, getCoupCardArt, getCoupCardBackArt } from './coupCards';
 import { describeEvent } from './describeEvent';
 import './coup-host.css';
 
@@ -14,14 +14,14 @@ function InfluenceCard({ character, revealed }: { character: keyof typeof CHARAC
     const meta = CHARACTER_META[character];
     return (
       <div className="coup-card is-revealed" style={{ borderColor: meta.color }}>
-        <span className="coup-card-emoji">{meta.emoji}</span>
+        <img className="coup-card-art" src={getCoupCardArt(character)} alt={meta.label} draggable={false} />
         <span className="coup-card-name">{meta.label}</span>
       </div>
     );
   }
   return (
     <div className="coup-card is-back" aria-label="Influência oculta">
-      <span className="coup-card-crest">⚜</span>
+      <img className="coup-card-art" src={getCoupCardBackArt()} alt="" draggable={false} />
     </div>
   );
 }

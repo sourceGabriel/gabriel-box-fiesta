@@ -18,7 +18,7 @@ Local (LAN, no internet, no accounts, in-memory) "Jackbox-style" party-game plat
 - Change history + rationale: `docs/CHANGELOG.md` · Gap vs spec: `docs/repository-gap-review.md` · Short log: `.copilot/logs/changes-log.md`
 
 ## Current state (2026-09-06)
-UNO MVP **complete and validated** (Fases 1–10 + mobile visual overhaul). **Coup added as game #2** (Fase D, classic ruleset). Server tests: **57 green**. Build: 4 workspaces green. Branch: **`feature/coupzin`** (D1–D5, off `feature/coup-ou-coupa`).
+UNO MVP **complete and validated** (Fases 1–10 + mobile visual overhaul). **Coup added as game #2** (Fase D, classic ruleset) — now with **real character card art** (D6a). Server tests: **57 green**. Build: 5 workspaces green. Branch: **`feature/coupzin`** (D1–D5 committed + D6a card art, off `feature/coup-ou-coupa`).
 
 **Fase A (game-agnostic core, §52) — COMPLETE:**
 - ✅ **A1** — `shared/src/games/` generic contract (`GameMeta`, `GameStatus`, `LifecycleEvent`) + `GAME_ACTION`/`SELECT_GAME`/`GAME_CATALOG`/`LIFECYCLE_EVENT` messages.
@@ -41,9 +41,10 @@ UNO MVP **complete and validated** (Fases 1–10 + mobile visual overhaul). **Co
 - ✅ **D1** — `shared/src/models/coup.ts` (`CoupPublicState`/`CoupPrivateState`/`CoupCharacter`/`CoupActionType`/`CoupPhase`/`CoupDecision`/…) + `shared/src/games/coup/events.ts` (`CoupGameEvent`). Types-only.
 - ✅ **D2** — `server/src/games/coup/` (`deck`/`player`/`game`/`action-resolver`/`coup-game`/`action-schema`/`constants`/`types`): the standalone repo's `src/engine/` ported classic-only (no Reformation), RNG/clock injected, all `setTimeout` replaced by one `getTimer()`/`onTurnTimeout()` deadline. `CoupGame implements PausableGame, TurnTimedGame`. 1 line in `GAMES`. `coup-game.test.ts` (27) + integration path. **No `core/`/`ws-server`/shell/protocol changes** (§52 proof holds).
 - ✅ **D3** — `host/src/games/coup/` (`CoupHostView` + `CoupCover` + `describeEvent` + `coupCards` + css). 1 line in `HOST_GAMES`.
+- ✅ **D6a (card art)** — real character portraits: 6 `.webp` copied from `Jogos/Coup` → `coup_card_art/` (repo root) + `ui/src/coup-cards.ts` (`@party/ui/coup-cards`, mirrors `@party/ui/uno-cards`: `CHARACTER_META` now carries `art`, `getCoupCardArt`/`getCoupCardBackArt`). Host `InfluenceCard` + mobile `coup-mini`/exchange cards render `<img>` (portrait + name gradient); `CoupCover` fans 3 portraits. `assets.d.ts` gained `*.webp`. `CHARACTER_META` de-duplicated (was copied in both `coupCards.ts`).
 - ✅ **D4** — `mobile/src/games/coup/` (`CoupControllerView` — one prompt per `pendingDecision` + `HowToPlay` overlay). 1 line in `CONTROLLER_GAMES`.
 - ✅ **D5** — generic emoji reactions: `SEND_REACTION`/`REACTION` in `shared/protocol` + `ws-server` rebroadcast (1.2s cooldown) + `reactions` in both `useRoomConnection` + `*GameViewProps`. Reusable by UNO later.
-- 🔜 **D6 (optional polish)** — Coup `sound-map.ts`, card-flip animation.
+- 🔜 **D6 (remaining polish)** — Coup `sound-map.ts`, card-flip animation. (Card art ✅ — see D6a above.)
 - **Deferred from v1:** bots (needs a platform "virtual player" concept — `BotBrain` is ~1100 lines pure TS, portable later) and the **Reformation** expansion (Inquisitor/factions/Convert/Embezzle/Examine).
 - Coup timers: 15s challenge/block windows, 30s turn/decision. Every phase exposes its deadline via `getTimer()`; `onTurnTimeout()` auto-resolves (all-passed / auto-Income / forced random Coup / keep-first-N / lose-first-influence). Single-influence forced losses auto-resolve server-side.
 
@@ -71,7 +72,7 @@ Monorepo, npm workspaces: `server` · `shared` (**types-only, no runtime, no zod
 | Emoji reactions (generic) | `SEND_REACTION`/`REACTION` in `shared/src/protocol/messages.ts` + `ws-server.ts` rebroadcast; `reactions` in both `useRoomConnection` + game-view props |
 | Host UI (shell + game module) | `host/src/shell/` (`useRoomConnection`, `AttractScreen`, `CatalogScreen`, `LobbyScreen`, `messages`, `shell.css`) + `host/src/games/{types,registry}.ts` (`HOST_GAMES[id] = { View, Cover }`) + `host/src/games/uno/` (`UnoHostView`, `UnoCover`, …) + `App.tsx` (flow machine) |
 | Mobile UI (shell + game module, after A4) | `mobile/src/shell/` (`session`, `useRoomConnection`, `MobileHeader`, `JoinScreen`, `WaitingScreen`, `shell.css`) + `mobile/src/games/{types,registry}.ts` + `mobile/src/games/uno/` + thin `App.tsx` + `index.css` (theme/tokens) |
-| Card PNGs | `uno_card_sheet_crops/` (repo root, 57 files); mapped by `ui/src/uno-cards.ts` (`@party/ui/uno-cards`) |
+| Card art | UNO: `uno_card_sheet_crops/` (repo root, 57 PNGs) → `ui/src/uno-cards.ts` (`@party/ui/uno-cards`). Coup: `coup_card_art/` (repo root, 6 `.webp`) → `ui/src/coup-cards.ts` (`@party/ui/coup-cards`) |
 | Tests | `server/src/tests/{uno-game,room,multiplayer.integration}.test.ts` |
 | Per-workspace how-to | `{server,shared,ui,host,mobile}/README.md` |
 
