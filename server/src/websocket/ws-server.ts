@@ -3,8 +3,10 @@ import { URL } from 'node:url';
 import pino from 'pino';
 import QRCode from 'qrcode';
 import { WebSocketServer, type WebSocket } from 'ws';
-import type { ClientMessage } from '@party/shared';
+import type { ClientMessage, GameEvent, UnoPrivatePlayerState, UnoPublicState } from '@party/shared';
+import { isTurnTimed } from '../core/game-plugin';
 import { RoomManager } from '../core/room-manager';
+import { gameCatalog } from '../games/registry';
 import { pickPrimaryLocalIPv4 } from '../network/local-ip';
 import { makeServerMessage, parseClientMessage } from './protocol';
 
@@ -205,6 +207,7 @@ export class PartyServer {
         this.hostConnections.add(socket);
         logger.info({ remoteAddress, roomCode: room.code, role: 'host' }, 'Host connected');
         this.send(socket, 'ROOM_JOINED', { roomCode: room.code, role: 'host', ownerPlayerId: room.ownerPlayerId });
+        this.sendGameCatalog(socket);
         this.broadcastRoomState();
         return;
       }
@@ -224,6 +227,7 @@ export class PartyServer {
         ownerPlayerId: room.ownerPlayerId,
         sessionToken,
       });
+      this.sendGameCatalog(socket);
       this.broadcast('PLAYER_JOINED', { playerId: player.id, name: player.name });
       this.broadcastRoomState();
       this.pushGameState();
@@ -240,6 +244,7 @@ export class PartyServer {
         ctx.role = 'host';
         this.hostConnections.add(socket);
         this.send(socket, 'ROOM_JOINED', { roomCode: room.code, role: 'host', ownerPlayerId: room.ownerPlayerId });
+        this.sendGameCatalog(socket);
         this.broadcastRoomState();
         return;
       }
@@ -258,6 +263,7 @@ export class PartyServer {
         playerId: player.id,
         ownerPlayerId: room.ownerPlayerId,
       });
+      this.sendGameCatalog(socket);
       this.broadcast('PLAYER_RECONNECTED', { playerId: player.id });
       this.broadcastRoomState();
       this.pushPrivateState(player.id);
@@ -265,10 +271,18 @@ export class PartyServer {
       return;
     }
 
+    if (message.type === 'SELECT_GAME') {
+      this.assertOwner(ctx.playerId, ctx.role);
+      room.selectGame(message.payload.gameId);
+      this.broadcastGameCatalog();
+      return;
+    }
+
     if (message.type === 'START_GAME') {
       this.assertOwner(ctx.playerId, ctx.role);
-      room.startGame(ctx.playerId ?? room.ownerPlayerId ?? null);
+      room.startGame(ctx.playerId ?? room.ownerPlayerId ?? null, message.payload.gameId);
       this.broadcast('GAME_STARTED', {});
+      this.broadcastGameCatalog();
       this.pushGameState();
       this.flushGameEvents();
       this.broadcastRoomState();
@@ -321,32 +335,39 @@ export class PartyServer {
       return;
     }
 
+    if (message.type === 'GAME_ACTION') {
+      room.applyGameAction(ctx.playerId, message.payload.action);
+      this.flushAndPublishState();
+      return;
+    }
+
+    // Legacy UNO verbs — kept for one phase while the frontend migrates to GAME_ACTION.
     if (message.type === 'PLAY_CARD') {
-      room.applyGameAction({ type: 'play_card', playerId: ctx.playerId, cardId: message.payload.cardId, chosenColor: message.payload.chosenColor });
+      room.applyGameAction(ctx.playerId, { type: 'play_card', cardId: message.payload.cardId, chosenColor: message.payload.chosenColor });
       this.flushAndPublishState();
       return;
     }
 
     if (message.type === 'DRAW_CARD') {
-      room.applyGameAction({ type: 'draw_card', playerId: ctx.playerId, playDrawnCardId: message.payload.playDrawnCardId, chosenColor: message.payload.chosenColor });
+      room.applyGameAction(ctx.playerId, { type: 'draw_card', playDrawnCardId: message.payload.playDrawnCardId, chosenColor: message.payload.chosenColor });
       this.flushAndPublishState();
       return;
     }
 
     if (message.type === 'CHOOSE_COLOR') {
-      room.applyGameAction({ type: 'choose_color', playerId: ctx.playerId, color: message.payload.color });
+      room.applyGameAction(ctx.playerId, { type: 'choose_color', color: message.payload.color });
       this.flushAndPublishState();
       return;
     }
 
     if (message.type === 'UNO_CALL') {
-      room.applyGameAction({ type: 'uno_call', playerId: ctx.playerId });
+      room.applyGameAction(ctx.playerId, { type: 'uno_call' });
       this.flushAndPublishState();
       return;
     }
 
     if (message.type === 'UNO_CHALLENGE') {
-      room.applyGameAction({ type: 'uno_challenge', playerId: ctx.playerId, targetPlayerId: message.payload.targetPlayerId });
+      room.applyGameAction(ctx.playerId, { type: 'uno_challenge', targetPlayerId: message.payload.targetPlayerId });
       this.flushAndPublishState();
       return;
     }
@@ -359,12 +380,23 @@ export class PartyServer {
     this.flushGameEvents();
   }
 
+  private broadcastGameCatalog(): void {
+    const room = this.roomManager.getRoom();
+    this.broadcast('GAME_CATALOG', { games: gameCatalog(), selectedGameId: room.selectedGameId });
+  }
+
+  private sendGameCatalog(socket: WebSocket): void {
+    const room = this.roomManager.getRoom();
+    this.send(socket, 'GAME_CATALOG', { games: gameCatalog(), selectedGameId: room.selectedGameId });
+  }
+
   private flushGameEvents(): void {
     const game = this.roomManager.getRoom().game;
     if (!game) {
       return;
     }
-    for (const event of game.consumeEvents()) {
+    // TODO(A5): GAME_EVENT payload becomes { gameId, event: unknown }; drop the cast then.
+    for (const event of game.consumeEvents() as GameEvent[]) {
       this.broadcast('GAME_EVENT', { event, stateVersion: this.roomManager.getRoom().stateVersion });
     }
   }
@@ -374,7 +406,8 @@ export class PartyServer {
     if (!room.game) {
       return;
     }
-    const publicState = room.game.getPublicState();
+    // TODO(A5): GAME_STATE_PUBLIC payload becomes { gameId, state: unknown }; drop the cast then.
+    const publicState = room.game.getPublicState() as UnoPublicState;
     this.broadcast('GAME_STATE_PUBLIC', { state: publicState, stateVersion: room.stateVersion });
     for (const playerId of this.playerConnections.keys()) {
       this.pushPrivateState(playerId);
@@ -387,7 +420,8 @@ export class PartyServer {
     if (!game) {
       return;
     }
-    const state = game.getPrivateState(playerId);
+    // TODO(A5): PLAYER_STATE_PRIVATE payload becomes { gameId, state: unknown }; drop the cast then.
+    const state = game.getPrivateState(playerId) as UnoPrivatePlayerState;
     for (const socket of this.playerConnections.get(playerId) ?? []) {
       this.send(socket, 'PLAYER_STATE_PRIVATE', { state, stateVersion: room.stateVersion });
     }
@@ -410,7 +444,8 @@ export class PartyServer {
       ownerPlayerId: room.ownerPlayerId,
       joinUrl,
       joinQrDataUrl,
-      players: room.getPlayers().map((player) => ({ id: player.id, name: player.name, connected: player.connected, handCount: room.game?.getState().hands[player.id]?.length ?? 0 })),
+      // handCount here is redundant (live counts come from GAME_STATE_PUBLIC); kept at 0 until the field is removed in A5.
+      players: room.getPlayers().map((player) => ({ id: player.id, name: player.name, connected: player.connected, handCount: 0 })),
     });
   }
 
@@ -472,7 +507,11 @@ export class PartyServer {
 
   private tickTimers(): void {
     const room = this.roomManager.getRoom();
-    const timer = room.game?.getState().timer;
+    const game = room.game;
+    if (!game || !isTurnTimed(game)) {
+      return;
+    }
+    const timer = game.getTimer();
     if (!timer) {
       return;
     }

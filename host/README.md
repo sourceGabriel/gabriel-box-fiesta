@@ -1,32 +1,41 @@
-# React + TypeScript + Vite
+# @party/host — tela principal (TV/PC)
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+A tela compartilhada da plataforma: lobby com QR code + código da sala, e o
+tabuleiro do jogo em tempo real. É um **consumidor de estado validado** — nenhuma
+regra de jogo roda aqui.
 
-Currently, two official plugins are available:
+React 19 + Vite. Depende de `@party/shared` (contratos) e conversa com o
+`@party/server` por WebSocket.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Rodar
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm run -w host dev       # http://localhost:5173  (a partir da raiz do repo)
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Precisa do servidor no ar (`npm run -w server dev`, porta 3001) e do app
+`@party/mobile` (porta 5174) para os celulares entrarem.
+
+Fluxo: abra `http://localhost:5173` no PC/TV → mostra o código + QR → jogadores
+entram pelo celular → owner (ou o host) clica "Iniciar partida".
+
+## Configuração
+
+`.env` opcional:
+
+- `VITE_SERVER_ORIGIN` — origem do servidor se não for `http://<mesmo-host>:3001`
+  (ex.: `http://192.168.0.10:3001`).
+
+## Build / lint
+
+```bash
+npm run -w host build     # tsc -b && vite build
+npm run -w host lint      # oxlint
+```
+
+## Estrutura
+
+Hoje `src/App.tsx` é um componente único (lobby + tabuleiro UNO + animações da
+Fase 10). A Fase A do plano (`.claude/plans/`) extrai isto para
+`src/shell/` (conexão, lobby, chrome — genéricos) + `src/games/uno/` (a view do
+UNO), com um registry estático `HOST_GAMES` para múltiplos jogos.

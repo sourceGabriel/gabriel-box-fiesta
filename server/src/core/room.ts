@@ -1,8 +1,8 @@
 import { nanoid } from 'nanoid';
 import type { Player } from '@party/shared';
 import { SessionService } from './session-service';
-import { UnoGame } from '../games/uno/uno-game';
-import type { UnoAction } from '../games/uno/types';
+import { isPausable, isRounded, isTurnTimed, type GameInstance } from './game-plugin';
+import { DEFAULT_GAME_ID, GAMES } from '../games/registry';
 
 export type RoomState = 'accepting_players' | 'in_game' | 'paused' | 'ended';
 
@@ -13,7 +13,8 @@ export class Room {
 
   ownerPlayerId: string | null = null;
   state: RoomState = 'accepting_players';
-  game: UnoGame | null = null;
+  game: GameInstance | null = null;
+  selectedGameId: string = DEFAULT_GAME_ID;
   stateVersion = 0;
 
   private readonly sessionService = new SessionService();
@@ -80,7 +81,7 @@ export class Room {
 
     player.connected = true;
     player.lastSeenAt = now;
-    this.game?.setPlayerConnected(player.id, true);
+    this.game?.setPlayerConnected?.(player.id, true);
     return player;
   }
 
@@ -92,7 +93,7 @@ export class Room {
     }
     player.connected = false;
     player.lastSeenAt = now;
-    this.game?.setPlayerConnected(playerId, false);
+    this.game?.setPlayerConnected?.(playerId, false);
   }
 
   /**
@@ -109,27 +110,42 @@ export class Room {
     return true;
   }
 
-  startGame(requestedBy: string | null): void {
+  /** Owner picks which game the lobby will play. Only valid before a game starts. */
+  selectGame(gameId: string): void {
+    if (this.state !== 'accepting_players') {
+      throw new Error('GAME_IN_PROGRESS:Cannot change the game after it started');
+    }
+    if (!GAMES[gameId]) {
+      throw new Error('UNKNOWN_GAME:No such game');
+    }
+    this.selectedGameId = gameId;
+  }
+
+  startGame(requestedBy: string | null, gameId: string = this.selectedGameId): void {
     if (!requestedBy) {
       throw new Error('NOT_ALLOWED:Player context required');
     }
+    const plugin = GAMES[gameId];
+    if (!plugin) {
+      throw new Error('UNKNOWN_GAME:No such game');
+    }
     const connectedPlayers = [...this.players.values()].filter((player) => player.connected);
-    if (connectedPlayers.length < 2) {
-      throw new Error('NOT_ENOUGH_PLAYERS:At least two players required');
+    if (connectedPlayers.length < plugin.meta.minPlayers) {
+      throw new Error(`NOT_ENOUGH_PLAYERS:${plugin.meta.name} needs at least ${plugin.meta.minPlayers} players`);
+    }
+    if (connectedPlayers.length > plugin.meta.maxPlayers) {
+      throw new Error(`TOO_MANY_PLAYERS:${plugin.meta.name} allows at most ${plugin.meta.maxPlayers} players`);
     }
 
-    this.game = new UnoGame(connectedPlayers.map((player) => ({ id: player.id, name: player.name })), this.code);
+    this.selectedGameId = gameId;
+    this.game = plugin.create({
+      players: connectedPlayers.map((player) => ({ id: player.id, name: player.name })),
+      roomCode: this.code,
+      now: () => Date.now(),
+      random: Math.random,
+    });
     this.game.start();
     this.state = 'in_game';
-    this.bumpStateVersion();
-  }
-
-  // Host UI triggers starting the timer for the current turn.
-  startTurnTimer(): void {
-    if (!this.game) {
-      throw new Error('GAME_NOT_STARTED:Game is not started');
-    }
-    this.game.startTurnTimer(Date.now());
     this.bumpStateVersion();
   }
 
@@ -137,21 +153,27 @@ export class Room {
     if (!this.game) {
       throw new Error('GAME_NOT_STARTED:Game is not started');
     }
+    if (!isRounded(this.game)) {
+      throw new Error('NOT_SUPPORTED:This game has no rounds');
+    }
     this.game.startNextRound();
     this.bumpStateVersion();
   }
 
-  applyGameAction(action: UnoAction): void {
+  applyGameAction(playerId: string, action: unknown): void {
     if (!this.game) {
       throw new Error('GAME_NOT_STARTED:Game is not started');
     }
-    this.game.handleAction(action);
+    this.game.handleAction(playerId, action);
     this.bumpStateVersion();
   }
 
   pauseGame(): void {
     if (!this.game) {
       throw new Error('GAME_NOT_STARTED:Game is not started');
+    }
+    if (!isPausable(this.game)) {
+      throw new Error('NOT_SUPPORTED:This game cannot be paused');
     }
     this.game.pause(Date.now());
     this.state = 'paused';
@@ -161,6 +183,9 @@ export class Room {
   resumeGame(): void {
     if (!this.game) {
       throw new Error('GAME_NOT_STARTED:Game is not started');
+    }
+    if (!isPausable(this.game)) {
+      throw new Error('NOT_SUPPORTED:This game cannot be paused');
     }
     this.game.resume(Date.now());
     this.state = 'in_game';
@@ -187,7 +212,7 @@ export class Room {
   }
 
   applyTimeout(): void {
-    if (!this.game) {
+    if (!this.game || !isTurnTimed(this.game)) {
       return;
     }
     this.game.onTurnTimeout();

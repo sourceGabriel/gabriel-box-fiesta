@@ -11,8 +11,13 @@ Local (LAN, no internet, no accounts, in-memory) "Jackbox-style" party-game plat
 - Change history + rationale: `docs/CHANGELOG.md` · Gap vs spec: `docs/repository-gap-review.md` · Short log: `.copilot/logs/changes-log.md`
 
 ## Current state (2026-09-06)
-UNO MVP **complete and validated** (Fases 1–10 + mobile visual overhaul). Server tests: **25 green**. Build: 4 workspaces green.
-Next: **game-agnostic core** (§52) so a 2nd game plugs in without touching the core. A 2nd complete game exists in a separate repo (to be integrated).
+UNO MVP **complete and validated** (Fases 1–10 + mobile visual overhaul). Server tests: **27 green**. Build: 4 workspaces green. Branch: **`feature/coup-ou-coupa`**.
+
+**Fase A (game-agnostic core, §52) in progress:**
+- ✅ **A1** — `shared/src/games/` generic contract (`GameMeta`, `GameStatus`, `LifecycleEvent`) + `GAME_ACTION`/`SELECT_GAME`/`GAME_CATALOG`/`LIFECYCLE_EVENT` messages. Non-breaking.
+- ✅ **A2** — `server/src/core/game-plugin.ts` (`GamePlugin`, `GameInstance`, capability interfaces) + `server/src/games/registry.ts` (`GAMES`) + `server/src/games/uno/plugin.ts`. `Room` is game-agnostic; `ws-server` speaks a **dual protocol** (old UNO verbs + generic `GAME_ACTION`). `server/src/core/game.ts` deleted. Wire payloads for state/events unchanged (server casts `unknown`→UNO at the boundary, `TODO(A5)`).
+- 🔜 **A3** — extract `host/src/shell/` + `host/src/games/uno/`. 🔜 **A4** — same for mobile (session/reconnect subsystem is the crown jewel). 🔜 **A5** — drop legacy UNO verbs, generic `{gameId, state}` payloads.
+Then B (game catalog UI), C (`@party/ui` design system + synthesized sounds; folds in Fase 11), D (integrate game #2).
 
 **Active plan:** `C:\Users\gabri\.claude\plans\antes-dos-proximos-passos-elegant-clover.md` — Fase A→D.
 Locked decisions:
@@ -26,18 +31,20 @@ Monorepo, npm workspaces: `server` · `shared` (**types-only, no runtime, no zod
 
 | Concern | Where |
 |---|---|
-| Game contract | `server/src/core/game.ts` (`Game<>` — implemented only by `UnoGame`, unused by core) |
-| Room / player / owner / reconnect / 30s grace | `server/src/core/room.ts` |
+| Plugin contract | `server/src/core/game-plugin.ts` (`GamePlugin`, `GameInstance`, `GameContext`, `TurnTimedGame`/`RoundedGame`/`PausableGame`/`TickingGame`, `isX()` guards) |
+| Game registry | `server/src/games/registry.ts` (`GAMES` map — add a game = 1 import + 1 entry) |
+| Room / player / owner / reconnect / 30s grace / `selectGame`/`startGame(gameId)` | `server/src/core/room.ts` (game-agnostic after A2) |
 | Session tokens (sha256, 6h TTL) | `server/src/core/session-service.ts` |
-| WS gateway (dedupe by `messageId`, rate-limit, 16KB cap, reconnect, tick loop) | `server/src/websocket/ws-server.ts` |
+| WS gateway (dual protocol, dedupe, rate-limit, 16KB cap, reconnect, capability-gated tick) | `server/src/websocket/ws-server.ts` |
 | Wire protocol (envelope, zod validation) | `shared/src/protocol/messages.ts` + `server/src/websocket/protocol.ts` |
-| UNO engine (~635 lines, self-contained) | `server/src/games/uno/{uno-game,rules,cards,types}.ts` |
-| Host UI (flat `App.tsx` ~589 lines, no shell) | `host/src/App.tsx` + `App.css` + `cardArt.ts` |
-| Mobile UI (flat `App.tsx` ~554 lines, no shell) | `mobile/src/App.tsx` + `App.css` + `index.css` (theme) + `cardArt.ts` |
+| UNO engine (~640 lines) + plugin + action zod | `server/src/games/uno/{uno-game,rules,cards,types,plugin,action-schema}.ts` |
+| Host UI (flat `App.tsx` ~589 lines, no shell yet) | `host/src/App.tsx` + `App.css` + `cardArt.ts` |
+| Mobile UI (flat `App.tsx` ~554 lines, no shell yet) | `mobile/src/App.tsx` + `App.css` + `index.css` (theme) + `cardArt.ts` |
 | Card PNGs | `uno_card_sheet_crops/` (repo root, 54 files) |
 | Tests | `server/src/tests/{uno-game,room,multiplayer.integration}.test.ts` |
+| Per-workspace how-to | `{server,shared,host,mobile}/README.md` |
 
-**UNO coupling in the core (the Fase A target):** `Room` imports concrete `UnoGame`+`UnoAction`; `ws-server` builds `UnoAction` inline + reads `getState().hands`/`.timer`; `shared/protocol/messages.ts` bakes `UnoPublicState`/`GameEvent` into the wire union; `shared/events/game-events.ts` imports `UnoCard`. `shared/models/common.ts` `Phase` has UNO's `awaiting_color_choice`; `Direction` is UNO-only.
+**Remaining UNO coupling (A3–A5 targets):** frontends are 100% UNO with no shell; `shared/protocol/messages.ts` still bakes `UnoPublicState`/`GameEvent` into `GAME_STATE_PUBLIC`/`GAME_EVENT` (server casts at the boundary); `shared/events/game-events.ts` imports `UnoCard`; `shared/models/common.ts` `Phase` has `awaiting_color_choice`; the 5 legacy UNO client verbs still on the wire. `ROOM_STATE.handCount` is sent as `0` (removed in A5).
 
 ## Hard rules
 - Server is the single source of truth. Host/mobile never enforce rules. No business logic in React.

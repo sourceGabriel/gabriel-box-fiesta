@@ -1,11 +1,15 @@
 # Revisão do repositório: lacunas em relação ao prompt mestre
 
-_Atualizado em 2026-09-06._
+_Atualizado em 2026-09-06 (branch `feature/coup-ou-coupa`, após PR A1+A2)._
 
 ## Resumo executivo
-O MVP jogável do UNO (§53) está **completo e validado**: host mostra a mesa em tempo real, partida completa com cartas especiais, coringa com escolha de cor, UNO!, denúncia, placar acumulado entre rodadas, fim de partida, pausar/continuar, reconexão de jogador e transferência de owner. 25 testes de servidor verdes; build dos 4 workspaces verde.
+O MVP jogável do UNO (§53) está **completo e validado**: host mostra a mesa em tempo real, partida completa com cartas especiais, coringa com escolha de cor, UNO!, denúncia, placar acumulado entre rodadas, fim de partida, pausar/continuar, reconexão de jogador e transferência de owner. **27 testes de servidor verdes**; build dos 4 workspaces verde.
 
-A lacuna principal agora é a **Fase 12 / §52**: o núcleo ainda nomeia o UNO em 4 pontos, então adicionar um segundo jogo exigiria modificar o core. Existe um plano faseado para resolver isso (ver "Próximo passo").
+**Fase A (núcleo agnóstico, §52) em andamento:**
+- ✅ **A1** — contrato genérico em `shared/` (`GameMeta`, `GameStatus`, `LifecycleEvent`, mensagens `GAME_ACTION`/`SELECT_GAME`/`GAME_CATALOG`).
+- ✅ **A2** — `GamePlugin`/registry + `GameInstance` opaco + `Room` sem import de UNO no servidor; protocolo duplo. O **servidor** já satisfaz "adicionar jogo = `src/games/<id>/` + 1 linha no registry".
+- 🔜 **A3/A4** — falta extrair o shell dos frontends (`host`/`mobile`), hoje 100% UNO.
+- 🔜 **A5** — remover os 5 verbos UNO do fio; payloads `{ gameId, state }` genéricos.
 
 ## O que já existe (Fases 1–10 + polimento)
 - Monorepo `server` / `shared` (types-only) / `host` / `mobile`.

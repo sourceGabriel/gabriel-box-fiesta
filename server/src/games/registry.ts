@@ -1,0 +1,15 @@
+import type { GameMeta } from '@party/shared';
+import type { GamePlugin } from '../core/game-plugin';
+import { unoPlugin } from './uno/plugin';
+
+/**
+ * The platform's game catalog. Adding a game = one import + one entry here.
+ * Nothing in `core/` or `websocket/` references a specific game.
+ */
+export const GAMES: Readonly<Record<string, GamePlugin>> = {
+  [unoPlugin.meta.id]: unoPlugin,
+};
+
+export const DEFAULT_GAME_ID = unoPlugin.meta.id;
+
+export const gameCatalog = (): GameMeta[] => Object.values(GAMES).map((plugin) => plugin.meta);

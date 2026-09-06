@@ -1,5 +1,6 @@
-import type { Game } from '../../core/game';
-import type { GameEvent, UnoCard, UnoFullState, UnoPrivatePlayerState, UnoPublicState } from '@party/shared';
+import type { GameEvent, GameStatus, TurnTimer, UnoCard, UnoFullState, UnoPrivatePlayerState, UnoPublicState } from '@party/shared';
+import type { GameContext, PausableGame, RoundedGame, TurnTimedGame } from '../../core/game-plugin';
+import { parseUnoAction } from './action-schema';
 import { createDeck, shuffle } from './cards';
 import { isCardPlayable } from './rules';
 import type { UnoAction } from './types';
@@ -21,7 +22,7 @@ function assertCondition(condition: unknown, code: string, message: string): ass
   }
 }
 
-export class UnoGame implements Game<UnoFullState, UnoAction, GameEvent, UnoPublicState, UnoPrivatePlayerState> {
+export class UnoGame implements PausableGame, RoundedGame, TurnTimedGame {
   private readonly events: GameEvent[] = [];
 
   private state: UnoFullState;
@@ -30,23 +31,34 @@ export class UnoGame implements Game<UnoFullState, UnoAction, GameEvent, UnoPubl
 
   private pausedRemainingMs: number | null = null;
 
-  constructor(
-    private readonly players: { id: string; name: string }[],
-    private readonly roomCode: string,
-    private readonly nowProvider: () => number = Date.now,
-    private readonly targetScore: number = DEFAULT_TARGET_SCORE,
-  ) {
-    const playersOrder = players.map((player) => player.id);
-    const playerBase = Object.fromEntries(players.map((player) => [
+  private readonly players: { id: string; name: string }[];
+
+  private readonly roomCode: string;
+
+  private readonly nowProvider: () => number;
+
+  private readonly random: () => number;
+
+  private readonly targetScore: number;
+
+  constructor(ctx: GameContext, targetScore: number = DEFAULT_TARGET_SCORE) {
+    this.players = ctx.players.map((player) => ({ id: player.id, name: player.name }));
+    this.roomCode = ctx.roomCode;
+    this.nowProvider = ctx.now;
+    this.random = ctx.random;
+    this.targetScore = targetScore;
+
+    const playersOrder = this.players.map((player) => player.id);
+    const playerBase = Object.fromEntries(this.players.map((player) => [
       player.id,
       { id: player.id, name: player.name, connected: true, handCount: 0, calledUno: false, score: 0 },
     ]));
-    const hands = Object.fromEntries(players.map((player) => [player.id, [] as UnoCard[]]));
-    const unoWindow = Object.fromEntries(players.map((player) => [player.id, null as number | null]));
+    const hands = Object.fromEntries(this.players.map((player) => [player.id, [] as UnoCard[]]));
+    const unoWindow = Object.fromEntries(this.players.map((player) => [player.id, null as number | null]));
 
     this.state = {
       phase: 'ready',
-      roomCode,
+      roomCode: this.roomCode,
       playersOrder,
       players: playerBase,
       hands,
@@ -89,7 +101,7 @@ export class UnoGame implements Game<UnoFullState, UnoAction, GameEvent, UnoPubl
 
   private dealRound(startingPlayerId: string | null): void {
     const starter = startingPlayerId ?? this.state.playersOrder[0]!;
-    const deck = shuffle(createDeck());
+    const deck = shuffle(createDeck(), this.random);
     this.state.round += 1;
     this.state.winnerPlayerId = null;
     this.state.pendingDraw = 0;
@@ -167,21 +179,42 @@ export class UnoGame implements Game<UnoFullState, UnoAction, GameEvent, UnoPubl
     return this.events.slice(-1);
   }
 
-  onTurnTimeout(): GameEvent[] {
+  onTurnTimeout(): void {
     if (this.paused) {
-      return [];
+      return;
     }
     if (this.state.phase === 'awaiting_color_choice' && this.state.pendingColorChoiceBy) {
-      return this.handleAction({
+      this.dispatch({
         type: 'choose_color',
         playerId: this.state.pendingColorChoiceBy,
         color: this.autoPickColor(this.state.pendingColorChoiceBy),
       });
+      return;
     }
     if (this.state.phase !== 'round_active' || !this.state.currentPlayerId) {
-      return [];
+      return;
     }
-    return this.handleAction({ type: 'timeout' });
+    this.dispatch({ type: 'timeout' });
+  }
+
+  /** Room-facing lifecycle projection. */
+  getStatus(): GameStatus {
+    switch (this.state.phase) {
+      case 'round_active':
+      case 'awaiting_color_choice':
+        return 'active';
+      case 'round_finished':
+        return 'intermission';
+      case 'game_finished':
+        return 'complete';
+      default:
+        return 'setup';
+    }
+  }
+
+  /** Raw stored turn timer — the server scheduler compares `expiresAt` against its clock. */
+  getTimer(): TurnTimer | null {
+    return this.state.timer;
   }
 
   private autoPickColor(playerId: string): 'red' | 'yellow' | 'green' | 'blue' {
@@ -194,7 +227,13 @@ export class UnoGame implements Game<UnoFullState, UnoAction, GameEvent, UnoPubl
     return (['red', 'yellow', 'green', 'blue'] as const).reduce((best, color) => (counts[color] > counts[best] ? color : best), 'red');
   }
 
-  handleAction(action: UnoAction): GameEvent[] {
+  /** Public entry for a client `GAME_ACTION`. Validates, injects the trusted `playerId`, dispatches. */
+  handleAction(playerId: string, action: unknown): void {
+    const input = parseUnoAction(action);
+    this.dispatch({ ...input, playerId } as UnoAction);
+  }
+
+  private dispatch(action: UnoAction): GameEvent[] {
     assertCondition(!this.paused || action.type === 'timeout', 'GAME_PAUSED', 'Game is paused');
     const before = this.events.length;
     switch (action.type) {
@@ -550,7 +589,7 @@ export class UnoGame implements Game<UnoFullState, UnoAction, GameEvent, UnoPubl
       return;
     }
     const top = this.state.discardPile.pop()!;
-    this.state.drawPile = shuffle([...this.state.discardPile]);
+    this.state.drawPile = shuffle([...this.state.discardPile], this.random);
     this.state.discardPile = [top];
   }
 }

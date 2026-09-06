@@ -214,13 +214,6 @@ party-game/
 9. **Fase 9–11**: UX, animações, polimento party game.
 10. **Fase 12**: consolidação de plataforma multi-jogos.
 
-## Execução local
-
-```bash
-cd /home/runner/work/gabriel-box-fiesta/gabriel-box-fiesta
-npm install
-```
-
 ## Implementação atual (incremental)
 
 _Atualizado em 2026-09-06. Detalhe por mudança em `docs/CHANGELOG.md`._
@@ -231,51 +224,63 @@ _Atualizado em 2026-09-06. Detalhe por mudança em `docs/CHANGELOG.md`._
 - ✅ **Fase 5** — Host: board de jogo real (monte/descarte com arte, cor, sentido, +N, turno, timer, placar), controles do owner.
 - ✅ **Fase 6** — Mobile: entrada com avatar, faixa da mesa, mão com destaque de jogável, modal de cor pós-jogada, denúncia, retomada de sessão no reload; identidade visual "party" própria.
 - ✅ **Fase 7** — Reconexão por token de sessão assinado + transferência automática de owner + auto-reconnect com backoff nos dois clients.
-- ✅ **Fase 8** — Testes de integração multiplayer (join/owner/reconexão, 8 jogadores, partida sustentada, mensagem duplicada). Suite de servidor: 25 verdes.
+- ✅ **Fase 8** — Testes de integração multiplayer (join/owner/reconexão, 8 jogadores, partida sustentada, mensagem duplicada).
 - ✅ **Fase 9–10** — UX + animações dirigidas por evento no host (cartas voando, flash de cor, burst de UNO/vitória; respeita `prefers-reduced-motion`).
-- 🔜 **Fase A (núcleo agnóstico, §52)** — em planejamento. Extrair `GamePlugin`/registry para adicionar um 2º jogo sem tocar no núcleo. Plano: `.claude/plans/antes-dos-proximos-passos-elegant-clover.md`. Feito **antes** da Fase 11 por decisão (2º jogo pronto e travado na abstração).
+- 🚧 **Fase A (núcleo agnóstico, §52)** — em andamento na branch `feature/coup-ou-coupa`. Extrair `GamePlugin`/registry para adicionar um 2º jogo sem tocar no núcleo. Plano: `.claude/plans/antes-dos-proximos-passos-elegant-clover.md`. Feito **antes** da Fase 11 por decisão (2º jogo pronto e travado na abstração).
+  - ✅ A1 — contrato genérico em `shared/` (`GameMeta`, `GameStatus`, `LifecycleEvent`, `GAME_ACTION`/`SELECT_GAME`/`GAME_CATALOG`), não quebra nada.
+  - ✅ A2 — registry de plugins + `GameInstance` opaco + `Room` agnóstico no servidor; protocolo duplo (verbos UNO antigos + `GAME_ACTION`). 27 testes verdes.
+  - 🔜 A3/A4 — extrair shell dos frontends (`host`/`mobile`) + módulo `games/uno/`.
+  - 🔜 A5 — remover verbos UNO do fio; payloads `{ gameId, state }` genéricos.
 - 🔜 **Fase 11 (§47)** — identidade visual completa + sons; dobrada na Fase C do plano (design system `@party/ui`).
 
-Pré-requisito: Node.js 20+.
+## Como rodar a aplicação (rede local)
 
-## Como executar localmente
+Pré-requisito: **Node.js 20+**.
 
-Terminal 1 (servidor):
-
-```bash
-npm run -w server dev
-```
-
-Terminal 2 (host):
+**Primeira vez / após puxar mudanças:**
 
 ```bash
-npm run -w host dev
+npm install
 ```
 
-Terminal 3 (mobile):
+**Subir os 3 serviços (um terminal cada, na raiz do repo):**
 
 ```bash
-npm run -w mobile dev
+npm run -w server dev    # servidor autoritativo — porta 3001
+```
+```bash
+npm run -w host dev      # tela da TV/PC — porta 5173
+```
+```bash
+npm run -w mobile dev    # controle do celular — porta 5174
 ```
 
-Os clientes web ficam em portas separadas por padrão:
+**Jogar:**
 
-- host: `http://<host>:5173`
-- mobile: `http://<host>:5174`
+1. Abra a tela do host no PC/TV: `http://localhost:5173`. Ele mostra o **código da sala** e um **QR code**.
+2. Cada jogador abre no celular (na mesma rede Wi-Fi) `http://<IP-DO-PC>:5174/join/<CÓDIGO>` — ou escaneia o QR. O IP aparece no log do servidor ao subir.
+3. Digite o nome, escolha um avatar, entre. O **primeiro** jogador vira o **owner** e vê o botão "Iniciar partida" (o host também pode iniciar).
+4. 2–8 jogadores. Owner inicia; o jogo roda; owner pode pausar/continuar/expulsar/encerrar e iniciar a próxima rodada.
 
-O servidor continua em `http://<host>:3001`.
-Se necessário, configure `VITE_SERVER_ORIGIN` em cada app frontend.
+**Configuração opcional (`.env` em `host/` e `mobile/`):**
+
+- `VITE_SERVER_ORIGIN` — se o servidor não estiver em `http://<mesmo-host>:3001` (ex.: `http://192.168.0.10:3001`).
+
+**Firewall:** em rede real, libere a porta `3001` (servidor) e `5174` (mobile) no sistema operacional. Em máquina com várias interfaces (Wi-Fi/Ethernet/VPN/Docker) o IP mostrado pode não ser o certo — use `PARTY_PUBLIC_URL=http://<ip>:5174` no ambiente do servidor para forçar.
 
 ## Como validar
 
 ```bash
-npm run -w server test
-npm run -w server lint
-npm run -w shared lint
-npm run -w host lint
-npm run -w mobile lint
-npm run build
+npm run -w server test    # ~27 testes (regras UNO + integração multiplayer)
+npm run -w server lint    # tsc --noEmit
+npm run -w host lint      # oxlint
+npm run -w mobile lint    # oxlint
+npm run build             # build dos 4 workspaces
 ```
+
+Ou tudo de uma vez a partir da raiz: `npm test && npm run lint && npm run build`.
+
+**Smoke manual:** suba os 3 serviços, abra o host + 2 celulares (ou 2 abas do navegador em `/join/<código>`), jogue uma rodada completa, pause/continue, recarregue uma aba de celular (a sessão deve retomar), feche a aba do owner (o owner deve transferir após ~30s).
 
 ## Problemas conhecidos e rede local
 

@@ -28,3 +28,10 @@ The project is currently between the room lifecycle phase and the actual host ga
 - `shared/src/games/{meta,status,lifecycle,index}.ts`: `GameMeta`, `GameStatus` (`setup|active|intermission|complete`), `LifecycleEvent`.
 - `shared/src/protocol/messages.ts` (additive): `SELECT_GAME`, `GAME_ACTION { action: unknown }`, `START_GAME { gameId? }`, `GAME_CATALOG`, `LIFECYCLE_EVENT`.
 - Non-breaking: no server/host/mobile logic changed, `shared/` stays types-only, 25 server tests + 4 builds + 2 lints green. Nothing emits the new messages yet — that's PR A2.
+
+## 2026-09-06 — Fase A / PR A2 (branch `feature/coup-ou-coupa`)
+- New: `server/src/core/game-plugin.ts` (`GamePlugin`, `GameInstance`, `GameContext`, capability interfaces + guards), `server/src/games/registry.ts` (`GAMES`), `server/src/games/uno/{plugin,action-schema}.ts`.
+- `Room` is game-agnostic (`GameInstance`, `selectGame`, plugin-driven `startGame`, `applyGameAction(playerId, action)`, capability guards). `server/src/core/game.ts` deleted.
+- `UnoGame`: `GameContext` ctor, injected RNG (determinism fix), `handleAction(playerId, unknown)` + private `dispatch`, `getStatus()`, `getTimer()`.
+- `ws-server`: `SELECT_GAME` + `GAME_ACTION` handlers; 5 legacy UNO verbs kept (dual protocol); `GAME_CATALOG` on join; capability-gated timer tick. Wire state/event payload shapes unchanged (boundary casts, `TODO(A5)`).
+- Tests migrated + 2 new; 27 server tests green (stable ×4). No frontend changes. Backward-compatible except `ROOM_STATE.handCount` → `0` (no consumer).

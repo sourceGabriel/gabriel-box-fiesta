@@ -379,4 +379,59 @@ describe('multiplayer integration', () => {
     host.close();
     p1.close();
   });
+
+  it('sends the game catalog on join, routes SELECT_GAME and generic GAME_ACTION', async () => {
+    server = new PartyServer(0);
+    await server.start();
+    const roomCode = server.getRoomCode();
+    const port = server.getPort();
+
+    const host = await connect(port);
+    const catalogPromise = waitForMessage(host, 'GAME_CATALOG');
+    host.send(makeMessage('JOIN_ROOM', { roomCode, playerName: 'HOST', role: 'host' }));
+    await waitForMessage(host, 'ROOM_JOINED');
+    const catalog = await catalogPromise;
+    expect(catalog.payload.games.map((g) => g.id)).toContain('uno');
+    expect(catalog.payload.selectedGameId).toBe('uno');
+
+    // SELECT_GAME to a known game is accepted; unknown is rejected.
+    const reselected = waitForMessage(host, 'GAME_CATALOG');
+    host.send(makeMessage('SELECT_GAME', { gameId: 'uno' }));
+    expect((await reselected).payload.selectedGameId).toBe('uno');
+    const selectError = waitForMessage(host, 'ERROR');
+    host.send(makeMessage('SELECT_GAME', { gameId: 'nope' }));
+    expect((await selectError).payload.message).toMatch(/no such game/i);
+
+    const p1 = await connect(port);
+    p1.send(makeMessage('JOIN_ROOM', { roomCode, playerName: 'Alice', role: 'player' }));
+    const p1Joined = await waitForMessage(p1, 'ROOM_JOINED');
+    const p2 = await connect(port);
+    p2.send(makeMessage('JOIN_ROOM', { roomCode, playerName: 'Bob', role: 'player' }));
+    await waitForMessage(p2, 'ROOM_JOINED');
+
+    const firstPublic = waitForMessage(host, 'GAME_STATE_PUBLIC');
+    host.send(makeMessage('START_GAME', { gameId: 'uno' }));
+    await waitForMessage(host, 'GAME_STARTED');
+    const initial = (await firstPublic).payload.state as { currentPlayerId: string; turn: number };
+
+    // The current player draws a card via the generic GAME_ACTION verb — draw always advances the turn.
+    const currentWs = initial.currentPlayerId === p1Joined.payload.playerId ? p1 : p2;
+    currentWs.send(makeMessage('GAME_ACTION', { action: { type: 'draw_card' } }));
+    const advanced = await waitForMessageWhere(
+      host,
+      'GAME_STATE_PUBLIC',
+      (m) => (m.payload.state as { turn: number }).turn > initial.turn,
+    );
+    expect((advanced.payload.state as { turn: number }).turn).toBeGreaterThan(initial.turn);
+
+    // A malformed GAME_ACTION is rejected without crashing the room.
+    const otherWs = currentWs === p1 ? p2 : p1;
+    const actionError = waitForMessage(otherWs, 'ERROR');
+    otherWs.send(makeMessage('GAME_ACTION', { action: { type: 'garbage' } }));
+    expect((await actionError).payload.message).toMatch(/INVALID_ACTION/i);
+
+    host.close();
+    p1.close();
+    p2.close();
+  });
 });
