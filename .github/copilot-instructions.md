@@ -3,6 +3,10 @@
 ## Mission
 This repository is a local multiplayer party-game platform with a server-authoritative architecture. The first game is a UNO-inspired game, but the platform must remain extensible to future games.
 
+## Current focus
+The UNO MVP is complete and validated. Active work: the **game-agnostic core** (master prompt §52) so a second game plugs in without touching `core/`, `ws-server.ts` or the frontend shell. Plan: `C:\Users\gabri\.claude\plans\antes-dos-proximos-passos-elegant-clover.md`. See `.copilot/spec-kit/copilot-operating-standards.md` for the roadmap and the deliberate reorder ahead of the "party visual" phase.
+Keep `docs/CHANGELOG.md`, `docs/repository-gap-review.md` and `.copilot/logs/changes-log.md` current in the same batch as any code change.
+
 ## Core principles
 - Server is the source of truth for game state, validation, timers, turns, and scoring.
 - Host and mobile clients are consumers of validated state; they must not enforce game rules on their own.

@@ -2,7 +2,7 @@
 
 Este repositório implementa um **MVP local de plataforma de party games multiplayer** com o primeiro jogo inspirado em UNO.
 
-> Escopo atual: Fase 1 documentada + implementação funcional incremental das fases 2–8 (base).
+> Escopo atual: MVP do UNO completo e validado (Fases 1–10). Próximo: núcleo agnóstico de jogo (§52) para plugar um 2º jogo. Ver `docs/CHANGELOG.md` e `docs/repository-gap-review.md`.
 
 ## 1) Arquitetura recomendada
 
@@ -223,14 +223,18 @@ npm install
 
 ## Implementação atual (incremental)
 
-Fases implementadas até agora:
+_Atualizado em 2026-09-06. Detalhe por mudança em `docs/CHANGELOG.md`._
 
-- ✅ Fase 2: Core (`Room`, `Session`, `RoomManager`, `Game` interface)
-- ✅ Fase 3: Engine UNO com regras centrais, estado autoritativo e eventos
-- ✅ Fase 4: Servidor WebSocket com protocolo tipado, join/reconnect e roteamento de ações
-- ✅ Fase 5/6 (MVP funcional): apps `host` e `mobile` React conectando em tempo real
-- ✅ Fase 7 (base): reconexão por token de sessão + transferência automática de owner
-- ✅ Fase 8 (base): teste de integração multiplayer com host e múltiplos jogadores
+- ✅ **Fase 2** — Core (`Room`, `Session`, `RoomManager`, interface `Game`, janela de graça de 30s na desconexão).
+- ✅ **Fase 3** — Engine UNO completo: todas as cartas, acúmulo de +2, +4 sobre +2, denúncia com janela determinística, múltiplas rodadas + placar, fim de partida por meta, pausa/retomada, timeout autoritativo.
+- ✅ **Fase 4** — Servidor WebSocket com protocolo tipado + `zod`, dedupe por `messageId`, rate-limit, logs estruturados.
+- ✅ **Fase 5** — Host: board de jogo real (monte/descarte com arte, cor, sentido, +N, turno, timer, placar), controles do owner.
+- ✅ **Fase 6** — Mobile: entrada com avatar, faixa da mesa, mão com destaque de jogável, modal de cor pós-jogada, denúncia, retomada de sessão no reload; identidade visual "party" própria.
+- ✅ **Fase 7** — Reconexão por token de sessão assinado + transferência automática de owner + auto-reconnect com backoff nos dois clients.
+- ✅ **Fase 8** — Testes de integração multiplayer (join/owner/reconexão, 8 jogadores, partida sustentada, mensagem duplicada). Suite de servidor: 25 verdes.
+- ✅ **Fase 9–10** — UX + animações dirigidas por evento no host (cartas voando, flash de cor, burst de UNO/vitória; respeita `prefers-reduced-motion`).
+- 🔜 **Fase A (núcleo agnóstico, §52)** — em planejamento. Extrair `GamePlugin`/registry para adicionar um 2º jogo sem tocar no núcleo. Plano: `.claude/plans/antes-dos-proximos-passos-elegant-clover.md`. Feito **antes** da Fase 11 por decisão (2º jogo pronto e travado na abstração).
+- 🔜 **Fase 11 (§47)** — identidade visual completa + sons; dobrada na Fase C do plano (design system `@party/ui`).
 
 Pré-requisito: Node.js 20+.
 

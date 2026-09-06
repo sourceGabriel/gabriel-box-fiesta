@@ -33,4 +33,16 @@ A phase is only complete when:
 - the implementation matches the phase scope,
 - the code remains executable,
 - the relevant tests/build pass,
-- the next step remains explicit.
+- the next step remains explicit,
+- the tracking docs are updated in the same batch (`docs/CHANGELOG.md`, `docs/repository-gap-review.md`, `.copilot/logs/changes-log.md`, the active plan file).
+
+## Current roadmap (2026-09-06)
+The UNO MVP (§53) is complete and validated. Work now proceeds on the **game-agnostic core** (master prompt §52) per the plan at
+`C:\Users\gabri\.claude\plans\antes-dos-proximos-passos-elegant-clover.md`:
+
+- **Fase A** — extract a `GamePlugin` registry + opaque `GameInstance` + game-agnostic `Room`; frontend shell per role + `games/uno/` module. 5 green PRs; UNO stays identical. This is a **deliberate reorder ahead of Fase 11** because a second complete game is ready and blocked on the abstraction.
+- **Fase B** — game catalog / selection UI + return-to-lobby.
+- **Fase C** — shared `@party/ui` design system + synthesized Web Audio sounds; retrofit UNO. Fase 11 (own visual identity, §47) folds in here.
+- **Fase D** — integrate the second game: comparative analysis of its repo → port rules to a `GamePlugin` → build its host + controller views.
+
+Acceptance test for Fase A (proves §52): a stub game plugs in by touching only `server/src/games/<id>/` + one line in each registry — zero edits to `core/`, `ws-server.ts`, or the frontend shell.
