@@ -17,3 +17,10 @@ export interface HostGameViewProps {
 }
 
 export type HostGameView = FC<HostGameViewProps>;
+
+/** One registered game on the host: its in-game view + its catalog cover art. */
+export interface HostGameEntry {
+  View: HostGameView;
+  /** Catalog cover art — an inline SVG component, no external assets. */
+  Cover: FC;
+}

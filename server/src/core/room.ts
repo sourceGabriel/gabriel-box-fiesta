@@ -4,7 +4,7 @@ import { SessionService } from './session-service';
 import { isPausable, isRounded, isTurnTimed, type GameInstance } from './game-plugin';
 import { DEFAULT_GAME_ID, GAMES } from '../games/registry';
 
-export type RoomState = 'accepting_players' | 'in_game' | 'paused' | 'ended';
+export type RoomState = 'accepting_players' | 'in_game' | 'paused';
 
 export class Room {
   readonly id: string;
@@ -192,9 +192,11 @@ export class Room {
     this.bumpStateVersion();
   }
 
+  /** Ends the current game and returns the room to the lobby, keeping `selectedGameId`
+   * so the host lands on that game's lobby (Fase B: "play again" / "change game"). */
   endGame(): void {
     this.game = null;
-    this.state = 'ended';
+    this.state = 'accepting_players';
     this.bumpStateVersion();
   }
 

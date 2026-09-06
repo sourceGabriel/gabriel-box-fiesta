@@ -194,5 +194,31 @@
 ### Why
 - The master-prompt platform vision (§52) needs a game picker, not a single fused lobby. Recorded now so Fase B (after A5) starts from a settled flow instead of re-deciding it. Full detail: `C:\Users\gabri\.claude\plans\antes-dos-proximos-passos-elegant-clover.md` (FASE B).
 
+## 2026-09-06 — Fase B: 3-screen host flow (attract → catalog → lobby) + return-to-lobby
+### Added — `host`
+- `shell/AttractScreen.tsx` — the platform screen: "Box Fiesta" wordmark, room code, connected-phone count. Advances **manually only** (any key / click / tap) — no idle auto-advance. No QR here.
+- `shell/CatalogScreen.tsx` — game grid from `GAME_CATALOG` (`GameMeta` name / tagline / player range) + cover art from the game module. Keyboard (←/→/↑/↓ move, Enter/Space pick, Esc/Backspace back) and click/tap. Covers are passed down from the app, not fetched from the wire (`shared` stays types-only). No QR here.
+- `games/uno/UnoCover.tsx` — UNO catalog cover as an inline SVG (tilted card back + four-colour oval + "UNO" wordmark), no external asset.
+- `HostGameEntry` (`{ View, Cover }`); `HOST_GAMES` entries are now objects, `App.tsx` reads `HOST_GAMES[id].View`.
+
+### Changed — `host`
+- `App.tsx` — a `flow` state machine (`attract | catalog | lobby`); a game in progress (incl. mid-game host reload) always wins. When a game ends, `flow` returns to `lobby` (not attract). `SELECT_GAME` is sent when a game is picked in the catalog.
+- `LobbyScreen.tsx` — the catalog grid is gone (moved to `CatalogScreen`); the title now shows the selected game's name + tagline; added a "Trocar de jogo" button (→ catalog). QR stays here (large), and is the only screen with a QR.
+
+### Changed — `server`
+- `Room.endGame()` — now sets `state = 'accepting_players'` (was `'ended'`, which blocked `selectGame`) and keeps `selectedGameId`, so the host lands on that game's lobby and can "play again" (`START_GAME`) or "switch game" (`SELECT_GAME`). `'ended'` removed from `RoomState`.
+- `ws-server` `END_GAME` handler re-broadcasts `GAME_CATALOG` (fresh, same `selectedGameId`) alongside `GAME_ENDED` / `ROOM_STATE`.
+
+### Changed — `mobile`
+- `useRoomConnection` handles `GAME_ENDED` — clears the game state so the player returns to `WaitingScreen`, session kept.
+- `WaitingScreen` shows the selected game's name (accent) + tagline.
+
+### Tests
+- `room.test.ts` +1: `endGame()` → `accepting_players`, keeps `selectedGameId`, `selectGame` / `startGame` work again (play again + switch). **28 server tests green.**
+- Builds (4 workspaces), oxlint (host + mobile), server `tsc` green. Browser smoke: attract → (key/click) → catalog (UNO cover, nav) → pick → lobby (QR, code, players) → "Trocar de jogo" → catalog → lobby → 2 phones join (waiting shows "UNO" + tagline) → start → play → "Encerrar" → **host back to the lobby, phones back to waiting with session** → "Iniciar UNO" again (play again) works.
+
+### Why
+- The platform vision (§52) needs a game picker and a place to land after a match, not a single fused lobby. No new wire messages — reuses `END_GAME` / `START_GAME` / `SELECT_GAME` / `GAME_CATALOG`.
+
 ## Next planned change
-- **Fase B** — the 3-screen host flow (attract → catalog → lobby) + return-to-lobby. Server: `Room.endGame()` keeps `selectedGameId` and goes back to `accepting_players`; `ws-server` re-broadcasts `GAME_CATALOG` after `END_GAME`. Fase A (game-agnostic core, §52) is complete.
+- **Fase C** — shared `@party/ui` (design tokens + components + synthesized Web Audio sounds), retrofit host + mobile; folds in Fase 11 (§47 own visual identity — the "UNO" name and cover become the platform's own). `cardArt.ts` (duplicated host/mobile) consolidates here.

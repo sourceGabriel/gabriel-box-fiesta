@@ -37,4 +37,23 @@ describe('Room', () => {
     expect(reconnected.id).toBe(joined.player.id);
     expect(reconnected.connected).toBe(true);
   });
+
+  it('endGame returns to the lobby keeping the selected game so the host can play again or switch', () => {
+    const room = new Room('ABCD');
+    const owner = room.joinPlayer('Alice', Date.now()).player;
+    room.joinPlayer('Bob', Date.now());
+
+    room.startGame(owner.id, 'uno');
+    expect(room.state).toBe('in_game');
+    expect(room.game).not.toBeNull();
+
+    room.endGame();
+    expect(room.state).toBe('accepting_players');
+    expect(room.game).toBeNull();
+    expect(room.selectedGameId).toBe('uno');
+
+    // selectGame works again after a game, and a fresh game can start (play again).
+    expect(() => room.selectGame('uno')).not.toThrow();
+    expect(() => room.startGame(owner.id, 'uno')).not.toThrow();
+  });
 });

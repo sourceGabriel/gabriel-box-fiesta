@@ -68,3 +68,11 @@ The project is currently between the room lifecycle phase and the actual host ga
 - `host`/`mobile`: `useRoomConnection` resolves `activeGameId` from `payload.gameId`; host UNO module `GameEvent`→`UnoGameEvent`; `UnoControllerView` senders → `send('GAME_ACTION', { action: {...} })`.
 - Tests: `multiplayer.integration.test.ts` migrated (`gameAction()` helper + `pubState()`/`privState()` casts + `gameId` asserts). 27 server tests green; builds + host/mobile oxlint + server tsc green; browser smoke incl. mid-game reload passed.
 - **Fase A (game-agnostic core, §52) is complete.** Next: Fase B.
+
+## 2026-09-06 — Fase B (branch `feature/coup-ou-coupa`) — 3-screen host flow + return-to-lobby
+- `host`: new `shell/AttractScreen.tsx` ("Box Fiesta" wordmark, room code, phone count, manual advance, no QR), `shell/CatalogScreen.tsx` (game grid + cover art, keyboard + click nav, no QR), `games/uno/UnoCover.tsx` (inline SVG cover). `HOST_GAMES` entries → `{ View, Cover }`. `App.tsx` flow machine `attract | catalog | lobby` (in-game wins; game-end → lobby). `LobbyScreen` loses the catalog grid, gains "Trocar de jogo" + game name/tagline; QR only here.
+- `server`: `Room.endGame()` → `state='accepting_players'` keeping `selectedGameId` (`'ended'` removed from `RoomState`); `ws-server` re-broadcasts `GAME_CATALOG` after `END_GAME`.
+- `mobile`: `useRoomConnection` handles `GAME_ENDED` (→ waiting, session kept); `WaitingScreen` shows game name + tagline.
+- Tests: `room.test.ts` +1 (endGame → accepting_players + selectedGameId kept + play-again/switch work). **28 server tests green.** Builds + host/mobile oxlint + server tsc green; browser smoke of the full loop passed.
+- Decisions applied: QR only on lobby, attract advances manually, UNO cover generated as inline SVG. No new wire messages.
+- Next: **Fase C** (`@party/ui` design system + synth Web Audio sounds; folds in Fase 11 §47).

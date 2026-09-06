@@ -18,7 +18,7 @@ Local (LAN, no internet, no accounts, in-memory) "Jackbox-style" party-game plat
 - Change history + rationale: `docs/CHANGELOG.md` · Gap vs spec: `docs/repository-gap-review.md` · Short log: `.copilot/logs/changes-log.md`
 
 ## Current state (2026-09-06)
-UNO MVP **complete and validated** (Fases 1–10 + mobile visual overhaul). Server tests: **27 green**. Build: 4 workspaces green. Branch: **`feature/coup-ou-coupa`**.
+UNO MVP **complete and validated** (Fases 1–10 + mobile visual overhaul). Server tests: **28 green**. Build: 4 workspaces green. Branch: **`feature/coup-ou-coupa`**.
 
 **Fase A (game-agnostic core, §52) — COMPLETE:**
 - ✅ **A1** — `shared/src/games/` generic contract (`GameMeta`, `GameStatus`, `LifecycleEvent`) + `GAME_ACTION`/`SELECT_GAME`/`GAME_CATALOG`/`LIFECYCLE_EVENT` messages.
@@ -26,7 +26,9 @@ UNO MVP **complete and validated** (Fases 1–10 + mobile visual overhaul). Serv
 - ✅ **A3** — host split: `host/src/shell/` (game-agnostic; `publicState`/`events` opaque) + `host/src/games/{types,registry}.ts` (`HOST_GAMES`) + `host/src/games/uno/`. Thin `App.tsx`.
 - ✅ **A4** — mobile split: `mobile/src/shell/` (`session.ts` reconnect subsystem extracted verbatim) + `mobile/src/games/{types,registry}.ts` (`CONTROLLER_GAMES`) + `mobile/src/games/uno/`. Thin `App.tsx`.
 - ✅ **A5** — protocol cleanup (**breaking wire**): 5 legacy UNO verbs removed — only `GAME_ACTION` remains. `GAME_STATE_PUBLIC`/`PLAYER_STATE_PRIVATE`/`GAME_EVENT` are now `{ gameId, state|event: unknown, stateVersion }`; `GAME_STARTED` is `{ gameId }`; `ROOM_STATE.players[]` dropped `handCount`. `shared/events/game-events.ts` → `shared/src/games/uno/events.ts` (`UnoGameEvent`, 4 dead variants dropped). `Direction`/`Phase` moved from `models/common.ts` → `models/uno.ts` (`Direction`, `UnoPhase`). Frontends resolve `activeGameId` from `payload.gameId`; the UNO controller emits `GAME_ACTION`.
-Next: **Fase B** (game catalog / selection UI — 3-screen host flow attract→catalog→lobby + return-to-lobby), C (`@party/ui` design system + synthesized sounds; folds in Fase 11), D (integrate game #2).
+**Fase B — COMPLETE:** 3-screen host flow — `shell/AttractScreen` ("Box Fiesta" wordmark, manual advance, no QR) → `shell/CatalogScreen` (game grid + `HOST_GAMES[id].Cover` art, keyboard + click, no QR) → `LobbyScreen` (QR here only, "Trocar de jogo" → catalog, "Iniciar {game}"). `App.tsx` runs a `flow` state machine; in-game wins; `END_GAME` → back to that game's lobby. `Room.endGame()` → `accepting_players` keeping `selectedGameId`; `ws-server` re-broadcasts `GAME_CATALOG` on `END_GAME`. Mobile: `GAME_ENDED` → waiting (session kept); `WaitingScreen` shows game name + tagline. No new wire messages.
+
+Next: **Fase C** (`@party/ui` design system + synthesized Web Audio sounds; retrofit host + mobile; folds in Fase 11 §47 — the "UNO" name + cover become the platform's own), then **D** (integrate game #2).
 
 **Active plan:** `C:\Users\gabri\.claude\plans\antes-dos-proximos-passos-elegant-clover.md` — Fase A→D.
 Locked decisions:
@@ -47,7 +49,7 @@ Monorepo, npm workspaces: `server` · `shared` (**types-only, no runtime, no zod
 | WS gateway (`GAME_ACTION` routing, dedupe, rate-limit, 16KB cap, reconnect, capability-gated tick) | `server/src/websocket/ws-server.ts` |
 | Wire protocol (envelope, zod validation) | `shared/src/protocol/messages.ts` + `server/src/websocket/protocol.ts` |
 | UNO engine (~640 lines) + plugin + action zod | `server/src/games/uno/{uno-game,rules,cards,types,plugin,action-schema}.ts` |
-| Host UI (shell + game module, after A3) | `host/src/shell/` (`useRoomConnection`, `LobbyScreen`, `messages`, `shell.css`) + `host/src/games/{types,registry}.ts` + `host/src/games/uno/` + thin `App.tsx` |
+| Host UI (shell + game module) | `host/src/shell/` (`useRoomConnection`, `AttractScreen`, `CatalogScreen`, `LobbyScreen`, `messages`, `shell.css`) + `host/src/games/{types,registry}.ts` (`HOST_GAMES[id] = { View, Cover }`) + `host/src/games/uno/` (`UnoHostView`, `UnoCover`, …) + `App.tsx` (flow machine) |
 | Mobile UI (shell + game module, after A4) | `mobile/src/shell/` (`session`, `useRoomConnection`, `MobileHeader`, `JoinScreen`, `WaitingScreen`, `shell.css`) + `mobile/src/games/{types,registry}.ts` + `mobile/src/games/uno/` + thin `App.tsx` + `index.css` (theme/tokens) |
 | Card PNGs | `uno_card_sheet_crops/` (repo root, 54 files) |
 | Tests | `server/src/tests/{uno-game,room,multiplayer.integration}.test.ts` |
@@ -67,7 +69,7 @@ Monorepo, npm workspaces: `server` · `shared` (**types-only, no runtime, no zod
 ## Validation
 `/validate` runs it all and reports one line. Under the hood:
 ```
-npm run -w server test       # must stay green (currently 27)
+npm run -w server test       # must stay green (currently 28)
 npm run -w server lint        # tsc --noEmit
 npm run -w host lint          # oxlint
 npm run -w mobile lint        # oxlint

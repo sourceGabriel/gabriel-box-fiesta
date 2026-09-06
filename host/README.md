@@ -35,17 +35,23 @@ npm run -w host lint      # oxlint
 
 ## Estrutura
 
-- `src/App.tsx` — dispatcher fino: monta a conexão e mostra o lobby até um jogo
-  começar, depois entrega para a view registrada daquele jogo. Não conhece UNO.
+- `src/App.tsx` — dispatcher fino: máquina de estados de 3 telas
+  (`attract → catalog → lobby`); um jogo em andamento (`activeGameId`) sempre
+  vence; fim de jogo volta pro lobby. Não conhece UNO.
 - `src/shell/` — parte **genérica** (nenhum conhecimento de jogo):
   - `useRoomConnection.ts` — `/room` + WebSocket (reconexão + backoff), expõe
     `{ roomCode, players, catalog, selectedGameId, activeGameId, publicState,
     events, connected, send, … }`. `publicState`/`events` são opacos aqui.
-  - `LobbyScreen.tsx` — QR + código + lista de jogadores + botão iniciar; mostra
-    a grade do `GAME_CATALOG` só quando há mais de um jogo. `brandName` é prop.
+  - `AttractScreen.tsx` — marca "Box Fiesta" + código da sala; avança só manual
+    (tecla/clique). Sem QR.
+  - `CatalogScreen.tsx` — grade do `GAME_CATALOG` + arte de capa por jogo
+    (`covers` vem do app, não do fio); navegação setas/Enter/Esc + clique. Sem QR.
+  - `LobbyScreen.tsx` — QR grande + código + jogadores + "Iniciar {jogo}" +
+    "Trocar de jogo". É a única tela com QR.
   - `messages.ts`, `shell.css`.
-- `src/games/{types,registry}.ts` — `HostGameViewProps` e
-  `HOST_GAMES = { uno: UnoHostView }`. Adicionar um jogo = 1 import + 1 entrada.
-- `src/games/uno/` — a view do UNO (`UnoHostView.tsx`), `describeEvent.ts`,
-  `animations.ts` (Fase 10), `cardArt.ts`, `uno-host.css`.
+- `src/games/{types,registry}.ts` — `HostGameViewProps`, `HostGameEntry` e
+  `HOST_GAMES = { uno: { View: UnoHostView, Cover: UnoCover } }`. Adicionar um
+  jogo = 1 import + 1 entrada.
+- `src/games/uno/` — `UnoHostView.tsx`, `UnoCover.tsx` (capa SVG),
+  `describeEvent.ts`, `animations.ts` (Fase 10), `cardArt.ts`, `uno-host.css`.
 - `src/index.css` — reset mínimo + design tokens (`--bg`/`--panel`/`--line`/…).

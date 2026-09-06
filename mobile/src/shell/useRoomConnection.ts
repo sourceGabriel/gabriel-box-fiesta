@@ -136,6 +136,12 @@ export function useRoomConnection(): RoomConnection {
             setPrivateState(message.payload.state);
             setActiveGameId((current) => current ?? message.payload.gameId);
             break;
+          case 'GAME_ENDED':
+            // Game over — back to the waiting screen, session kept.
+            setActiveGameId(null);
+            setPublicState(null);
+            setPrivateState(null);
+            break;
           case 'ERROR':
             if (/INVALID_SESSION|PLAYER_NOT_FOUND/.test(message.payload.message)) {
               clearStoredSession(activeSessionKeyRef.current, roomCodeRef.current);

@@ -244,6 +244,13 @@ h2 {
   color: var(--text);
 }
 
+.waiting-game {
+  font-weight: 900;
+  font-size: 1.15rem;
+  letter-spacing: 0.02em;
+  color: var(--accent);
+}
+
 .dots span {
   animation: dot-bounce 1.2s infinite;
   display: inline-block;

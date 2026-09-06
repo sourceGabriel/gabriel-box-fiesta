@@ -1,6 +1,6 @@
 # Revisão do repositório: lacunas em relação ao prompt mestre
 
-_Atualizado em 2026-09-06 (branch `feature/coup-ou-coupa`, após a Fase A completa — PR A1→A5)._
+_Atualizado em 2026-09-06 (branch `feature/coup-ou-coupa`, após a Fase A completa (A1→A5) + Fase B)._
 
 ## Resumo executivo
 O MVP jogável do UNO (§53) está **completo e validado**: host mostra a mesa em tempo real, partida completa com cartas especiais, coringa com escolha de cor, UNO!, denúncia, placar acumulado entre rodadas, fim de partida, pausar/continuar, reconexão de jogador e transferência de owner. **27 testes de servidor verdes**; build dos 4 workspaces verde.
@@ -29,8 +29,8 @@ O MVP jogável do UNO (§53) está **completo e validado**: host mostra a mesa e
 ### 1) §52 — núcleo agnóstico de jogo — ✅ RESOLVIDO (Fase A)
 "Adicionar um jogo novo não deve exigir modificar o núcleo." Feito: `GamePlugin`/`GameInstance` opaco (`server/src/core/game-plugin.ts`), registry `GAMES`, `Room` sem import de UNO, `ws-server` só roteia `GAME_ACTION`, `messages.ts` com payloads `{ gameId, state|event: unknown }`, `UnoGameEvent` em `shared/src/games/uno/events.ts`, `common.ts` só genérico (`Direction`/`UnoPhase` em `models/uno.ts`). Único nome UNO que sobra no `shared`: `models/uno.ts` + `games/uno/events.ts` (ambos escopados) e `unoPlugin.meta.name` (§47, Fase C). Prova: um plugin stub entra tocando só `server/src/games/<id>/` + 1 linha em cada registry.
 
-### 2) Frontend sem shell multi-jogo
-**Resolvido em A3 (host) + A4 (mobile):** os dois `App.tsx` são dispatchers finos (shell `useRoomConnection` + telas de lobby/join/waiting + `HOST_GAMES`/`CONTROLLER_GAMES[activeGameId]`); `App.css` e `assets/` do template removidos dos dois; `host/src/index.css` trocado por reset + tokens. **Ainda pendente (Fase C):** `cardArt.ts` duplicado byte-a-byte entre host e mobile (menos os paths de import), sem pacote `@party/ui`, e tokens de CSS ainda duplicados entre os dois apps com valores levemente diferentes.
+### 2) Frontend sem shell multi-jogo + seleção de jogo
+**Resolvido em A3/A4 (shells) + Fase B (seleção):** os dois `App.tsx` são dispatchers finos; o host tem o fluxo de 3 telas `attract → catalog → lobby` (`AttractScreen`/`CatalogScreen`/`LobbyScreen`), arte de capa por jogo (`HOST_GAMES[id].Cover`, SVG inline), navegação teclado + clique; QR só no lobby; fim de jogo (`END_GAME`) → volta pro lobby do mesmo jogo; mobile volta pro waiting (`GAME_ENDED`, sessão mantida). **Ainda pendente (Fase C):** `cardArt.ts` duplicado entre host e mobile, sem pacote `@party/ui`, tokens de CSS duplicados.
 
 ### 3) Fase 11 — identidade visual completa + sons (§47)
 Mobile já tem identidade "party" própria; host tem visual TV coeso. Falta: sistema de design compartilhado (`@party/ui`), sons (sintetizados via Web Audio, sem assets), e uma identidade de marca própria substituindo o nome "UNO" (adiado por decisão do usuário).
@@ -38,7 +38,7 @@ Mobile já tem identidade "party" própria; host tem visual TV coeso. Falta: sis
 ### 4) Menores
 - Fluxo "jogar a carta que acabou de comprar" existe no engine (`playDrawnCardId`) mas não está exposto na UI do mobile.
 - Seletor de interface de IP quando há múltiplas (§39) — hoje auto-escolhe IPv4 privado; há override por env.
-- `shuffle` usa `Math.random` (não injetado) — gap de determinismo para testes reproduzíveis; será corrigido na Fase A via `GameContext.random`.
+- `shuffle` agora usa `GameContext.random` injetado (corrigido na Fase A/A2) — testes podem passar um RNG determinístico; `nanoid` de ids ainda não é injetado (baixa prioridade).
 - `multiplayer.integration.test.ts` fixa `108` cartas (invariante legítimo do UNO).
 
 ## Não fazer agora (§54)

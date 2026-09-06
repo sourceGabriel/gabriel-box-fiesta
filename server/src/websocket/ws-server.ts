@@ -293,6 +293,8 @@ export class PartyServer {
       this.assertOwner(ctx.playerId, ctx.role);
       room.endGame();
       this.broadcast('GAME_ENDED', {});
+      // Back in the lobby: re-sync the catalog so SELECT_GAME works again and the host can switch games.
+      this.broadcastGameCatalog();
       this.broadcastRoomState();
       return;
     }

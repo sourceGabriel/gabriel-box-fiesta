@@ -12,9 +12,9 @@ interface LobbyScreenProps {
   lastError: string;
   catalog: GameMeta[];
   selectedGameId: string;
-  onSelectGame: (gameId: string) => void;
   onStart: () => void;
-  brandName?: string;
+  /** Back to the game catalog. */
+  onChangeGame: () => void;
 }
 
 export function LobbyScreen({
@@ -26,9 +26,8 @@ export function LobbyScreen({
   lastError,
   catalog,
   selectedGameId,
-  onSelectGame,
   onStart,
-  brandName = 'UNO',
+  onChangeGame,
 }: LobbyScreenProps) {
   const onlineCount = players.filter((p) => p.connected).length;
   const selected = catalog.find((g) => g.id === selectedGameId) ?? catalog[0];
@@ -45,26 +44,9 @@ export function LobbyScreen({
     <main className="host-shell host-lobby">
       <div className="lobby-card">
         <div className="lobby-title">
-          <span className="brand-mark xl">{brandName}</span>
-          <p>Escaneie o QR code ou digite o código no celular para entrar.</p>
+          <span className="brand-mark xl">{selected?.name ?? 'Jogo'}</span>
+          {selected?.tagline ? <p>{selected.tagline}</p> : <p>Escaneie o QR code ou digite o código no celular para entrar.</p>}
         </div>
-
-        {catalog.length > 1 ? (
-          <div className="lobby-catalog" role="group" aria-label="Escolha o jogo">
-            {catalog.map((game) => (
-              <button
-                key={game.id}
-                type="button"
-                className={`catalog-item ${game.id === selectedGameId ? 'selected' : ''}`}
-                onClick={() => onSelectGame(game.id)}
-              >
-                <strong>{game.name}</strong>
-                {game.tagline ? <span>{game.tagline}</span> : null}
-                <small>{game.minPlayers}–{game.maxPlayers} jogadores</small>
-              </button>
-            ))}
-          </div>
-        ) : null}
 
         <div className="lobby-grid">
           <div className="lobby-qr">
@@ -91,6 +73,7 @@ export function LobbyScreen({
         </div>
 
         <div className="lobby-cta">
+          <button className="ghost-button" type="button" onClick={onChangeGame}>Trocar de jogo</button>
           <button className="start-button" disabled={!connected || !canStart} onClick={onStart} type="button">
             {canStart ? `Iniciar ${selected?.name ?? 'partida'}` : `Aguardando ${minPlayers}+ jogadores`}
           </button>

@@ -8,8 +8,9 @@ interface WaitingScreenProps {
   myName: string;
   players: ShellPlayer[];
   playerId: string | null;
-  /** Name of the game the host has selected, shown so players know what's starting. */
+  /** Name + tagline of the game the host has selected, shown so players know what's starting. */
   gameName?: string;
+  gameTagline?: string;
 }
 
 export function WaitingScreen({
@@ -20,6 +21,7 @@ export function WaitingScreen({
   players,
   playerId,
   gameName,
+  gameTagline,
 }: WaitingScreenProps) {
   return (
     <>
@@ -29,8 +31,10 @@ export function WaitingScreen({
         <div className="waiting-badge">{avatar}</div>
         <h2>Tudo pronto!</h2>
         <p className="you-are">Você entrou como <strong>{myName}</strong></p>
+        {gameName ? <p className="waiting-game">{gameName}</p> : null}
+        {gameTagline ? <p className="hint">{gameTagline}</p> : null}
         <p className="hint dots">
-          Aguardando o anfitrião iniciar{gameName ? ` ${gameName}` : ''}<span>.</span><span>.</span><span>.</span>
+          Aguardando o anfitrião iniciar<span>.</span><span>.</span><span>.</span>
         </p>
       </section>
 

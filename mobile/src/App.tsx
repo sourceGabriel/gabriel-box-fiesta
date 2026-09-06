@@ -18,7 +18,7 @@ function App() {
   const myName =
     conn.roomPlayers.find((player) => player.id === conn.playerId)?.name
     ?? `${avatar} ${playerName.trim() || 'Você'}`;
-  const gameName = conn.catalog.find((game) => game.id === conn.selectedGameId)?.name;
+  const selectedGame = conn.catalog.find((game) => game.id === conn.selectedGameId);
   const GameView = conn.activeGameId ? CONTROLLER_GAMES[conn.activeGameId] : undefined;
 
   let screen;
@@ -44,7 +44,8 @@ function App() {
         myName={myName}
         players={conn.roomPlayers}
         playerId={conn.playerId}
-        gameName={gameName}
+        gameName={selectedGame?.name}
+        gameTagline={selectedGame?.tagline}
       />
     );
   } else {
