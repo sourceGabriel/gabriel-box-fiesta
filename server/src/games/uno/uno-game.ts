@@ -168,10 +168,30 @@ export class UnoGame implements Game<UnoFullState, UnoAction, GameEvent, UnoPubl
   }
 
   onTurnTimeout(): GameEvent[] {
-    if (this.paused || this.state.phase !== 'round_active' || !this.state.currentPlayerId) {
+    if (this.paused) {
+      return [];
+    }
+    if (this.state.phase === 'awaiting_color_choice' && this.state.pendingColorChoiceBy) {
+      return this.handleAction({
+        type: 'choose_color',
+        playerId: this.state.pendingColorChoiceBy,
+        color: this.autoPickColor(this.state.pendingColorChoiceBy),
+      });
+    }
+    if (this.state.phase !== 'round_active' || !this.state.currentPlayerId) {
       return [];
     }
     return this.handleAction({ type: 'timeout' });
+  }
+
+  private autoPickColor(playerId: string): 'red' | 'yellow' | 'green' | 'blue' {
+    const counts: Record<'red' | 'yellow' | 'green' | 'blue', number> = { red: 0, yellow: 0, green: 0, blue: 0 };
+    for (const card of this.state.hands[playerId] ?? []) {
+      if (card.color !== 'wild') {
+        counts[card.color] += 1;
+      }
+    }
+    return (['red', 'yellow', 'green', 'blue'] as const).reduce((best, color) => (counts[color] > counts[best] ? color : best), 'red');
   }
 
   handleAction(action: UnoAction): GameEvent[] {
@@ -283,6 +303,7 @@ export class UnoGame implements Game<UnoFullState, UnoAction, GameEvent, UnoPubl
         };
       }),
       currentPlayerId: this.state.currentPlayerId,
+      pendingColorChoiceBy: this.paused ? null : this.state.pendingColorChoiceBy,
       direction: this.state.direction,
       currentColor: this.state.currentColor,
       topDiscard: this.state.discardPile.at(-1) ?? null,

@@ -336,7 +336,11 @@ function App() {
             </div>
           </div>
 
-          <p className="turn-banner">Vez de <strong>{currentPlayerName}</strong></p>
+          <p className="turn-banner">
+            {publicState.phase === 'awaiting_color_choice'
+              ? <><strong>{currentPlayerName}</strong> está escolhendo a cor…</>
+              : <>Vez de <strong>{currentPlayerName}</strong></>}
+          </p>
 
           {unoForgot ? (
             <p className="uno-shout forgot">⚠️ {unoForgot.name} esqueceu de dizer UNO!</p>

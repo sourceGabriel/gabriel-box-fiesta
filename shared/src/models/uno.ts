@@ -29,6 +29,8 @@ export type UnoPublicState = {
   roomCode: string;
   players: UnoPublicPlayer[];
   currentPlayerId: PlayerId | null;
+  /** Player who must pick a colour after playing a wild (phase 'awaiting_color_choice'). */
+  pendingColorChoiceBy: PlayerId | null;
   direction: Direction;
   currentColor: Exclude<UnoColor, 'wild'> | null;
   topDiscard: UnoCard | null;

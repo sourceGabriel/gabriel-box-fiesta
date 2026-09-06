@@ -4,6 +4,7 @@ import { UnoGame } from '../games/uno/uno-game';
 
 const numberCard = (id: string, color: UnoCard['color'], value: number): UnoCard => ({ id, color, type: 'number', value });
 const drawTwoCard = (id: string, color: UnoCard['color']): UnoCard => ({ id, color, type: 'draw_two', value: null });
+const wildCard = (id: string): UnoCard => ({ id, color: 'wild', type: 'wild', value: null });
 const wildDrawFourCard = (id: string): UnoCard => ({ id, color: 'wild', type: 'wild_draw_four', value: null });
 
 const players = [
@@ -204,6 +205,42 @@ describe('UnoGame', () => {
     const game = new UnoGame(players, 'ABCD');
     game.start();
     expect(() => game.startNextRound()).toThrow(/INVALID_PHASE/);
+  });
+
+  it('waits for a colour choice after a wild and advances the turn on confirm', () => {
+    const game = new UnoGame(players, 'ABCD');
+    game.start();
+    const state = (game as unknown as { state: ReturnType<UnoGame['getState']> }).state;
+    state.discardPile = [numberCard('top', 'red', 5)];
+    state.currentColor = 'red';
+    state.currentPlayerId = 'p1';
+    state.hands.p1 = [wildCard('w'), numberCard('f1', 'red', 1), numberCard('f2', 'red', 2)];
+
+    game.handleAction({ type: 'play_card', playerId: 'p1', cardId: 'w' });
+    expect(game.getPublicState().phase).toBe('awaiting_color_choice');
+    expect(game.getPublicState().pendingColorChoiceBy).toBe('p1');
+    expect(game.getState().currentPlayerId).toBe('p1');
+
+    game.handleAction({ type: 'choose_color', playerId: 'p1', color: 'blue' });
+    expect(game.getPublicState().phase).toBe('round_active');
+    expect(game.getPublicState().currentColor).toBe('blue');
+    expect(game.getState().currentPlayerId).toBe('p2');
+  });
+
+  it('auto-picks the most common colour when the wild player times out', () => {
+    const game = new UnoGame(players, 'ABCD');
+    game.start();
+    const state = (game as unknown as { state: ReturnType<UnoGame['getState']> }).state;
+    state.discardPile = [numberCard('top', 'red', 5)];
+    state.currentColor = 'red';
+    state.currentPlayerId = 'p1';
+    state.hands.p1 = [wildCard('w'), numberCard('b1', 'blue', 1), numberCard('b2', 'blue', 2)];
+
+    game.handleAction({ type: 'play_card', playerId: 'p1', cardId: 'w' });
+    game.onTurnTimeout();
+
+    expect(game.getPublicState().phase).toBe('round_active');
+    expect(game.getPublicState().currentColor).toBe('blue');
   });
 
   it('pauses the turn timer, blocks actions, and restores remaining time on resume', () => {

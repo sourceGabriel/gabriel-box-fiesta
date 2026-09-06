@@ -206,6 +206,8 @@ function App() {
   const paused = publicState?.phase === 'paused';
   const roundOver = publicState?.phase === 'round_finished' || gameOver;
   const playing = gameStarted && !roundOver && !paused;
+  const mustPickColor = publicState?.phase === 'awaiting_color_choice' && publicState.pendingColorChoiceBy === playerId;
+  const canAct = publicState?.phase === 'round_active';
   const canSubmitJoin = connected && roomCode.trim().length > 0 && playerName.trim().length > 0;
   const resultWinnerId = gameOver ? publicState?.gameWinnerPlayerId : publicState?.winnerPlayerId;
   const resultWinnerName = publicState?.players.find((player) => player.id === resultWinnerId)?.name ?? '—';
@@ -267,15 +269,16 @@ function App() {
     if (!socketRef.current || !selectedCard) {
       return;
     }
-    socketRef.current.send(
-      JSON.stringify(
-        makeMessage('PLAY_CARD', {
-          cardId: selectedCard.id,
-          chosenColor: selectedCard.type === 'wild' || selectedCard.type === 'wild_draw_four' ? chosenColor : undefined,
-        }),
-      ),
-    );
+    // Wild cards are played first; the server then asks for a colour (see the colour modal).
+    socketRef.current.send(JSON.stringify(makeMessage('PLAY_CARD', { cardId: selectedCard.id })));
     setSelectedCardId(null);
+  };
+
+  const confirmColor = (): void => {
+    if (!socketRef.current) {
+      return;
+    }
+    socketRef.current.send(JSON.stringify(makeMessage('CHOOSE_COLOR', { color: chosenColor })));
   };
 
   const drawCard = (): void => {
@@ -435,7 +438,7 @@ function App() {
                   <button
                     key={card.id}
                     className={`card ${selected ? 'selected' : ''} ${playable ? 'playable' : ''}`}
-                    disabled={!myTurn || !playable}
+                    disabled={!canAct || !myTurn || !playable}
                     onClick={() => setSelectedCardId(selected ? null : card.id)}
                     type="button"
                     aria-label={card.type === 'number' ? `${card.color} ${card.value}` : `${card.color} ${card.type}`}
@@ -448,25 +451,11 @@ function App() {
           </section>
 
           <section className="actions-panel">
-            {(selectedCard?.type === 'wild' || selectedCard?.type === 'wild_draw_four') ? (
-              <div className="color-choice" role="group" aria-label="Escolha a cor do coringa">
-                {(['red', 'yellow', 'green', 'blue'] as const).map((color) => (
-                  <button
-                    key={color}
-                    type="button"
-                    className={`color-swatch swatch-${color} ${chosenColor === color ? 'selected' : ''}`}
-                    onClick={() => setChosenColor(color)}
-                    aria-label={color}
-                    aria-pressed={chosenColor === color}
-                  />
-                ))}
-              </div>
-            ) : null}
             <div className="action-row">
-              <button className="action-button action-green" disabled={!myTurn || !selectedCard} onClick={playCard} type="button">
+              <button className="action-button action-green" disabled={!canAct || !myTurn || !selectedCard} onClick={playCard} type="button">
                 Jogar
               </button>
-              <button className="action-button action-blue" disabled={!myTurn} onClick={drawCard} type="button">
+              <button className="action-button action-blue" disabled={!canAct || !myTurn} onClick={drawCard} type="button">
                 Comprar
               </button>
               <button
@@ -480,6 +469,27 @@ function App() {
             </div>
           </section>
         </>
+      ) : null}
+
+      {mustPickColor ? (
+        <div className="color-modal" role="dialog" aria-modal="true" aria-label="Escolha a cor">
+          <div className="color-modal-card">
+            <h2>Escolha a cor</h2>
+            <div className="color-choice" role="group">
+              {(['red', 'yellow', 'green', 'blue'] as const).map((color) => (
+                <button
+                  key={color}
+                  type="button"
+                  className={`color-swatch swatch-${color} ${chosenColor === color ? 'selected' : ''}`}
+                  onClick={() => setChosenColor(color)}
+                  aria-label={color}
+                  aria-pressed={chosenColor === color}
+                />
+              ))}
+            </div>
+            <button type="button" className="primary-button" onClick={confirmColor}>Confirmar</button>
+          </div>
+        </div>
       ) : null}
 
       {error ? <p className="error">{error}</p> : null}
