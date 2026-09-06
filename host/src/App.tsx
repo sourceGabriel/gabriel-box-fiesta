@@ -173,6 +173,10 @@ function App() {
     socketRef.current?.send(JSON.stringify(makeMessage('NEXT_ROUND', {})));
   };
 
+  const handlePauseToggle = (resume: boolean) => {
+    socketRef.current?.send(JSON.stringify(makeMessage(resume ? 'RESUME_GAME' : 'PAUSE_GAME', {})));
+  };
+
   const handleNewGame = () => {
     socketRef.current?.send(JSON.stringify(makeMessage('START_GAME', {})));
   };
@@ -185,6 +189,7 @@ function App() {
   const gameWinnerName = publicState?.players.find((player) => player.id === publicState.gameWinnerPlayerId)?.name ?? '—';
   const roundOver = publicState?.phase === 'round_finished';
   const gameOver = publicState?.phase === 'game_finished';
+  const paused = publicState?.phase === 'paused';
 
   const handleKickPlayer = (playerId: string) => {
     const confirmed = window.confirm('Expulsar este jogador da sala?');
@@ -249,6 +254,19 @@ function App() {
 
   return (
     <main className="host-shell host-game">
+      {paused ? (
+        <div className="result-overlay" role="dialog" aria-live="polite">
+          <div className="result-card">
+            <p className="eyebrow">Partida pausada</p>
+            <h2>⏸ Aguardando o anfitrião</h2>
+            <div className="result-actions">
+              <button type="button" className="start-button" onClick={() => handlePauseToggle(true)}>Continuar</button>
+              <button type="button" className="danger-button" onClick={handleEndGame}>Encerrar</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {(roundOver || gameOver) ? (
         <div className="result-overlay" role="dialog" aria-live="polite">
           <div className="result-card">
@@ -359,6 +377,9 @@ function App() {
             ))}
           </ul>
           <div className="side-actions">
+            <button type="button" className="ghost-button" onClick={() => handlePauseToggle(paused)}>
+              {paused ? '▶ Continuar' : '⏸ Pausar'}
+            </button>
             <button type="button" className="ghost-button" onClick={() => setRevealDrawPile((current) => !current)}>
               {revealDrawPile ? 'Ocultar monte' : 'Revelar monte'}
             </button>

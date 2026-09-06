@@ -205,4 +205,26 @@ describe('UnoGame', () => {
     game.start();
     expect(() => game.startNextRound()).toThrow(/INVALID_PHASE/);
   });
+
+  it('pauses the turn timer, blocks actions, and restores remaining time on resume', () => {
+    const clock = { t: 1000 };
+    const game = new UnoGame(players, 'ABCD', () => clock.t);
+    game.start();
+    const state = (game as unknown as { state: ReturnType<UnoGame['getState']> }).state;
+    state.currentPlayerId = 'p1';
+
+    clock.t = 5000;
+    game.pause(clock.t);
+    expect(game.getPublicState().phase).toBe('paused');
+    expect(game.getPublicState().timer).toBeNull();
+    expect(() => game.handleAction({ type: 'draw_card', playerId: 'p1' })).toThrow(/GAME_PAUSED/);
+    expect(game.onTurnTimeout()).toEqual([]);
+
+    clock.t = 90_000; // a long real-world pause
+    game.resume(clock.t);
+    expect(game.getPublicState().phase).toBe('round_active');
+    const timer = game.getPublicState().timer!;
+    expect(timer.remainingMs).toBeGreaterThan(20_000);
+    expect(timer.remainingMs).toBeLessThanOrEqual(30_000);
+  });
 });

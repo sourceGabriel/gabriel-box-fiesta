@@ -26,6 +26,10 @@ export class UnoGame implements Game<UnoFullState, UnoAction, GameEvent, UnoPubl
 
   private state: UnoFullState;
 
+  private paused = false;
+
+  private pausedRemainingMs: number | null = null;
+
   constructor(
     private readonly players: { id: string; name: string }[],
     private readonly roomCode: string,
@@ -126,14 +130,52 @@ export class UnoGame implements Game<UnoFullState, UnoAction, GameEvent, UnoPubl
     }
   }
 
+  isPaused(): boolean {
+    return this.paused;
+  }
+
+  /** Freeze the current turn timer. No-op unless a round is in progress. */
+  pause(now: number): GameEvent[] {
+    if (this.paused || (this.state.phase !== 'round_active' && this.state.phase !== 'awaiting_color_choice')) {
+      return [];
+    }
+    this.pausedRemainingMs = this.state.timer ? Math.max(0, this.state.timer.expiresAt - now) : null;
+    this.state.timer = null;
+    this.paused = true;
+    this.events.push({ type: 'game_paused' });
+    return this.events.slice(-1);
+  }
+
+  /** Resume the frozen turn, restoring the remaining time for the current player. */
+  resume(now: number): GameEvent[] {
+    if (!this.paused) {
+      return [];
+    }
+    this.paused = false;
+    if (this.pausedRemainingMs !== null && this.state.phase === 'round_active' && this.state.currentPlayerId) {
+      const remaining = this.pausedRemainingMs;
+      this.state.timer = {
+        startedAt: now,
+        expiresAt: now + remaining,
+        durationMs: TURN_DURATION_MS,
+        serverNow: now,
+        remainingMs: remaining,
+      };
+    }
+    this.pausedRemainingMs = null;
+    this.events.push({ type: 'game_resumed' });
+    return this.events.slice(-1);
+  }
+
   onTurnTimeout(): GameEvent[] {
-    if (this.state.phase !== 'round_active' || !this.state.currentPlayerId) {
+    if (this.paused || this.state.phase !== 'round_active' || !this.state.currentPlayerId) {
       return [];
     }
     return this.handleAction({ type: 'timeout' });
   }
 
   handleAction(action: UnoAction): GameEvent[] {
+    assertCondition(!this.paused || action.type === 'timeout', 'GAME_PAUSED', 'Game is paused');
     const before = this.events.length;
     switch (action.type) {
       case 'timeout': {
@@ -230,7 +272,7 @@ export class UnoGame implements Game<UnoFullState, UnoAction, GameEvent, UnoPubl
       : null;
 
     return {
-      phase: this.state.phase,
+      phase: this.paused ? 'paused' : this.state.phase,
       roomCode: this.state.roomCode,
       players: this.state.playersOrder.map((playerId) => {
         const base = this.state.players[playerId];
@@ -269,8 +311,8 @@ export class UnoGame implements Game<UnoFullState, UnoAction, GameEvent, UnoPubl
     return {
       playerId,
       hand: [...hand],
-      canPlay: this.state.currentPlayerId === playerId && this.state.phase === 'round_active',
-      selectableCardIds,
+      canPlay: !this.paused && this.state.currentPlayerId === playerId && this.state.phase === 'round_active',
+      selectableCardIds: this.paused ? [] : selectableCardIds,
     };
   }
 

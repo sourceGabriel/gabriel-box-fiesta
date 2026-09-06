@@ -282,6 +282,20 @@ export class PartyServer {
       return;
     }
 
+    if (message.type === 'PAUSE_GAME') {
+      this.assertOwner(ctx.playerId, ctx.role);
+      room.pauseGame();
+      this.flushAndPublishState();
+      return;
+    }
+
+    if (message.type === 'RESUME_GAME') {
+      this.assertOwner(ctx.playerId, ctx.role);
+      room.resumeGame();
+      this.flushAndPublishState();
+      return;
+    }
+
     if (message.type === 'KICK_PLAYER') {
       this.assertOwner(ctx.playerId, ctx.role);
       const targetPlayerId = message.payload.targetPlayerId;
@@ -327,7 +341,7 @@ export class PartyServer {
       return;
     }
 
-    this.send(socket, 'ERROR', { code: 'NOT_IMPLEMENTED', message: `Action ${message.type} not implemented`, recoverable: true });
+    this.send(socket, 'ERROR', { code: 'NOT_IMPLEMENTED', message: 'Unsupported action', recoverable: true });
   }
 
   private flushAndPublishState(): void {

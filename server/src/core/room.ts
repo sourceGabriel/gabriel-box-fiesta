@@ -139,6 +139,24 @@ export class Room {
     this.bumpStateVersion();
   }
 
+  pauseGame(): void {
+    if (!this.game) {
+      throw new Error('GAME_NOT_STARTED:Game is not started');
+    }
+    this.game.pause(Date.now());
+    this.state = 'paused';
+    this.bumpStateVersion();
+  }
+
+  resumeGame(): void {
+    if (!this.game) {
+      throw new Error('GAME_NOT_STARTED:Game is not started');
+    }
+    this.game.resume(Date.now());
+    this.state = 'in_game';
+    this.bumpStateVersion();
+  }
+
   endGame(): void {
     this.game = null;
     this.state = 'ended';

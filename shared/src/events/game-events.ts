@@ -7,6 +7,8 @@ export type GameEvent =
   | { type: 'player_disconnected'; playerId: PlayerId }
   | { type: 'owner_changed'; playerId: PlayerId | null }
   | { type: 'game_started' }
+  | { type: 'game_paused' }
+  | { type: 'game_resumed' }
   | { type: 'round_started'; round: number; startingPlayerId: PlayerId }
   | { type: 'timer_started'; playerId: PlayerId; turn: number; durationMs: number }
   | { type: 'turn_started'; playerId: PlayerId; turn: number }

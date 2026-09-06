@@ -203,8 +203,9 @@ function App() {
   const hasJoined = Boolean(playerId);
   const gameStarted = Boolean(privateState);
   const gameOver = publicState?.phase === 'game_finished';
+  const paused = publicState?.phase === 'paused';
   const roundOver = publicState?.phase === 'round_finished' || gameOver;
-  const playing = gameStarted && !roundOver;
+  const playing = gameStarted && !roundOver && !paused;
   const canSubmitJoin = connected && roomCode.trim().length > 0 && playerName.trim().length > 0;
   const resultWinnerId = gameOver ? publicState?.gameWinnerPlayerId : publicState?.winnerPlayerId;
   const resultWinnerName = publicState?.players.find((player) => player.id === resultWinnerId)?.name ?? '—';
@@ -350,6 +351,12 @@ function App() {
           <div className="waiting-badge">{selectedAvatar}</div>
           <h2>Você está na sala</h2>
           <p className="hint">Aguardando o anfitrião iniciar a partida…</p>
+        </section>
+      ) : paused ? (
+        <section className="waiting-panel">
+          <div className="waiting-badge">⏸</div>
+          <h2>Partida pausada</h2>
+          <p className="hint">Aguardando o anfitrião continuar…</p>
         </section>
       ) : null}
 
