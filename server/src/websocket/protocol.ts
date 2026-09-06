@@ -11,8 +11,6 @@ const base = z.object({
   payload: z.unknown(),
 });
 
-const color = z.enum(['red', 'yellow', 'green', 'blue']);
-
 const clientSchema = z.discriminatedUnion('type', [
   base.extend({ type: z.literal('JOIN_ROOM'), payload: z.object({ roomCode: z.string().min(1), playerName: z.string().min(1).max(40), role: z.enum(['player', 'host']) }) }),
   base.extend({ type: z.literal('RECONNECT_SESSION'), payload: z.object({ roomCode: z.string().min(1), sessionToken: z.string().min(1), role: z.enum(['player', 'host']) }) }),
@@ -22,11 +20,6 @@ const clientSchema = z.discriminatedUnion('type', [
   base.extend({ type: z.literal('NEXT_ROUND'), payload: z.object({}) }),
   // Generic per-game action. Only the envelope is validated here; the active game plugin validates `action`.
   base.extend({ type: z.literal('GAME_ACTION'), payload: z.object({ action: z.unknown() }) }),
-  base.extend({ type: z.literal('PLAY_CARD'), payload: z.object({ cardId: z.string().min(1), chosenColor: color.optional() }) }),
-  base.extend({ type: z.literal('DRAW_CARD'), payload: z.object({ playDrawnCardId: z.string().optional(), chosenColor: color.optional() }) }),
-  base.extend({ type: z.literal('CHOOSE_COLOR'), payload: z.object({ color }) }),
-  base.extend({ type: z.literal('UNO_CALL'), payload: z.object({}) }),
-  base.extend({ type: z.literal('UNO_CHALLENGE'), payload: z.object({ targetPlayerId: z.string().min(1) }) }),
   base.extend({ type: z.literal('PAUSE_GAME'), payload: z.object({}) }),
   base.extend({ type: z.literal('RESUME_GAME'), payload: z.object({}) }),
   base.extend({ type: z.literal('KICK_PLAYER'), payload: z.object({ targetPlayerId: z.string().min(1) }) }),

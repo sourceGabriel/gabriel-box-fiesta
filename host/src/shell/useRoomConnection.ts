@@ -29,7 +29,6 @@ const EVENT_BUFFER = 24;
 export function useRoomConnection(): RoomConnection {
   const socketRef = useRef<WebSocket | null>(null);
   const seqRef = useRef(0);
-  const selectedGameIdRef = useRef('');
 
   const [roomCode, setRoomCode] = useState('');
   const [players, setPlayers] = useState<ShellPlayer[]>([]);
@@ -108,13 +107,11 @@ export function useRoomConnection(): RoomConnection {
           case 'GAME_CATALOG':
             setCatalog(message.payload.games);
             setSelectedGameId(message.payload.selectedGameId);
-            selectedGameIdRef.current = message.payload.selectedGameId;
             break;
           case 'GAME_STATE_PUBLIC':
             setPublicState(message.payload.state);
-            // On a mid-game reconnect the server replays GAME_STATE_PUBLIC but not
-            // GAME_STARTED — infer the active game from the current lobby selection.
-            setActiveGameId((current) => current ?? (selectedGameIdRef.current || null));
+            // A mid-game reconnect replays GAME_STATE_PUBLIC but not GAME_STARTED.
+            setActiveGameId((current) => current ?? message.payload.gameId);
             break;
           case 'GAME_EVENT': {
             const seq = (seqRef.current += 1);
@@ -122,7 +119,7 @@ export function useRoomConnection(): RoomConnection {
             break;
           }
           case 'GAME_STARTED':
-            setActiveGameId(selectedGameIdRef.current || null);
+            setActiveGameId(message.payload.gameId);
             setEvents([]);
             break;
           case 'GAME_ENDED':

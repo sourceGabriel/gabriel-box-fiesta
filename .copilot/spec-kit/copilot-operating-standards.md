@@ -40,8 +40,7 @@ A phase is only complete when:
 The UNO MVP (§53) is complete and validated. Work now proceeds on the **game-agnostic core** (master prompt §52) per the plan at
 `C:\Users\gabri\.claude\plans\antes-dos-proximos-passos-elegant-clover.md`:
 
-- **Fase A** — extract a `GamePlugin` registry + opaque `GameInstance` + game-agnostic `Room`; frontend shell per role + `games/uno/` module. 5 green PRs; UNO stays identical. This is a **deliberate reorder ahead of Fase 11** because a second complete game is ready and blocked on the abstraction.
-  Progress: A1 ✅ (`shared` generic contract), A2 ✅ (server registry + agnostic `Room` + dual protocol), A3 ✅ (host shell + `host/src/games/uno/`), A4 ✅ (mobile shell + `session.ts` reconnect subsystem + `mobile/src/games/uno/`). Next: A5 (drop legacy UNO verbs, generic `{gameId,state}` payloads).
+- **Fase A** — ✅ COMPLETE. `GamePlugin` registry + opaque `GameInstance` + game-agnostic `Room`; frontend shell per role + `games/uno/` module; generic wire (`GAME_ACTION` only, `{ gameId, state|event: unknown }` payloads). 5 green PRs (A1 shared contract, A2 server registry, A3 host shell, A4 mobile shell + `session.ts`, A5 protocol cleanup). UNO stays identical. Was a **deliberate reorder ahead of Fase 11** because a second complete game is blocked on the abstraction.
 - **Fase B** — game catalog / selection UI + return-to-lobby.
 - **Fase C** — shared `@party/ui` design system + synthesized Web Audio sounds; retrofit UNO. Fase 11 (own visual identity, §47) folds in here.
 - **Fase D** — integrate the second game: comparative analysis of its repo → port rules to a `GamePlugin` → build its host + controller views.

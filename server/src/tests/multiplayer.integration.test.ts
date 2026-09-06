@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import WebSocket, { type RawData } from 'ws';
-import type { ServerMessage } from '@party/shared';
+import type { ServerMessage, UnoGameEvent, UnoPrivatePlayerState, UnoPublicState } from '@party/shared';
 import { PartyServer } from '../websocket/ws-server';
 
 const makeMessage = <T extends string, P>(type: T, payload: P) =>
@@ -11,6 +11,16 @@ const makeMessage = <T extends string, P>(type: T, payload: P) =>
     type,
     payload,
   });
+
+/** A generic GAME_ACTION envelope carrying a raw UNO action. */
+const gameAction = (action: Record<string, unknown>) => makeMessage('GAME_ACTION', { action });
+
+// GAME_STATE_PUBLIC / PLAYER_STATE_PRIVATE / GAME_EVENT payloads are `unknown` on the wire;
+// the tests know the active game is UNO and cast at the boundary.
+const pubState = (m: Extract<ServerMessage, { type: 'GAME_STATE_PUBLIC' }>): UnoPublicState =>
+  m.payload.state as UnoPublicState;
+const privState = (m: Extract<ServerMessage, { type: 'PLAYER_STATE_PRIVATE' }>): UnoPrivatePlayerState =>
+  m.payload.state as UnoPrivatePlayerState;
 
 const waitForMessage = async <T extends ServerMessage['type']>(
   socket: WebSocket,
@@ -170,25 +180,26 @@ describe('multiplayer integration', () => {
     host.send(makeMessage('START_GAME', {}));
     await gameStartedPromise;
     const publicState = await publicStatePromise;
-    expect(publicState.payload.state.players).toHaveLength(2);
-    expect(publicState.payload.state.players.every((player) => typeof player.handCount === 'number')).toBe(true);
+    expect(publicState.payload.gameId).toBe('uno');
+    expect(pubState(publicState).players).toHaveLength(2);
+    expect(pubState(publicState).players.every((player) => typeof player.handCount === 'number')).toBe(true);
 
     const p1Private = await waitForMessageWhere(
       p1,
       'PLAYER_STATE_PRIVATE',
-      (message) => message.payload.state.playerId === p1Joined.payload.playerId,
+      (message) => privState(message).playerId === p1Joined.payload.playerId,
     );
     const p2Private = await waitForMessageWhere(
       p2,
       'PLAYER_STATE_PRIVATE',
-      (message) => message.payload.state.playerId === p2Joined.payload.playerId,
+      (message) => privState(message).playerId === p2Joined.payload.playerId,
     );
 
-    expect(p1Private.payload.state.playerId).toBe(p1Joined.payload.playerId);
-    expect(p2Private.payload.state.playerId).toBe(p2Joined.payload.playerId);
-    expect(p1Private.payload.state.hand).toHaveLength(7);
-    expect(p2Private.payload.state.hand).toHaveLength(7);
-    expect(p1Private.payload.state.playerId).not.toBe(p2Private.payload.state.playerId);
+    expect(privState(p1Private).playerId).toBe(p1Joined.payload.playerId);
+    expect(privState(p2Private).playerId).toBe(p2Joined.payload.playerId);
+    expect(privState(p1Private).hand).toHaveLength(7);
+    expect(privState(p2Private).hand).toHaveLength(7);
+    expect(privState(p1Private).playerId).not.toBe(privState(p2Private).playerId);
 
     host.close();
     p1.close();
@@ -259,11 +270,11 @@ describe('multiplayer integration', () => {
     const publicStatePromise = waitForMessage(host, 'GAME_STATE_PUBLIC');
     host.send(makeMessage('START_GAME', {}));
     const publicState = await publicStatePromise;
-    expect(publicState.payload.state.players).toHaveLength(8);
+    expect(pubState(publicState).players).toHaveLength(8);
 
     for (let i = 0; i < 8; i += 1) {
-      const priv = await waitForMessageWhere(players[i], 'PLAYER_STATE_PRIVATE', (m) => m.payload.state.playerId === ids[i]);
-      expect(priv.payload.state.hand).toHaveLength(7);
+      const priv = await waitForMessageWhere(players[i], 'PLAYER_STATE_PRIVATE', (m) => privState(m).playerId === ids[i]);
+      expect(privState(priv).hand).toHaveLength(7);
     }
 
     host.close();
@@ -286,7 +297,7 @@ describe('multiplayer integration', () => {
     const errors: string[] = [];
     host.on('message', (raw: RawData) => {
       const m = JSON.parse(String(raw)) as ServerMessage;
-      if (m.type === 'GAME_EVENT' && m.payload.event.type === 'card_played') cardsPlayed += 1;
+      if (m.type === 'GAME_EVENT' && (m.payload.event as UnoGameEvent).type === 'card_played') cardsPlayed += 1;
       if (m.type === 'GAME_STATE_PUBLIC') lastPublic = m;
       if (m.type === 'ERROR') errors.push(m.payload.message);
     });
@@ -301,24 +312,24 @@ describe('multiplayer integration', () => {
         actedFor: string;
       } = { ws, id: null, pub: null, priv: null, actedFor: '' };
       const maybeAct = (): void => {
-        const pub = bot.pub?.payload.state;
-        const priv = bot.priv?.payload.state;
+        const pub = bot.pub ? pubState(bot.pub) : null;
+        const priv = bot.priv ? privState(bot.priv) : null;
         if (!pub || !priv || !bot.id || pub.currentPlayerId !== bot.id) return;
         const key = `${pub.turn}:${pub.phase}`;
         if (bot.actedFor === key) return; // one action per (turn, phase)
         bot.actedFor = key;
         if (pub.phase === 'awaiting_color_choice') {
-          ws.send(makeMessage('CHOOSE_COLOR', { color: 'red' }));
+          ws.send(gameAction({ type: 'choose_color', color: 'red' }));
           return;
         }
         if (pub.phase !== 'round_active') return;
         const p = priv.selectableCardIds;
         if (p.length > 0) {
           const card = priv.hand.find((c) => c.id === p[0])!;
-          ws.send(makeMessage('PLAY_CARD', { cardId: card.id }));
-          if (priv.hand.length === 2) ws.send(makeMessage('UNO_CALL', {}));
+          ws.send(gameAction({ type: 'play_card', cardId: card.id }));
+          if (priv.hand.length === 2) ws.send(gameAction({ type: 'uno_call' }));
         } else {
-          ws.send(makeMessage('DRAW_CARD', {}));
+          ws.send(gameAction({ type: 'draw_card' }));
         }
       };
       ws.on('message', (raw: RawData) => {
@@ -336,7 +347,7 @@ describe('multiplayer integration', () => {
     host.send(makeMessage('START_GAME', {}));
     await new Promise((r) => setTimeout(r, 6_000));
 
-    const state = (lastPublic as (ServerMessage & { type: 'GAME_STATE_PUBLIC' }) | null)?.payload.state;
+    const state = lastPublic ? pubState(lastPublic) : null;
     expect(errors).toEqual([]);
     expect(cardsPlayed).toBeGreaterThan(10);
     expect(state?.turn ?? 0).toBeGreaterThan(10);
@@ -410,24 +421,27 @@ describe('multiplayer integration', () => {
     await waitForMessage(p2, 'ROOM_JOINED');
 
     const firstPublic = waitForMessage(host, 'GAME_STATE_PUBLIC');
+    const startedPromise = waitForMessage(host, 'GAME_STARTED');
     host.send(makeMessage('START_GAME', { gameId: 'uno' }));
-    await waitForMessage(host, 'GAME_STARTED');
-    const initial = (await firstPublic).payload.state as { currentPlayerId: string; turn: number };
+    expect((await startedPromise).payload.gameId).toBe('uno');
+    const firstPublicMsg = await firstPublic;
+    expect(firstPublicMsg.payload.gameId).toBe('uno');
+    const initial = pubState(firstPublicMsg);
 
     // The current player draws a card via the generic GAME_ACTION verb — draw always advances the turn.
     const currentWs = initial.currentPlayerId === p1Joined.payload.playerId ? p1 : p2;
-    currentWs.send(makeMessage('GAME_ACTION', { action: { type: 'draw_card' } }));
+    currentWs.send(gameAction({ type: 'draw_card' }));
     const advanced = await waitForMessageWhere(
       host,
       'GAME_STATE_PUBLIC',
-      (m) => (m.payload.state as { turn: number }).turn > initial.turn,
+      (m) => pubState(m).turn > initial.turn,
     );
-    expect((advanced.payload.state as { turn: number }).turn).toBeGreaterThan(initial.turn);
+    expect(pubState(advanced).turn).toBeGreaterThan(initial.turn);
 
     // A malformed GAME_ACTION is rejected without crashing the room.
     const otherWs = currentWs === p1 ? p2 : p1;
     const actionError = waitForMessage(otherWs, 'ERROR');
-    otherWs.send(makeMessage('GAME_ACTION', { action: { type: 'garbage' } }));
+    otherWs.send(gameAction({ type: 'garbage' }));
     expect((await actionError).payload.message).toMatch(/INVALID_ACTION/i);
 
     host.close();

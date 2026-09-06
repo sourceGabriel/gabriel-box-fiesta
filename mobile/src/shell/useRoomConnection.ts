@@ -49,7 +49,6 @@ export function useRoomConnection(): RoomConnection {
   const activeSessionKeyRef = useRef<string | null>(readStoredSessionKey(getRoomCodeFromPath()));
   const roomCodeRef = useRef(roomCode);
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const selectedGameIdRef = useRef('');
 
   useEffect(() => {
     roomCodeRef.current = roomCode;
@@ -124,18 +123,18 @@ export function useRoomConnection(): RoomConnection {
           case 'GAME_CATALOG':
             setCatalog(message.payload.games);
             setSelectedGameId(message.payload.selectedGameId);
-            selectedGameIdRef.current = message.payload.selectedGameId;
             break;
           case 'GAME_STARTED':
-            setActiveGameId(selectedGameIdRef.current || null);
+            setActiveGameId(message.payload.gameId);
             break;
           case 'GAME_STATE_PUBLIC':
             setPublicState(message.payload.state);
-            setActiveGameId((current) => current ?? (selectedGameIdRef.current || null));
+            // A mid-game reconnect replays state but not GAME_STARTED.
+            setActiveGameId((current) => current ?? message.payload.gameId);
             break;
           case 'PLAYER_STATE_PRIVATE':
             setPrivateState(message.payload.state);
-            setActiveGameId((current) => current ?? (selectedGameIdRef.current || null));
+            setActiveGameId((current) => current ?? message.payload.gameId);
             break;
           case 'ERROR':
             if (/INVALID_SESSION|PLAYER_NOT_FOUND/.test(message.payload.message)) {

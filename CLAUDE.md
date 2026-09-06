@@ -20,13 +20,13 @@ Local (LAN, no internet, no accounts, in-memory) "Jackbox-style" party-game plat
 ## Current state (2026-09-06)
 UNO MVP **complete and validated** (Fases 1–10 + mobile visual overhaul). Server tests: **27 green**. Build: 4 workspaces green. Branch: **`feature/coup-ou-coupa`**.
 
-**Fase A (game-agnostic core, §52) in progress:**
-- ✅ **A1** — `shared/src/games/` generic contract (`GameMeta`, `GameStatus`, `LifecycleEvent`) + `GAME_ACTION`/`SELECT_GAME`/`GAME_CATALOG`/`LIFECYCLE_EVENT` messages. Non-breaking.
-- ✅ **A2** — `server/src/core/game-plugin.ts` (`GamePlugin`, `GameInstance`, capability interfaces) + `server/src/games/registry.ts` (`GAMES`) + `server/src/games/uno/plugin.ts`. `Room` is game-agnostic; `ws-server` speaks a **dual protocol** (old UNO verbs + generic `GAME_ACTION`). `server/src/core/game.ts` deleted. Wire payloads for state/events unchanged (server casts `unknown`→UNO at the boundary, `TODO(A5)`).
-- ✅ **A3** — host split: `host/src/shell/` (`useRoomConnection` + `LobbyScreen` + `messages` + `shell.css`, all game-agnostic; `publicState`/`events` opaque) + `host/src/games/{types,registry}.ts` (`HOST_GAMES`) + `host/src/games/uno/` (`UnoHostView`, `describeEvent`, `animations`, `cardArt` moved, `uno-host.css`). `App.tsx` → ~55-line dispatcher. `App.css` + template `assets/` deleted; `index.css` → minimal reset + tokens. No wire change.
-- ✅ **A4** — mobile split: `mobile/src/shell/` (`session.ts` reconnect subsystem extracted verbatim + `useRoomConnection` + `MobileHeader`/`JoinScreen`/`WaitingScreen` + `shell.css`; `publicState`/`privateState` opaque) + `mobile/src/games/{types,registry}.ts` (`CONTROLLER_GAMES`) + `mobile/src/games/uno/` (`UnoControllerView` — still emits legacy verbs, `cardArt` moved, `uno-controller.css`). `App.tsx` → ~70-line dispatcher; `App.css` + template `assets/` deleted. No wire change.
-- 🔜 **A5** — drop legacy UNO verbs, generic `{gameId, state}` payloads.
-Then B (game catalog UI), C (`@party/ui` design system + synthesized sounds; folds in Fase 11), D (integrate game #2).
+**Fase A (game-agnostic core, §52) — COMPLETE:**
+- ✅ **A1** — `shared/src/games/` generic contract (`GameMeta`, `GameStatus`, `LifecycleEvent`) + `GAME_ACTION`/`SELECT_GAME`/`GAME_CATALOG`/`LIFECYCLE_EVENT` messages.
+- ✅ **A2** — `server/src/core/game-plugin.ts` + `server/src/games/registry.ts` (`GAMES`) + `server/src/games/uno/plugin.ts`. `Room` game-agnostic. `server/src/core/game.ts` deleted.
+- ✅ **A3** — host split: `host/src/shell/` (game-agnostic; `publicState`/`events` opaque) + `host/src/games/{types,registry}.ts` (`HOST_GAMES`) + `host/src/games/uno/`. Thin `App.tsx`.
+- ✅ **A4** — mobile split: `mobile/src/shell/` (`session.ts` reconnect subsystem extracted verbatim) + `mobile/src/games/{types,registry}.ts` (`CONTROLLER_GAMES`) + `mobile/src/games/uno/`. Thin `App.tsx`.
+- ✅ **A5** — protocol cleanup (**breaking wire**): 5 legacy UNO verbs removed — only `GAME_ACTION` remains. `GAME_STATE_PUBLIC`/`PLAYER_STATE_PRIVATE`/`GAME_EVENT` are now `{ gameId, state|event: unknown, stateVersion }`; `GAME_STARTED` is `{ gameId }`; `ROOM_STATE.players[]` dropped `handCount`. `shared/events/game-events.ts` → `shared/src/games/uno/events.ts` (`UnoGameEvent`, 4 dead variants dropped). `Direction`/`Phase` moved from `models/common.ts` → `models/uno.ts` (`Direction`, `UnoPhase`). Frontends resolve `activeGameId` from `payload.gameId`; the UNO controller emits `GAME_ACTION`.
+Next: **Fase B** (game catalog / selection UI — 3-screen host flow attract→catalog→lobby + return-to-lobby), C (`@party/ui` design system + synthesized sounds; folds in Fase 11), D (integrate game #2).
 
 **Active plan:** `C:\Users\gabri\.claude\plans\antes-dos-proximos-passos-elegant-clover.md` — Fase A→D.
 Locked decisions:
@@ -44,7 +44,7 @@ Monorepo, npm workspaces: `server` · `shared` (**types-only, no runtime, no zod
 | Game registry | `server/src/games/registry.ts` (`GAMES` map — add a game = 1 import + 1 entry) |
 | Room / player / owner / reconnect / 30s grace / `selectGame`/`startGame(gameId)` | `server/src/core/room.ts` (game-agnostic after A2) |
 | Session tokens (sha256, 6h TTL) | `server/src/core/session-service.ts` |
-| WS gateway (dual protocol, dedupe, rate-limit, 16KB cap, reconnect, capability-gated tick) | `server/src/websocket/ws-server.ts` |
+| WS gateway (`GAME_ACTION` routing, dedupe, rate-limit, 16KB cap, reconnect, capability-gated tick) | `server/src/websocket/ws-server.ts` |
 | Wire protocol (envelope, zod validation) | `shared/src/protocol/messages.ts` + `server/src/websocket/protocol.ts` |
 | UNO engine (~640 lines) + plugin + action zod | `server/src/games/uno/{uno-game,rules,cards,types,plugin,action-schema}.ts` |
 | Host UI (shell + game module, after A3) | `host/src/shell/` (`useRoomConnection`, `LobbyScreen`, `messages`, `shell.css`) + `host/src/games/{types,registry}.ts` + `host/src/games/uno/` + thin `App.tsx` |
@@ -53,7 +53,7 @@ Monorepo, npm workspaces: `server` · `shared` (**types-only, no runtime, no zod
 | Tests | `server/src/tests/{uno-game,room,multiplayer.integration}.test.ts` |
 | Per-workspace how-to | `{server,shared,host,mobile}/README.md` |
 
-**Remaining UNO coupling (A5 target):** `shared/protocol/messages.ts` still bakes `UnoPublicState`/`GameEvent` into `GAME_STATE_PUBLIC`/`GAME_EVENT` (server + both frontends cast at the boundary); `shared/events/game-events.ts` imports `UnoCard`; `shared/models/common.ts` `Phase` has `awaiting_color_choice`; the 5 legacy UNO client verbs still on the wire (both shells' UNO views still emit them). `ROOM_STATE.handCount` is sent as `0` (removed in A5). Both frontends now carry a game-agnostic shell + a `games/uno/` module.
+**§52 proof:** adding a game = implement `GamePlugin` (pure TS) + `server/src/games/<id>/` + 1 line in `GAMES` + a host view + a controller view + 1 line in each frontend registry. Zero edits to `core/`, `ws-server.ts`, or either shell. The only UNO name left in shared is `models/uno.ts` + `games/uno/events.ts` (both UNO-scoped) and `unoPlugin.meta.name = 'UNO'` (§47, changes in Fase C).
 
 ## Hard rules
 - Server is the single source of truth. Host/mobile never enforce rules. No business logic in React.

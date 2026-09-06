@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { GameEvent, UnoPublicState } from '@party/shared';
+import type { UnoGameEvent, UnoPublicState } from '@party/shared';
 import type { HostGameViewProps } from '../types';
 import { getCardArt, getCardBackArt } from './cardArt';
 import { describeEvent } from './describeEvent';
@@ -16,7 +16,7 @@ export function UnoHostView({ publicState, events, players, connected, send }: H
   const state = publicState as UnoPublicState;
 
   const [revealDrawPile, setRevealDrawPile] = useState(false);
-  const [animQueue, setAnimQueue] = useState<{ seq: number; event: GameEvent }[]>([]);
+  const [animQueue, setAnimQueue] = useState<{ seq: number; event: UnoGameEvent }[]>([]);
   const [anim, setAnim] = useState<ActiveAnim | null>(null);
   const [showResult, setShowResult] = useState(false);
   const seenSeqRef = useRef(0);
@@ -40,7 +40,7 @@ export function UnoHostView({ publicState, events, players, connected, send }: H
       return;
     }
     const animated = fresh
-      .map((e) => ({ seq: e.seq, event: e.event as GameEvent }))
+      .map((e) => ({ seq: e.seq, event: e.event as UnoGameEvent }))
       .filter((e) => isAnimated(e.event));
     if (animated.length > 0) {
       setAnimQueue((current) => [...current, ...animated].slice(-5));
@@ -98,7 +98,7 @@ export function UnoHostView({ publicState, events, players, connected, send }: H
   const feedLines = useMemo(
     () =>
       events
-        .map(({ seq, event }) => ({ seq, text: describeEvent(event as GameEvent, nameOf) }))
+        .map(({ seq, event }) => ({ seq, text: describeEvent(event as UnoGameEvent, nameOf) }))
         .filter((line): line is { seq: number; text: string } => line.text !== null)
         .slice(-8),
     [events, boardPlayers],

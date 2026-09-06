@@ -151,6 +151,30 @@
 ### Why
 - The phone controller's connection + session/reconnect chrome is now a reusable shell; a second game is one `CONTROLLER_GAMES` entry + one view module. The reconnect subsystem — the client's most delicate part — was moved without changing any key format, message, or recovery path.
 
+## 2026-09-06 — Fase A, PR A5: protocol cleanup — generic wire, no UNO in the core (BREAKING wire)
+### Changed — `shared`
+- `ClientMessage`: removed `PLAY_CARD` / `DRAW_CARD` / `CHOOSE_COLOR` / `UNO_CALL` / `UNO_CHALLENGE`. `GAME_ACTION { action: unknown }` is the only per-game verb.
+- `ServerMessage`: `GAME_STARTED` → `{ gameId }`; `GAME_STATE_PUBLIC` / `PLAYER_STATE_PRIVATE` → `{ gameId; state: unknown; stateVersion }`; `GAME_EVENT` → `{ gameId; event: unknown; stateVersion }`; `ROOM_STATE.players[]` dropped `handCount` (no consumer — live counts come from the game's public state).
+- `shared/src/events/game-events.ts` **deleted** → `shared/src/games/uno/events.ts` as `UnoGameEvent`. The 4 dead variants (`player_joined`, `player_reconnected`, `player_disconnected`, `owner_changed` — the server sends those as their own envelopes) removed.
+- `Direction` and `Phase` moved out of `models/common.ts` (now generics-only: `PlayerId`/`RoomId`/`SessionId`/`TurnTimer`) into `models/uno.ts` as `Direction` + `UnoPhase` (`ready | round_active | awaiting_color_choice | round_finished | game_finished`). `UnoPublicState.phase` is `UnoPhase | 'paused'` (Room projector overlay); `UnoFullState.phase` is `UnoPhase`.
+
+### Changed — `server`
+- `ws-server`: the 5 legacy UNO verb handlers deleted (only `GAME_ACTION` routes to `room.applyGameAction`). The 3 broadcasts (`GAME_STATE_PUBLIC` / `PLAYER_STATE_PRIVATE` / `GAME_EVENT`) and `GAME_STARTED` now carry `gameId: room.selectedGameId`; no more `as UnoPublicState` casts. `ROOM_STATE` no longer sends `handCount`.
+- `protocol.ts`: the 5 UNO zod schemas and the now-unused `color` enum removed.
+- `uno-game.ts` + the UNO plugin: `GameEvent` → `UnoGameEvent`.
+
+### Changed — `host` / `mobile`
+- Both `useRoomConnection` hooks resolve `activeGameId` straight from `message.payload.gameId` (`GAME_STARTED`, and `GAME_STATE_PUBLIC`/`PLAYER_STATE_PRIVATE` on a mid-game reconnect); the `selectedGameIdRef` inference is gone.
+- Host UNO module: `GameEvent` → `UnoGameEvent`.
+- `mobile/src/games/uno/UnoControllerView.tsx`: the 5 action senders now emit `send('GAME_ACTION', { action: { type: 'play_card' | 'draw_card' | 'choose_color' | 'uno_call' | 'uno_challenge', … } })`.
+
+### Tests
+- `multiplayer.integration.test.ts`: added a `gameAction()` helper + `pubState()`/`privState()` casts (payloads are `unknown` now); bot rewritten to `GAME_ACTION`; asserts `GAME_STARTED`/`GAME_STATE_PUBLIC` payload `gameId === 'uno'`. `uno-game.test.ts` / `room.test.ts` unchanged. **27 server tests green.**
+- Builds (4 workspaces), oxlint (host + mobile), server `tsc --noEmit` green. Browser smoke: start → `GAME_STARTED {gameId}` → controller board → play a card via `GAME_ACTION` (propagates to both phones + host feed) → mid-game reload (board restored from `payload.gameId`, no crash).
+
+### Compat
+- **Breaking:** `GAME_ACTION` replaces 5 verbs; 3 state/event payloads gain `gameId` and become `unknown`; `GAME_STARTED` gains `gameId`; `ROOM_STATE` loses `handCount`. Unchanged: `JOIN_ROOM`, `RECONNECT_SESSION`, `PING`, `KICK_PLAYER`, `PAUSE`/`RESUME`, `END_GAME`, `NEXT_ROUND`, `SELECT_GAME`, the envelope shape, `protocolVersion: 1` (no third-party clients), the whole session/reconnect subsystem.
+
 ## 2026-09-06 — Fase B design elaborated with the user (no code yet)
 ### Decisions
 - **The TV (host) is the control point for game selection.** The host screen renders and navigates the catalog and picks the game; the phones never show a catalog. `assertOwner` already lets `role === 'host'` through, so no server auth change is needed.
@@ -171,5 +195,4 @@
 - The master-prompt platform vision (§52) needs a game picker, not a single fused lobby. Recorded now so Fase B (after A5) starts from a settled flow instead of re-deciding it. Full detail: `C:\Users\gabri\.claude\plans\antes-dos-proximos-passos-elegant-clover.md` (FASE B).
 
 ## Next planned change
-- Fase A, PR A5 (breaking wire): drop the 5 legacy UNO client verbs (only `GAME_ACTION` remains), retype `GAME_STATE_PUBLIC`/`PLAYER_STATE_PRIVATE`/`GAME_EVENT` to `{ gameId, state/event: unknown }`, `GAME_STARTED` → `{ gameId }`; delete `shared/events/game-events.ts` → `shared/games/uno/events.ts`; move `Direction`/`Phase` to `models/uno.ts`.
-- Then Fase B: the 3-screen host flow above.
+- **Fase B** — the 3-screen host flow (attract → catalog → lobby) + return-to-lobby. Server: `Room.endGame()` keeps `selectedGameId` and goes back to `accepting_players`; `ws-server` re-broadcasts `GAME_CATALOG` after `END_GAME`. Fase A (game-agnostic core, §52) is complete.

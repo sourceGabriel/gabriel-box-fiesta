@@ -1,16 +1,18 @@
 # Revisão do repositório: lacunas em relação ao prompt mestre
 
-_Atualizado em 2026-09-06 (branch `feature/coup-ou-coupa`, após PR A1+A2+A3+A4)._
+_Atualizado em 2026-09-06 (branch `feature/coup-ou-coupa`, após a Fase A completa — PR A1→A5)._
 
 ## Resumo executivo
 O MVP jogável do UNO (§53) está **completo e validado**: host mostra a mesa em tempo real, partida completa com cartas especiais, coringa com escolha de cor, UNO!, denúncia, placar acumulado entre rodadas, fim de partida, pausar/continuar, reconexão de jogador e transferência de owner. **27 testes de servidor verdes**; build dos 4 workspaces verde.
 
-**Fase A (núcleo agnóstico, §52) em andamento:**
+**Fase A (núcleo agnóstico, §52) — COMPLETA:**
 - ✅ **A1** — contrato genérico em `shared/` (`GameMeta`, `GameStatus`, `LifecycleEvent`, mensagens `GAME_ACTION`/`SELECT_GAME`/`GAME_CATALOG`).
-- ✅ **A2** — `GamePlugin`/registry + `GameInstance` opaco + `Room` sem import de UNO no servidor; protocolo duplo. O **servidor** já satisfaz "adicionar jogo = `src/games/<id>/` + 1 linha no registry".
-- ✅ **A3** — `host` dividido em shell agnóstico (`host/src/shell/`: `useRoomConnection` + `LobbyScreen`, `publicState`/`events` opacos) + `host/src/games/uno/` (registry `HOST_GAMES`). `App.tsx` virou dispatcher fino; `App.css` e `assets/` do template removidos.
-- ✅ **A4** — `mobile` dividido em shell agnóstico (`mobile/src/shell/`: `session.ts` (reconexão, extraído verbatim) + `useRoomConnection` + `Join/WaitingScreen`, `publicState`/`privateState` opacos) + `mobile/src/games/uno/` (registry `CONTROLLER_GAMES`). `App.tsx` dispatcher fino; `App.css` e `assets/` removidos. Smoke no navegador (incl. reload no meio do jogo) verde.
-- 🔜 **A5** — remover os 5 verbos UNO do fio; payloads `{ gameId, state }` genéricos.
+- ✅ **A2** — `GamePlugin`/registry + `GameInstance` opaco + `Room` sem import de UNO no servidor. `server/src/core/game.ts` deletado.
+- ✅ **A3** — `host` = shell agnóstico (`host/src/shell/`, `publicState`/`events` opacos) + `host/src/games/uno/` (`HOST_GAMES`) + `App.tsx` dispatcher fino.
+- ✅ **A4** — `mobile` = shell agnóstico (`mobile/src/shell/`, `session.ts` extraído verbatim, `publicState`/`privateState` opacos) + `mobile/src/games/uno/` (`CONTROLLER_GAMES`) + `App.tsx` dispatcher fino.
+- ✅ **A5** — protocolo genérico (quebra de fio): só `GAME_ACTION`; `GAME_STATE_PUBLIC`/`PLAYER_STATE_PRIVATE`/`GAME_EVENT` = `{ gameId, state|event: unknown }`; `GAME_STARTED` = `{ gameId }`; `ROOM_STATE` sem `handCount`. `events/game-events.ts` → `games/uno/events.ts`; `Direction`/`Phase` movidos pra `models/uno.ts`.
+
+**§52 satisfeito:** adicionar um jogo = `GamePlugin` (TS puro) + `server/src/games/<id>/` + 1 linha em `GAMES` + 1 view de host + 1 view de controller + 1 linha em cada registry de frontend. Zero edições em `core/`, `ws-server.ts`, ou os shells.
 
 ## O que já existe (Fases 1–10 + polimento)
 - Monorepo `server` / `shared` (types-only) / `host` / `mobile`.
@@ -24,14 +26,8 @@ O MVP jogável do UNO (§53) está **completo e validado**: host mostra a mesa e
 
 ## O que falta para o prompt mestre
 
-### 1) Fase 12 / §52 — núcleo agnóstico de jogo (lacuna principal)
-"Adicionar um jogo novo não deve exigir modificar o núcleo." Hoje o core nomeia o UNO em 4 lugares:
-- `server/src/core/room.ts` — importa `UnoGame` concreto e `UnoAction`; `game: UnoGame | null`.
-- `server/src/websocket/ws-server.ts` — monta objetos `UnoAction` inline a partir de `PLAY_CARD`/`DRAW_CARD`/`CHOOSE_COLOR`/`UNO_CALL`/`UNO_CHALLENGE`; lê `room.game.getState().hands` e `.timer` diretamente.
-- `shared/src/protocol/messages.ts` — `GAME_STATE_PUBLIC`/`PLAYER_STATE_PRIVATE`/`GAME_EVENT` tipados com `UnoPublicState`/`UnoPrivatePlayerState`/`GameEvent`; a união de mensagens mistura verbos de shell e verbos UNO.
-- `shared/src/events/game-events.ts` — importa `UnoCard`/`UnoColor`.
-- `shared/src/models/common.ts` — `Phase` mistura genérico e `awaiting_color_choice` (puro UNO); `Direction` é só UNO.
-A interface `Game<>` já existe e não é usada pelo core — a extração de um `GamePlugin`/registry é limitada e bem definida.
+### 1) §52 — núcleo agnóstico de jogo — ✅ RESOLVIDO (Fase A)
+"Adicionar um jogo novo não deve exigir modificar o núcleo." Feito: `GamePlugin`/`GameInstance` opaco (`server/src/core/game-plugin.ts`), registry `GAMES`, `Room` sem import de UNO, `ws-server` só roteia `GAME_ACTION`, `messages.ts` com payloads `{ gameId, state|event: unknown }`, `UnoGameEvent` em `shared/src/games/uno/events.ts`, `common.ts` só genérico (`Direction`/`UnoPhase` em `models/uno.ts`). Único nome UNO que sobra no `shared`: `models/uno.ts` + `games/uno/events.ts` (ambos escopados) e `unoPlugin.meta.name` (§47, Fase C). Prova: um plugin stub entra tocando só `server/src/games/<id>/` + 1 linha em cada registry.
 
 ### 2) Frontend sem shell multi-jogo
 **Resolvido em A3 (host) + A4 (mobile):** os dois `App.tsx` são dispatchers finos (shell `useRoomConnection` + telas de lobby/join/waiting + `HOST_GAMES`/`CONTROLLER_GAMES[activeGameId]`); `App.css` e `assets/` do template removidos dos dois; `host/src/index.css` trocado por reset + tokens. **Ainda pendente (Fase C):** `cardArt.ts` duplicado byte-a-byte entre host e mobile (menos os paths de import), sem pacote `@party/ui`, e tokens de CSS ainda duplicados entre os dois apps com valores levemente diferentes.

@@ -41,18 +41,20 @@ export function UnoControllerView({ publicState, privateState, playerId, connect
   const activeColor = pub.currentColor ?? null;
   const sentido = pub.direction === -1 ? '↺ anti-horário' : '↻ horário';
 
+  const act = (action: Record<string, unknown>): void => send('GAME_ACTION', { action });
+
   const playCard = (): void => {
     if (!selectedCard) {
       return;
     }
     // Wild cards are played first; the server then asks for a colour (see the colour modal).
-    send('PLAY_CARD', { cardId: selectedCard.id });
+    act({ type: 'play_card', cardId: selectedCard.id });
     setSelectedCardId(null);
   };
-  const confirmColor = (): void => send('CHOOSE_COLOR', { color: chosenColor });
-  const drawCard = (): void => send('DRAW_CARD', {});
-  const callUno = (): void => send('UNO_CALL', {});
-  const challengeUno = (targetPlayerId: string): void => send('UNO_CHALLENGE', { targetPlayerId });
+  const confirmColor = (): void => act({ type: 'choose_color', color: chosenColor });
+  const drawCard = (): void => act({ type: 'draw_card' });
+  const callUno = (): void => act({ type: 'uno_call' });
+  const challengeUno = (targetPlayerId: string): void => act({ type: 'uno_challenge', targetPlayerId });
 
   return (
     <>

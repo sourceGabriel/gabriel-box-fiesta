@@ -1,7 +1,18 @@
-import type { Direction, Phase, PlayerId, TurnTimer } from './common';
+import type { PlayerId, TurnTimer } from './common';
 
 export type UnoColor = 'red' | 'yellow' | 'green' | 'blue' | 'wild';
 export type UnoCardType = 'number' | 'skip' | 'reverse' | 'draw_two' | 'wild' | 'wild_draw_four';
+
+/** Play direction: 1 = clockwise, -1 = counter-clockwise. UNO-specific. */
+export type Direction = 1 | -1;
+
+/** UNO round/match phase. The paused overlay (`UnoPublicState.phase`) is a Room concern, not a real engine phase. */
+export type UnoPhase =
+  | 'ready'
+  | 'round_active'
+  | 'awaiting_color_choice'
+  | 'round_finished'
+  | 'game_finished';
 
 export type UnoCard = {
   id: string;
@@ -25,7 +36,8 @@ export type UnoPublicPlayer = UnoPlayerState & {
 };
 
 export type UnoPublicState = {
-  phase: Phase;
+  /** `UnoPhase`, or `'paused'` while the Room has the game paused (projector overlay). */
+  phase: UnoPhase | 'paused';
   roomCode: string;
   players: UnoPublicPlayer[];
   currentPlayerId: PlayerId | null;
@@ -57,7 +69,7 @@ export type UnoPrivatePlayerState = {
 };
 
 export type UnoFullState = {
-  phase: Phase;
+  phase: UnoPhase;
   roomCode: string;
   playersOrder: PlayerId[];
   players: Record<PlayerId, UnoPlayerState>;

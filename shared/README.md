@@ -7,12 +7,12 @@ O **único** ponto de acoplamento entre `server`, `host` e `mobile`.
 
 | Arquivo | O que define |
 |---|---|
-| `src/models/common.ts` | `PlayerId`, `RoomId`, `SessionId`, `TurnTimer` |
+| `src/models/common.ts` | genéricos: `PlayerId`, `RoomId`, `SessionId`, `TurnTimer` |
 | `src/models/room.ts` | `Player`, `Session`, `RoomSummary` |
-| `src/models/uno.ts` | tipos do UNO (`UnoCard`, `UnoPublicState`, `UnoPrivatePlayerState`, `Phase`, `Direction`, …) |
-| `src/games/` | contrato genérico de jogo: `GameMeta`, `GameStatus`, `LifecycleEvent` |
-| `src/events/game-events.ts` | união de eventos do UNO (`GameEvent`) — migra para `src/games/uno/events.ts` na Fase A5 |
-| `src/protocol/messages.ts` | `Envelope`, `ClientMessage`, `ServerMessage` — o protocolo de fio |
+| `src/models/uno.ts` | tipos do UNO (`UnoCard`, `UnoPublicState`, `UnoPrivatePlayerState`, `UnoPhase`, `Direction`, …) |
+| `src/games/{meta,status,lifecycle}.ts` | contrato genérico de jogo: `GameMeta`, `GameStatus`, `LifecycleEvent` |
+| `src/games/uno/events.ts` | união de eventos do UNO (`UnoGameEvent`) — viaja opaca em `GAME_EVENT { event: unknown }` |
+| `src/protocol/messages.ts` | `Envelope`, `ClientMessage`, `ServerMessage` — o protocolo de fio; payloads de estado/evento são `unknown` (`{ gameId, state\|event: unknown }`) |
 
 ## Uso
 

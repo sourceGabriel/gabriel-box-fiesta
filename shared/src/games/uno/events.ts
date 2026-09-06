@@ -1,11 +1,12 @@
-import type { PlayerId } from '../models/common';
-import type { UnoCard, UnoColor } from '../models/uno';
+import type { PlayerId } from '../../models/common';
+import type { Direction, UnoCard, UnoColor } from '../../models/uno';
 
-export type GameEvent =
-  | { type: 'player_joined'; playerId: PlayerId; name: string }
-  | { type: 'player_reconnected'; playerId: PlayerId }
-  | { type: 'player_disconnected'; playerId: PlayerId }
-  | { type: 'owner_changed'; playerId: PlayerId | null }
+/**
+ * Domain events the UNO engine emits. They travel on the wire opaquely inside
+ * `GAME_EVENT { gameId, event: unknown }`; only the UNO host/controller views
+ * (and the UNO engine) know this shape.
+ */
+export type UnoGameEvent =
   | { type: 'game_started' }
   | { type: 'game_paused' }
   | { type: 'game_resumed' }
@@ -16,7 +17,7 @@ export type GameEvent =
   | { type: 'card_played'; playerId: PlayerId; card: UnoCard }
   | { type: 'card_drawn'; playerId: PlayerId; count: number }
   | { type: 'color_changed'; color: Exclude<UnoColor, 'wild'> }
-  | { type: 'direction_changed'; direction: 1 | -1 }
+  | { type: 'direction_changed'; direction: Direction }
   | { type: 'player_skipped'; playerId: PlayerId }
   | { type: 'uno_called'; playerId: PlayerId }
   | { type: 'uno_penalty_applied'; playerId: PlayerId; count: number }

@@ -1,4 +1,4 @@
-import type { GameEvent, UnoCard } from '@party/shared';
+import type { UnoCard, UnoGameEvent } from '@party/shared';
 
 export const COLOR_LABEL: Record<string, string> = {
   red: 'vermelho',
@@ -19,7 +19,7 @@ export const cardText = (card: UnoCard): string => {
 };
 
 /** A human line for the host event feed, or null for events not worth showing. */
-export const describeEvent = (event: GameEvent, nameOf: (id: string) => string): string | null => {
+export const describeEvent = (event: UnoGameEvent, nameOf: (id: string) => string): string | null => {
   switch (event.type) {
     case 'round_started': return `Rodada ${event.round} começou`;
     case 'card_played': return `${nameOf(event.playerId)} jogou ${cardText(event.card)}`;

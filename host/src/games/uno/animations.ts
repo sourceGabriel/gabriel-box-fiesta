@@ -1,11 +1,11 @@
 import type { CSSProperties } from 'react';
-import type { GameEvent } from '@party/shared';
+import type { UnoGameEvent } from '@party/shared';
 
 export type Point = { x: number; y: number };
-export type ActiveAnim = { seq: number; event: GameEvent; from?: Point; to?: Point };
+export type ActiveAnim = { seq: number; event: UnoGameEvent; from?: Point; to?: Point };
 
 /** Which events get a queued board animation, and how long the queue holds for each (ms). */
-export const ANIMATION_MS: Partial<Record<GameEvent['type'], number>> = {
+export const ANIMATION_MS: Partial<Record<UnoGameEvent['type'], number>> = {
   card_played: 620,
   card_drawn: 620,
   color_changed: 820,
@@ -20,7 +20,7 @@ export const REDUCED_MOTION =
     ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
     : false;
 
-export const isAnimated = (event: GameEvent): boolean => ANIMATION_MS[event.type] !== undefined;
+export const isAnimated = (event: UnoGameEvent): boolean => ANIMATION_MS[event.type] !== undefined;
 
 export const flyStyle = (from: Point, to: Point, extra?: CSSProperties): CSSProperties => ({
   ['--x0' as string]: `${from.x}px`,

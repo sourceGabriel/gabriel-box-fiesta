@@ -61,3 +61,10 @@ The project is currently between the room lifecycle phase and the actual host ga
 - Post-match → back to the **lobby of the same game** ("Jogar de novo" = re-`START_GAME`, "Trocar de jogo" → `catalog`). No new wire messages (reuses `END_GAME`/`START_GAME`).
 - Server change queued for Fase B: `Room.endGame()` → `state='accepting_players'` keeping `selectedGameId` (today `'ended'` blocks `selectGame`); re-broadcast `GAME_CATALOG` after `END_GAME`.
 - Order unchanged: Fase A finishes (A5) first, then Fase B. Full detail in the plan file's FASE B section + `docs/CHANGELOG.md`.
+
+## 2026-09-06 — Fase A / PR A5 (branch `feature/coup-ou-coupa`) — BREAKING wire
+- `shared`: dropped 5 legacy UNO client verbs (only `GAME_ACTION` left); `GAME_STATE_PUBLIC`/`PLAYER_STATE_PRIVATE`/`GAME_EVENT` → `{ gameId, state|event: unknown, stateVersion }`; `GAME_STARTED` → `{ gameId }`; `ROOM_STATE` lost `handCount`. `events/game-events.ts` → `games/uno/events.ts` (`UnoGameEvent`, 4 dead variants dropped). `Direction`/`Phase` moved `common.ts` → `models/uno.ts` (`Direction`, `UnoPhase`).
+- `server`: `ws-server` deleted the 5 UNO verb handlers, adds `gameId` to the 3 broadcasts + `GAME_STARTED`, no boundary casts; `protocol.ts` dropped the 5 UNO zod schemas + `color` enum; `uno-game.ts` `GameEvent`→`UnoGameEvent`.
+- `host`/`mobile`: `useRoomConnection` resolves `activeGameId` from `payload.gameId`; host UNO module `GameEvent`→`UnoGameEvent`; `UnoControllerView` senders → `send('GAME_ACTION', { action: {...} })`.
+- Tests: `multiplayer.integration.test.ts` migrated (`gameAction()` helper + `pubState()`/`privState()` casts + `gameId` asserts). 27 server tests green; builds + host/mobile oxlint + server tsc green; browser smoke incl. mid-game reload passed.
+- **Fase A (game-agnostic core, §52) is complete.** Next: Fase B.

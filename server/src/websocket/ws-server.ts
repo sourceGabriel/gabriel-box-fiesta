@@ -3,7 +3,7 @@ import { URL } from 'node:url';
 import pino from 'pino';
 import QRCode from 'qrcode';
 import { WebSocketServer, type WebSocket } from 'ws';
-import type { ClientMessage, GameEvent, UnoPrivatePlayerState, UnoPublicState } from '@party/shared';
+import type { ClientMessage } from '@party/shared';
 import { isTurnTimed } from '../core/game-plugin';
 import { RoomManager } from '../core/room-manager';
 import { gameCatalog } from '../games/registry';
@@ -281,7 +281,7 @@ export class PartyServer {
     if (message.type === 'START_GAME') {
       this.assertOwner(ctx.playerId, ctx.role);
       room.startGame(ctx.playerId ?? room.ownerPlayerId ?? null, message.payload.gameId);
-      this.broadcast('GAME_STARTED', {});
+      this.broadcast('GAME_STARTED', { gameId: room.selectedGameId });
       this.broadcastGameCatalog();
       this.pushGameState();
       this.flushGameEvents();
@@ -341,37 +341,6 @@ export class PartyServer {
       return;
     }
 
-    // Legacy UNO verbs — kept for one phase while the frontend migrates to GAME_ACTION.
-    if (message.type === 'PLAY_CARD') {
-      room.applyGameAction(ctx.playerId, { type: 'play_card', cardId: message.payload.cardId, chosenColor: message.payload.chosenColor });
-      this.flushAndPublishState();
-      return;
-    }
-
-    if (message.type === 'DRAW_CARD') {
-      room.applyGameAction(ctx.playerId, { type: 'draw_card', playDrawnCardId: message.payload.playDrawnCardId, chosenColor: message.payload.chosenColor });
-      this.flushAndPublishState();
-      return;
-    }
-
-    if (message.type === 'CHOOSE_COLOR') {
-      room.applyGameAction(ctx.playerId, { type: 'choose_color', color: message.payload.color });
-      this.flushAndPublishState();
-      return;
-    }
-
-    if (message.type === 'UNO_CALL') {
-      room.applyGameAction(ctx.playerId, { type: 'uno_call' });
-      this.flushAndPublishState();
-      return;
-    }
-
-    if (message.type === 'UNO_CHALLENGE') {
-      room.applyGameAction(ctx.playerId, { type: 'uno_challenge', targetPlayerId: message.payload.targetPlayerId });
-      this.flushAndPublishState();
-      return;
-    }
-
     this.send(socket, 'ERROR', { code: 'NOT_IMPLEMENTED', message: 'Unsupported action', recoverable: true });
   }
 
@@ -391,13 +360,13 @@ export class PartyServer {
   }
 
   private flushGameEvents(): void {
-    const game = this.roomManager.getRoom().game;
+    const room = this.roomManager.getRoom();
+    const game = room.game;
     if (!game) {
       return;
     }
-    // TODO(A5): GAME_EVENT payload becomes { gameId, event: unknown }; drop the cast then.
-    for (const event of game.consumeEvents() as GameEvent[]) {
-      this.broadcast('GAME_EVENT', { event, stateVersion: this.roomManager.getRoom().stateVersion });
+    for (const event of game.consumeEvents()) {
+      this.broadcast('GAME_EVENT', { gameId: room.selectedGameId, event, stateVersion: room.stateVersion });
     }
   }
 
@@ -406,9 +375,11 @@ export class PartyServer {
     if (!room.game) {
       return;
     }
-    // TODO(A5): GAME_STATE_PUBLIC payload becomes { gameId, state: unknown }; drop the cast then.
-    const publicState = room.game.getPublicState() as UnoPublicState;
-    this.broadcast('GAME_STATE_PUBLIC', { state: publicState, stateVersion: room.stateVersion });
+    this.broadcast('GAME_STATE_PUBLIC', {
+      gameId: room.selectedGameId,
+      state: room.game.getPublicState(),
+      stateVersion: room.stateVersion,
+    });
     for (const playerId of this.playerConnections.keys()) {
       this.pushPrivateState(playerId);
     }
@@ -420,10 +391,9 @@ export class PartyServer {
     if (!game) {
       return;
     }
-    // TODO(A5): PLAYER_STATE_PRIVATE payload becomes { gameId, state: unknown }; drop the cast then.
-    const state = game.getPrivateState(playerId) as UnoPrivatePlayerState;
+    const state = game.getPrivateState(playerId);
     for (const socket of this.playerConnections.get(playerId) ?? []) {
-      this.send(socket, 'PLAYER_STATE_PRIVATE', { state, stateVersion: room.stateVersion });
+      this.send(socket, 'PLAYER_STATE_PRIVATE', { gameId: room.selectedGameId, state, stateVersion: room.stateVersion });
     }
   }
 
@@ -444,8 +414,7 @@ export class PartyServer {
       ownerPlayerId: room.ownerPlayerId,
       joinUrl,
       joinQrDataUrl,
-      // handCount here is redundant (live counts come from GAME_STATE_PUBLIC); kept at 0 until the field is removed in A5.
-      players: room.getPlayers().map((player) => ({ id: player.id, name: player.name, connected: player.connected, handCount: 0 })),
+      players: room.getPlayers().map((player) => ({ id: player.id, name: player.name, connected: player.connected })),
     });
   }
 

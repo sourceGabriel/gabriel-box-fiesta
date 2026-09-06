@@ -1,4 +1,4 @@
-import type { GameEvent, GameStatus, TurnTimer, UnoCard, UnoFullState, UnoPrivatePlayerState, UnoPublicState } from '@party/shared';
+import type { GameStatus, TurnTimer, UnoCard, UnoFullState, UnoGameEvent, UnoPrivatePlayerState, UnoPublicState } from '@party/shared';
 import type { GameContext, PausableGame, RoundedGame, TurnTimedGame } from '../../core/game-plugin';
 import { parseUnoAction } from './action-schema';
 import { createDeck, shuffle } from './cards';
@@ -23,7 +23,7 @@ function assertCondition(condition: unknown, code: string, message: string): ass
 }
 
 export class UnoGame implements PausableGame, RoundedGame, TurnTimedGame {
-  private readonly events: GameEvent[] = [];
+  private readonly events: UnoGameEvent[] = [];
 
   private state: UnoFullState;
 
@@ -147,7 +147,7 @@ export class UnoGame implements PausableGame, RoundedGame, TurnTimedGame {
   }
 
   /** Freeze the current turn timer. No-op unless a round is in progress. */
-  pause(now: number): GameEvent[] {
+  pause(now: number): UnoGameEvent[] {
     if (this.paused || (this.state.phase !== 'round_active' && this.state.phase !== 'awaiting_color_choice')) {
       return [];
     }
@@ -159,7 +159,7 @@ export class UnoGame implements PausableGame, RoundedGame, TurnTimedGame {
   }
 
   /** Resume the frozen turn, restoring the remaining time for the current player. */
-  resume(now: number): GameEvent[] {
+  resume(now: number): UnoGameEvent[] {
     if (!this.paused) {
       return [];
     }
@@ -233,7 +233,7 @@ export class UnoGame implements PausableGame, RoundedGame, TurnTimedGame {
     this.dispatch({ ...input, playerId } as UnoAction);
   }
 
-  private dispatch(action: UnoAction): GameEvent[] {
+  private dispatch(action: UnoAction): UnoGameEvent[] {
     assertCondition(!this.paused || action.type === 'timeout', 'GAME_PAUSED', 'Game is paused');
     const before = this.events.length;
     switch (action.type) {
@@ -376,7 +376,7 @@ export class UnoGame implements PausableGame, RoundedGame, TurnTimedGame {
     };
   }
 
-  consumeEvents(): GameEvent[] {
+  consumeEvents(): UnoGameEvent[] {
     const snapshot = [...this.events];
     this.events.length = 0;
     return snapshot;
