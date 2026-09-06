@@ -54,3 +54,10 @@ The project is currently between the room lifecycle phase and the actual host ga
 - New: `mobile/src/games/{types,registry}.ts` (`ControllerGameViewProps`, `CONTROLLER_GAMES = { uno: UnoControllerView }`) + `mobile/src/games/uno/` (`UnoControllerView.tsx` — still emits the legacy UNO verbs, `cardArt.ts` moved, `uno-controller.css`).
 - `mobile/src/App.tsx` → ~70-line dispatcher (`JoinScreen` → `WaitingScreen` until `privateState && publicState && registered game` → controller view; renders the error toast). Shell now handles `GAME_CATALOG` + `GAME_STARTED`; infers active game on mid-game reconnect.
 - Removed template `mobile/src/assets/`. No wire change. Builds + host/mobile lint + server tsc + 27 server tests green; browser smoke (join / waiting / play / mid-game reload / waiting reload) passed.
+
+## 2026-09-06 — Fase B design elaborated (no code yet)
+- Decided with the user: the **TV/host is the control point** for game selection (phones never show a catalog); `assertOwner` already allows `role:'host'` so no server auth change.
+- Host gets a **3-screen pre-match flow**: `attract` ("Box Fiesta" wordmark + room code + connected count) → `catalog` (game grid from `GAME_CATALOG`, cover art from the host game module, arrows+Enter / click / touch) → `lobby` (big QR + players + "Iniciar {game}"). Catalog grid moves out of `LobbyScreen`.
+- Post-match → back to the **lobby of the same game** ("Jogar de novo" = re-`START_GAME`, "Trocar de jogo" → `catalog`). No new wire messages (reuses `END_GAME`/`START_GAME`).
+- Server change queued for Fase B: `Room.endGame()` → `state='accepting_players'` keeping `selectedGameId` (today `'ended'` blocks `selectGame`); re-broadcast `GAME_CATALOG` after `END_GAME`.
+- Order unchanged: Fase A finishes (A5) first, then Fase B. Full detail in the plan file's FASE B section + `docs/CHANGELOG.md`.

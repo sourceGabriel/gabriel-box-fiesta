@@ -151,5 +151,25 @@
 ### Why
 - The phone controller's connection + session/reconnect chrome is now a reusable shell; a second game is one `CONTROLLER_GAMES` entry + one view module. The reconnect subsystem — the client's most delicate part — was moved without changing any key format, message, or recovery path.
 
+## 2026-09-06 — Fase B design elaborated with the user (no code yet)
+### Decisions
+- **The TV (host) is the control point for game selection.** The host screen renders and navigates the catalog and picks the game; the phones never show a catalog. `assertOwner` already lets `role === 'host'` through, so no server auth change is needed.
+- **Host gets a 3-screen pre-match flow:** `attract` (platform wordmark "Box Fiesta" + room code + connected count) → `catalog` (game grid from `GAME_CATALOG`, cover art from the host game module, keyboard + click/touch nav) → `lobby` (large QR + code + player list + "Iniciar {game}"). The catalog grid moves out of `LobbyScreen` (today it is embedded there).
+- **Post-match returns to the `lobby` of the same game** — "Jogar de novo" re-sends `START_GAME`, "Trocar de jogo" goes back to `catalog`. It does not return to attract.
+- **No new wire messages.** "Back to lobby" reuses `END_GAME`; "play again" reuses `START_GAME`. `SELECT_GAME` / `GAME_CATALOG` / `LIFECYCLE_EVENT` already exist (A1).
+- MVP host input: click/touch + keyboard (arrows + Enter, covers a smart-TV D-pad). Gamepad/remote mapping is out of scope.
+
+### Planned changes (Fase B, after A5)
+- **server:** `Room.endGame()` will set `state = 'accepting_players'` and keep `selectedGameId` (today it sets `'ended'`, which blocks `selectGame`); `ws-server` re-broadcasts `GAME_CATALOG` after `END_GAME`.
+- **host:** new `shell/AttractScreen.tsx`, `shell/CatalogScreen.tsx`, a `phase` state machine (`attract | catalog | lobby | in-game`); `LobbyScreen` loses the catalog grid; `HOST_GAMES[id]` gains `cover`.
+- **mobile:** `WaitingScreen` shows the selected game's name/tagline; `GAME_ENDED` / `returned_to_lobby` returns to waiting with the session kept.
+
+### Open points
+- QR on the attract/catalog screens (proposal: code always visible, big QR only on the lobby); attract auto-advance after idle vs manual only; a UNO cover image is needed for the catalog card.
+
+### Why
+- The master-prompt platform vision (§52) needs a game picker, not a single fused lobby. Recorded now so Fase B (after A5) starts from a settled flow instead of re-deciding it. Full detail: `C:\Users\gabri\.claude\plans\antes-dos-proximos-passos-elegant-clover.md` (FASE B).
+
 ## Next planned change
 - Fase A, PR A5 (breaking wire): drop the 5 legacy UNO client verbs (only `GAME_ACTION` remains), retype `GAME_STATE_PUBLIC`/`PLAYER_STATE_PRIVATE`/`GAME_EVENT` to `{ gameId, state/event: unknown }`, `GAME_STARTED` → `{ gameId }`; delete `shared/events/game-events.ts` → `shared/games/uno/events.ts`; move `Direction`/`Phase` to `models/uno.ts`.
+- Then Fase B: the 3-screen host flow above.
