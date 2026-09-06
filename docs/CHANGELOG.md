@@ -62,5 +62,18 @@
 ### Why
 - The reference repos confirm our infra already exceeds theirs; the only borrowed idea is rumpus's plugin registry. 8tp/Coup is a rules reference only (its runtime has no TV screen and uses an incompatible stack). Extracting the abstraction first, proven with the existing UNO game, avoids refactoring twice.
 
+## 2026-09-06 — Fase A, PR A1: generic game contract in `shared/` (non-breaking)
+### Added
+- `shared/src/games/{meta,status,lifecycle}.ts` + `index.ts` barrel, re-exported from `shared/src/index.ts`:
+  - `GameMeta` — static per-plugin description (id, name, tagline, min/max players, `capabilities: { rounds, turnTimer, pause }`).
+  - `GameStatus` — `'setup' | 'active' | 'intermission' | 'complete'`; the room-facing projection that will replace UNO's `Phase` at the core boundary.
+  - `LifecycleEvent` — shell-level events the server emits (`game_selected`, `game_started`, `round_advanced`, `game_completed`, `returned_to_lobby`).
+- Wire protocol (`shared/src/protocol/messages.ts`), additive only:
+  - `ClientMessage`: `SELECT_GAME { gameId }`, `GAME_ACTION { action: unknown }`; `START_GAME` payload `{}` → `{ gameId?: string }`.
+  - `ServerMessage`: `GAME_CATALOG { games: GameMeta[]; selectedGameId }`, `LIFECYCLE_EVENT { event: LifecycleEvent; stateVersion }`.
+
+### Why
+- First step of making the core game-agnostic (§52). Pure type additions — no server/host/mobile logic touched, no runtime in `shared/`. All 25 server tests, all 4 builds and both lints stay green. `protocolVersion` stays `1`; nothing emits the new messages yet.
+
 ## Next planned change
-- Begin Fase A, PR A1: additive generic contract in `shared/` (`GameMeta`, `GameStatus`, `LifecycleEvent`, `GAME_ACTION`/`SELECT_GAME`/`GAME_CATALOG`/`LIFECYCLE_EVENT` messages) — non-breaking. Await user go-ahead.
+- Fase A, PR A2: server registry + opaque `GameInstance` + game-agnostic `Room`; server speaks both the old UNO verbs and the new `GAME_ACTION` (dual protocol). Migrate `uno-game.test.ts` (`GameContext` ctor + `handleAction(playerId, action)`).
