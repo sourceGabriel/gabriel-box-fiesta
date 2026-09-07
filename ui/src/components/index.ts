@@ -7,3 +7,4 @@ export { QrPanel } from './QrPanel';
 export { PlayerRoster, type RosterPlayer } from './PlayerRoster';
 export { Avatar } from './Avatar';
 export { AvatarEditor } from './AvatarEditor';
+export { TextAnswerInput } from './TextAnswerInput';

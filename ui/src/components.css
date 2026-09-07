@@ -407,3 +407,39 @@
 @media (prefers-reduced-motion: reduce) {
   .ui-ae-swatch { transition: none; }
 }
+
+/* ---------- TextAnswerInput (Zap!, Fibbage) ---------- */
+.ui-answer {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 0.85rem;
+  display: grid;
+  gap: 0.6rem;
+}
+.ui-answer.is-sent { border-color: #35e0e0; }
+.ui-answer-prompt {
+  margin: 0;
+  font-weight: 700;
+  font-size: 1.02rem;
+  line-height: 1.25;
+}
+.ui-answer-field {
+  width: 100%;
+  resize: none;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: inherit;
+  font: inherit;
+  padding: 0.6rem 0.7rem;
+}
+.ui-answer-field:focus { outline: 2px solid var(--accent, #f59e0b); outline-offset: 1px; }
+.ui-answer-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+.ui-answer-count { color: var(--muted); font-size: 0.82rem; font-weight: 600; }
+.ui-answer-send { padding: 0.5rem 1.1rem; }

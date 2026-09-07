@@ -563,6 +563,78 @@ describe('multiplayer integration', () => {
     p3.close();
   });
 
+  it('runs Zap!: SELECT_GAME + START_GAME, per-player prompts isolated, generic GAME_ACTION routed', async () => {
+    server = new PartyServer(0);
+    await server.start();
+    const roomCode = server.getRoomCode();
+    const port = server.getPort();
+
+    const host = await connect(port);
+    const catalogPromise = waitForMessage(host, 'GAME_CATALOG');
+    host.send(makeMessage('JOIN_ROOM', { roomCode, playerName: 'HOST', role: 'host' }));
+    await waitForMessage(host, 'ROOM_JOINED');
+
+    const catalog = await catalogPromise;
+    expect(catalog.payload.games.map((game) => game.id)).toEqual(expect.arrayContaining(['uno', 'coup', 'zap']));
+
+    const reselected = waitForMessageWhere(host, 'GAME_CATALOG', (m) => m.payload.selectedGameId === 'zap');
+    host.send(makeMessage('SELECT_GAME', { gameId: 'zap' }));
+    await reselected;
+
+    const phones = [] as Awaited<ReturnType<typeof connect>>[];
+    for (const name of ['Ana', 'Bia', 'Caio']) {
+      const ws = await connect(port);
+      ws.send(makeMessage('JOIN_ROOM', { roomCode, playerName: name, role: 'player' }));
+      await waitForMessage(ws, 'ROOM_JOINED');
+      phones.push(ws);
+    }
+
+    const firstPublic = waitForMessage(host, 'GAME_STATE_PUBLIC');
+    const started = waitForMessage(host, 'GAME_STARTED');
+    host.send(makeMessage('START_GAME', { gameId: 'zap' }));
+    expect((await started).payload.gameId).toBe('zap');
+
+    const pub = (await firstPublic).payload.state as {
+      phase: string;
+      round: number;
+      answersExpectedCount: number;
+    };
+    expect(pub.phase).toBe('answering');
+    expect(pub.round).toBe(1);
+    expect(pub.answersExpectedCount).toBe(6);
+
+    // Each controller gets its own 2 prompts.
+    const privs = await Promise.all(
+      phones.map((ws) => waitForMessage(ws, 'PLAYER_STATE_PRIVATE')),
+    );
+    for (const p of privs) {
+      const priv = p.payload.state as { assignments: { slot: number; prompt: string }[]; pendingDecision: string };
+      expect(priv.assignments).toHaveLength(2);
+      expect(priv.pendingDecision).toBe('answer');
+    }
+
+    // Everyone answers both prompts via the generic GAME_ACTION verb → the round advances to voting.
+    const votingReached = waitForMessageWhere(
+      host,
+      'GAME_STATE_PUBLIC',
+      (m) => (m.payload.state as { phase: string }).phase === 'voting',
+    );
+    for (const ws of phones) {
+      for (const slot of [0, 1]) {
+        ws.send(makeMessage('GAME_ACTION', { action: { type: 'submitAnswer', slot, text: `resposta ${slot}` } }));
+      }
+    }
+    expect((await votingReached).payload.state).toBeTruthy();
+
+    // A malformed Zap action is rejected without crashing the room.
+    const actionError = waitForMessage(phones[0], 'ERROR');
+    phones[0].send(makeMessage('GAME_ACTION', { action: { type: 'garbage' } }));
+    expect((await actionError).payload.message).toMatch(/INVALID_ACTION/i);
+
+    host.close();
+    for (const ws of phones) ws.close();
+  });
+
   it('rebroadcasts emoji reactions to the whole room and rejects oversized ones', async () => {
     server = new PartyServer(0);
     await server.start();

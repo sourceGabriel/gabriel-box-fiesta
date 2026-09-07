@@ -1,0 +1,300 @@
+/* Zap! — host/TV view. Loaded only when the Zap! game is active.
+   Everything is scoped under .zap-host so it can't collide with uno/coup CSS. */
+
+.zap-host {
+  --zap-bolt: #ffd23f;
+  --zap-pink: #ff3caf;
+  --zap-cyan: #35e0e0;
+  position: relative;
+}
+
+/* ---------- top bar ---------- */
+.zap-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: clamp(0.5rem, 1.5vmin, 1rem) clamp(0.75rem, 2vmin, 1.5rem);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+}
+.zap-brand { display: flex; align-items: baseline; gap: 0.9rem; min-width: 0; }
+.zap-brand-sub { color: var(--muted); font-size: clamp(0.85rem, 1.6vmin, 1.15rem); white-space: nowrap; }
+.zap-conn-pill {
+  font-size: 0.7em; text-transform: uppercase; letter-spacing: 0.04em;
+  padding: 0.2em 0.7em; border-radius: 999px;
+  background: rgba(251, 191, 36, 0.16); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.4);
+}
+
+/* ---------- body layout ---------- */
+.zap-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(240px, 24vw, 380px);
+  gap: clamp(0.5rem, 1.5vmin, 1.25rem);
+}
+.zap-stage {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--panel);
+  padding: clamp(0.75rem, 2.4vmin, 2rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(0.6rem, 1.6vmin, 1.2rem);
+  overflow-y: auto;
+}
+
+.zap-eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: clamp(0.7rem, 1.5vmin, 0.95rem);
+  color: var(--zap-bolt);
+  font-weight: 700;
+  text-align: center;
+}
+.zap-prompt {
+  font-size: clamp(1.3rem, 3.6vmin, 2.4rem);
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.2;
+  max-width: 22ch;
+}
+.zap-prompt.is-big { font-size: clamp(1.8rem, 5vmin, 3.4rem); color: var(--zap-bolt); }
+
+/* ---------- answering progress ---------- */
+.zap-answering { display: flex; flex-direction: column; align-items: center; gap: 0.9rem; width: 100%; }
+.zap-progress {
+  width: min(70%, 520px);
+  height: 14px;
+  border-radius: 999px;
+  background: #0d1420;
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+.zap-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--zap-cyan), var(--zap-bolt));
+  transition: width 0.4s ease;
+}
+.zap-count { color: var(--muted); font-size: clamp(0.85rem, 1.7vmin, 1.1rem); }
+
+.zap-roster { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; }
+.zap-roster-chip {
+  display: flex; align-items: center; gap: 0.4rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: #0f1826;
+  font-size: clamp(0.8rem, 1.5vmin, 1rem);
+  opacity: 0.6;
+}
+.zap-roster-chip.is-done { opacity: 1; border-color: var(--zap-cyan); }
+.zap-roster-mark { font-size: 0.9em; }
+
+/* ---------- duel board ---------- */
+.zap-voting, .zap-results { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 0.9rem; }
+.zap-duel {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.8rem;
+}
+.zap-duel-prompt {
+  font-size: clamp(1.05rem, 2.8vmin, 1.8rem);
+  font-weight: 700;
+  text-align: center;
+  max-width: 26ch;
+}
+.zap-duel-answers {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(0.6rem, 2vmin, 1.4rem);
+  width: 100%;
+}
+.zap-duel.n-2 .zap-duel-answers { max-width: 900px; }
+.zap-duel.n-3 .zap-duel-answers,
+.zap-duel.n-4 .zap-duel-answers { grid-template-columns: repeat(2, 1fr); }
+.zap-duel.n-5 .zap-duel-answers,
+.zap-duel.n-6 .zap-duel-answers,
+.zap-duel.n-7 .zap-duel-answers,
+.zap-duel.n-8 .zap-duel-answers { grid-template-columns: repeat(3, 1fr); }
+
+.zap-answer {
+  border-radius: 14px;
+  border: 2px solid var(--line);
+  background: #0f1826;
+  padding: clamp(0.7rem, 2vmin, 1.3rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 5.5rem;
+  justify-content: space-between;
+}
+.zap-answer.tone-a { border-color: var(--zap-pink); box-shadow: inset 0 0 0 1px rgba(255, 60, 175, 0.25); }
+.zap-answer.tone-b { border-color: var(--zap-cyan); box-shadow: inset 0 0 0 1px rgba(53, 224, 224, 0.25); }
+.zap-answer.tone-c { border-color: #a78bfa; }
+.zap-answer.tone-d { border-color: #f59e0b; }
+.zap-answer.tone-e { border-color: #34d399; }
+.zap-answer.tone-f { border-color: #fb7185; }
+.zap-answer.tone-g { border-color: #60a5fa; }
+.zap-answer.tone-h { border-color: #f472b6; }
+.zap-answer.is-winner {
+  border-color: var(--zap-bolt);
+  background: rgba(255, 210, 63, 0.12);
+  box-shadow: 0 0 0 2px var(--zap-bolt), 0 8px 30px rgba(255, 210, 63, 0.2);
+  animation: zap-winner-pop 0.55s ease-out;
+}
+@keyframes zap-winner-pop {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 210, 63, 0); }
+  45% { transform: scale(1.04); box-shadow: 0 0 0 5px rgba(255, 210, 63, 0.5), 0 10px 40px rgba(255, 210, 63, 0.35); }
+  100% { transform: scale(1); box-shadow: 0 0 0 2px var(--zap-bolt), 0 8px 30px rgba(255, 210, 63, 0.2); }
+}
+.zap-answer-foot { animation: zap-foot-in 0.4s ease-out; }
+@keyframes zap-foot-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.zap-answer.is-blank { opacity: 0.55; font-style: italic; }
+.zap-answer-text {
+  font-size: clamp(1rem, 2.4vmin, 1.5rem);
+  font-weight: 600;
+  line-height: 1.25;
+}
+.zap-answer-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  border-top: 1px solid var(--line);
+  padding-top: 0.4rem;
+  font-size: clamp(0.75rem, 1.5vmin, 0.95rem);
+}
+.zap-answer-author { color: var(--muted); font-weight: 600; }
+.zap-answer-votes { color: var(--zap-bolt); font-weight: 700; white-space: nowrap; }
+
+.zap-burst {
+  font-size: clamp(1.2rem, 3.2vmin, 2rem);
+  font-weight: 800;
+  color: var(--zap-bolt);
+  letter-spacing: 0.1em;
+  animation: zap-pop 0.5s ease-out;
+}
+.zap-tie { color: var(--muted); font-weight: 600; }
+@keyframes zap-pop {
+  0% { transform: scale(0.6); opacity: 0; }
+  60% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+.zap-results-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: clamp(0.8rem, 2vmin, 1.6rem);
+}
+.zap-results-grid .zap-duel { padding: 0.6rem; border: 1px solid var(--line); border-radius: 14px; background: #0d1420; }
+.zap-results-grid .zap-duel-prompt { font-size: clamp(0.9rem, 1.9vmin, 1.15rem); }
+.zap-results-grid .zap-answer-text { font-size: clamp(0.85rem, 1.7vmin, 1.1rem); }
+
+/* ---------- side panel ---------- */
+.zap-side {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--panel);
+  padding: clamp(0.6rem, 1.8vmin, 1.1rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  min-height: 0;
+}
+.zap-side-head { display: flex; align-items: center; justify-content: space-between; }
+.zap-side-head h2 { margin: 0; font-size: clamp(1rem, 2vmin, 1.35rem); }
+
+.zap-standings { display: flex; flex-direction: column; gap: 0.3rem; }
+.zap-standings li,
+.zap-final-standings li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.55rem;
+  border-radius: 10px;
+  background: #0f1826;
+  border: 1px solid var(--line);
+}
+.zap-standings li:first-child { border-color: var(--zap-bolt); }
+.zap-rank { color: var(--muted); font-weight: 700; font-size: 0.85em; min-width: 2.2ch; }
+.zap-standings-name, .zap-final-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.zap-standings-delta { color: var(--zap-cyan); font-weight: 700; font-size: 0.85em; }
+.zap-standings-score, .zap-final-score { font-weight: 800; color: var(--zap-bolt); }
+
+.zap-feed {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: clamp(0.75rem, 1.5vmin, 0.95rem);
+  color: var(--muted);
+  border-top: 1px solid var(--line);
+  padding-top: 0.5rem;
+}
+.zap-side-actions { display: flex; gap: 0.5rem; }
+.zap-side-actions button { flex: 1; }
+.zap-sound-toggle {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  border-radius: 10px;
+  padding: 0.45rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ---------- overlays ---------- */
+.zap-result-actions { display: flex; gap: 0.6rem; justify-content: center; margin-top: 0.8rem; flex-wrap: wrap; }
+.zap-final-standings { display: flex; flex-direction: column; gap: 0.3rem; margin: 0.8rem 0 0; width: min(360px, 80vw); }
+
+/* ---------- reactions ---------- */
+.zap-reactions {
+  position: absolute;
+  right: clamp(0.5rem, 2vw, 1.5rem);
+  bottom: clamp(0.5rem, 2vh, 1.5rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  pointer-events: none;
+  z-index: 5;
+}
+.zap-reaction-bubble {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.3rem 0.7rem;
+  animation: zap-pop 0.4s ease-out;
+}
+.zap-reaction-emoji { font-size: 1.3rem; }
+.zap-reaction-who { color: var(--muted); font-size: 0.8rem; }
+
+@media (max-width: 900px) {
+  .zap-body { grid-template-columns: 1fr; }
+  .zap-duel-answers { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zap-burst,
+  .zap-reaction-bubble,
+  .zap-progress-fill,
+  .zap-answer.is-winner,
+  .zap-answer-foot { animation: none; transition: none; }
+}

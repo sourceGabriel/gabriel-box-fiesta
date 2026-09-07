@@ -1,0 +1,179 @@
+/* Zap! phone controller. Loaded only when the Zap! game is active. */
+
+.zap-panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 1rem;
+  display: grid;
+  gap: 0.75rem;
+}
+.zap-center { justify-items: center; text-align: center; }
+.zap-badge { font-size: 2.4rem; }
+
+.zap-banner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  text-align: center;
+  padding: 0.7rem;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  font-weight: 700;
+  color: var(--muted);
+}
+.zap-banner.is-live {
+  color: #1a1206;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-color: transparent;
+  background: linear-gradient(90deg, #35e0e0, #ffd23f);
+}
+.zap-round-tag { font-size: 0.72rem; font-weight: 700; opacity: 0.75; letter-spacing: 0.03em; }
+
+.zap-answers { gap: 0.9rem; }
+.zap-done { margin: 0; text-align: center; color: #35e0e0; font-weight: 700; }
+
+/* ---------- ballot ---------- */
+.zap-ballot-prompt { margin: 0; font-weight: 700; font-size: 1.05rem; text-align: center; line-height: 1.25; }
+.zap-ballot-opts { display: grid; gap: 0.6rem; }
+.zap-vote-btn {
+  width: 100%;
+  text-align: left;
+  border-radius: 12px;
+  border: 2px solid var(--line);
+  background: var(--panel-2);
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  padding: 0.9rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  cursor: pointer;
+}
+.zap-vote-btn:disabled { cursor: default; opacity: 0.7; }
+.zap-vote-btn.is-chosen {
+  border-color: #ffd23f;
+  background: rgba(255, 210, 63, 0.14);
+  opacity: 1;
+  animation: zap-chosen-pop 0.4s ease-out;
+}
+@keyframes zap-chosen-pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.03); }
+  100% { transform: scale(1); }
+}
+.zap-vote-check { font-size: 0.75rem; font-weight: 700; color: #ffd23f; }
+
+.zap-round-score { margin: 0; font-weight: 700; color: #ffd23f; }
+.zap-cheer {
+  font-size: 1.9rem;
+  font-weight: 800;
+  color: #ffd23f;
+  letter-spacing: 0.06em;
+  animation: zap-cheer-pop 0.55s ease-out;
+}
+@keyframes zap-cheer-pop {
+  0% { transform: scale(0.5) rotate(-6deg); opacity: 0; }
+  55% { transform: scale(1.18) rotate(3deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zap-vote-btn.is-chosen, .zap-cheer { animation: none; }
+}
+
+/* ---------- roster ---------- */
+.zap-roster-head { display: flex; align-items: center; justify-content: space-between; }
+.zap-roster-head h2 { margin: 0; font-size: 1.05rem; }
+.zap-howto-open {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.zap-roster ul { display: grid; gap: 0.35rem; }
+.zap-roster li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: 10px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+}
+.zap-roster li.is-me { border-color: #ffd23f; }
+.zap-roster-who { display: flex; align-items: center; gap: 0.45rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.zap-roster-score { font-weight: 800; color: #ffd23f; }
+
+/* ---------- reactions ---------- */
+.zap-reactions-bar { display: flex; gap: 0.4rem; justify-content: space-between; }
+.zap-reactions-bar button {
+  flex: 1;
+  font-size: 1.4rem;
+  padding: 0.5rem 0;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  cursor: pointer;
+}
+.zap-reaction-feed {
+  position: fixed;
+  right: 0.6rem;
+  bottom: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  pointer-events: none;
+}
+.zap-reaction-pop {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.25rem 0.6rem;
+}
+.zap-reaction-pop small { color: var(--muted); }
+
+/* ---------- how to play ---------- */
+.zap-howto {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 8, 13, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 50;
+}
+.zap-howto-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 1.2rem;
+  max-width: 26rem;
+  display: grid;
+  gap: 0.8rem;
+}
+.zap-howto-card h2 { margin: 0; }
+.zap-howto-list { margin: 0; padding-left: 1.2rem; display: grid; gap: 0.5rem; }
+.zap-howto-note { margin: 0; color: var(--muted); font-size: 0.9rem; }
+.zap-howto-close {
+  border: none;
+  border-radius: 12px;
+  padding: 0.7rem;
+  font-weight: 700;
+  background: linear-gradient(90deg, #f59e0b, #ef4444);
+  color: #fff;
+  cursor: pointer;
+}

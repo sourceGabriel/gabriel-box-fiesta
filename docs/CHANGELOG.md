@@ -362,5 +362,104 @@ Replaces the single-emoji "avatar" (which was just prepended to the display name
 - 60 server tests green · ui 7 green · host + mobile lint clean · 5-workspace build green (69 PNGs bundled per app).
 - Live smoke (host + 2 phones): edit avatar on join (gender, skin, hair + runtime recolour, eyes, shirt, hat, bg, Surpresa) → join → pixel avatar on waiting screen + roster pill → host lobby roster → start UNO → canvas avatars on TV seat rows + phone player pills. No console/server errors.
 
-## Next planned change
-- **Fase D / D6 (remaining polish, optional)** — Coup `sound-map.ts` (reuse `@party/ui` `getSounds()`), card-flip animation on reveal. Then **bots** (needs a platform "virtual player" concept — `BotBrain` is ~1100 lines pure TS, portable later) and the **Reformation** expansion, both deferred from v1.
+## 2026-09-07 — Stack merged + next-games direction (branch `feature/quiplaxi`)
+No code change — planning + docs sync.
+### Changed
+- `main`/`develop` fast-forwarded to `0079344` — the entire Fases A–D + pixel-avatars stack is now on `main`. The unmerged `feature/*` branch stack is resolved.
+- New working branch **`feature/quiplaxi`** (off `main`, empty) for **game #3, a Quiplash-inspired party game**. Implementation to be planned + built in a fresh chat from `~/.claude/plans/quiplax-e-proximos-jogos.md`.
+### Decisions (with the user)
+- **NO BOTS.** Bots / AI opponents / virtual players are **descoped** for every game — not "deferred". Do not propose a virtual-player phase; do not port 8tp/Coup's `BotBrain`. Solo testing = multiple browser tabs.
+- Coup **Reformation** expansion stays *deferred* (not descoped) — a cheap win any time.
+- **§47** (own visual identity / game names) still open — a Quiplash-like game needs its own name; `BrandMark.text` is the single rename point. Decide before/with game #3.
+### Reference repos — re-validated (read the code, not just READMEs)
+- The 5 cloned repos under `C:\Users\gabri\Documents\workspace\Jogos\` (`rumpus`, `bodbjanar`, `freewee`, `amoebas`, `Coup`) are **read-only references**. Our platform layer (session tokens + grace, typed `ws` protocol + zod, `@party/ui`, 60 tests, 3-screen host flow) already exceeds all of them — nothing to import architecturally.
+- **`rumpus/games/quiplash.js` + `rumpus/games/fibbage.js`** (~300 lines each) are the **mechanics** reference for games #3/#4 (self-vote block, per-phase timers with `endsAt`, lie==truth collision, identical-lie collapse crediting all authors, mid-round dropout recount). rumpus is **AGPLv3** → reimplement clean-room, never copy into this ISC repo.
+- `bodbjanar` (MIT): canvas-on-phone → bitmap-to-TV → auction — only if a drawing game is added. `freewee` (2015): sensor-input ideas only, code obsolete. `amoebas`: real-time `.io` arcade, marginal.
+- The real effort for text party games is original **PT-BR prompt/question banks** — rumpus ships only tiny samples; CAH text is non-commercial-licensed and not shipped.
+### Games roadmap
+1. **#3 Quiplash-inspired** (`feature/quiplaxi`) — `prompt → 2 free-text answers per player → 1v1 matchups → vote → score → N rounds`. Needs a new **free-text mobile input** component. §52 checklist (UNO/Coup are the mould). ~40–60 original PT-BR prompts.
+2. **#4 Fibbage-inspired** — reuses the text-input UI; `fact-with-blank → invent a lie → shuffle lies + truth → hunt the truth → points for finding + for fooling`.
+3. **#5 Trivia** — simplest engine; the cost is the PT-BR question bank.
+- Also pending: Coup D6 polish (`sound-map.ts`, card-flip on reveal).
+
+## 2026-09-07 — Zap! (game #3, Quiplash-inspired) / PR Z1 — shared contract (branch `feature/quiplaxi`)
+### Decided (with the user)
+- **Name: "Zap!"** (`gameId: "zap"`) — §47 own name, distinct from the Quiplash mark; `BrandMark.text` will carry it. Locale PT-BR.
+- **Real Quiplash mechanic** (head-to-head duels), not the rumpus single-prompt simplification. The "everyone answers one shared prompt" format the user flagged as more CAH-like is parked for a future Cards-Against-Humanity-style game #N.
+- **3 rounds**; rounds 1–2 are duels, round 3 is **"Última Chance"** — one shared prompt everyone answers, **3× points**.
+- Round pairing: players on a circle, `prompt_i → player_i + player_{i+1}` ⇒ N players = N prompts = N duels/round; each player owes 2 answers on a normal round, 1 on the final.
+- **minPlayers 3** (a duel needs a voter who is not a contestant) — supersedes the plan's `minPlayers: 2` assumption.
+- Scoring: 100 per vote (×3 on the final round) + a **"ZAP!"** sweep bonus when a duel winner takes 100% of the votes.
+- Voting is **one duel at a time** on the TV (`currentDuelIndex`); the phone shows a 2-option ballot (or nothing, if you are a contestant in that duel).
+### Added — code (types-only, `shared/` stays runtime-free)
+- `shared/src/models/zap.ts` — `ZapPhase` (`answering|voting|roundResults|gameover|paused`), `ZapRoundKind`, `ZapDuelAnswer`, `ZapDuelResult`, `ZapPointsAward`, `ZapDuel`, `ZapPublicPlayer`, `ZapStanding`, `ZapPublicState`, `ZapDecision`, `ZapAssignment`, `ZapBallot`, `ZapPrivateState`, `ZapAction` (`submitAnswer` / `castVote`). Authors of answers are `null` in the public state during `voting`, filled on reveal — privacy lives in the projection, not the events.
+- `shared/src/games/zap/events.ts` — `ZapGameEvent` discriminated union (mirrors `CoupGameEvent`): `game_started` / `round_started` / `answering_started` / `answer_submitted` / `all_answers_in` / `duel_started` / `vote_cast` / `duel_revealed` / `round_finished` / `game_finished` (+ pause/resume). Events never carry answer/vote text.
+- `shared/src/index.ts` — `export *` for the two new modules.
+### Why
+- A game's wire contract should exist and typecheck before its engine and views are written, so Z2/Z3/Z4 build against a fixed shape. Keeping answer authorship and vote text out of both the public state (during `voting`) and the event stream puts Zap!'s only privacy rule in one place — the private-state projection.
+### Validation
+- `npm run -w shared build` green. 60 server tests untouched/green; 5-workspace build green (Z1 adds no runtime).
+### Out of scope (Z2+)
+- Engine `server/src/games/zap/` (pairing, phase timers via `TurnTimedGame`, scoring), zod `action-schema.ts`, `GAMES` entry, PT-BR `prompts.ts`, host view + `Cover`, mobile controller + free-text input component, engine tests + integration path.
+
+## 2026-09-07 — Zap! / PR Z2 — server engine + plugin (branch `feature/quiplaxi`)
+### Added — code
+- `server/src/games/zap/constants.ts` — `MIN_PLAYERS 3` / `MAX_PLAYERS 8`, `TOTAL_ROUNDS 3`, phase windows (`ANSWER_MS 60s`, `VOTE_MS 20s`, `ROUND_RESULTS_MS 8s`), `POINTS_PER_VOTE 100`, `FINAL_ROUND_MULTIPLIER 3`, `SWEEP_BONUS 50`, `MAX_ANSWER_LEN 80`, `BLANK_ANSWER`.
+- `server/src/games/zap/prompts.ts` — `ZAP_PROMPTS`, 54 original PT-BR fill-in prompts (written for this repo, not lifted from any deck). Shuffled per match, reshuffled on exhaustion.
+- `server/src/games/zap/pairing.ts` — pure round planner. `planNormalRound(seatIds, prompts)`: circle pairing, `prompt_k` answered by seat `k` + seat `k+1` (mod N) ⇒ N prompts = N duels, 2 answers/player. `planFinalRound(seatIds, prompt)`: one shared prompt, one N-way duel.
+- `server/src/games/zap/zap-game.ts` — `ZapGame implements PausableGame, TurnTimedGame`. **Self-advancing**: one stored deadline ticked by the platform server; `onTurnTimeout()` closes each phase (`answering` → `voting` one duel at a time → `roundResults` → next round / `gameover`). Fills blanks for un-submitted assignments; drops all-blank duels. Scoring: `votes × 100`, `× 3` on the final round, `+ 50` sweep bonus when a 2-way duel is unanimous. Injected RNG (`ctx.random`) for prompt + answer-order shuffles. `getStatus()` = `active` until `gameover` → `complete` (no rounds/intermission — the owner never nudges it).
+- `server/src/games/zap/action-schema.ts` — zod discriminated union (`submitAnswer` / `castVote`), `parseZapAction`. Text is a coarse `≤2000` guard; the engine trims + clamps.
+- `server/src/games/zap/plugin.ts` — `zapPlugin` (`id: 'zap'`, name **"Zap!"**, 3–8p, `{ rounds: false, turnTimer: true, pause: true }`).
+- `server/src/games/registry.ts` — **+1 import, +1 entry** (`GAMES.zap`).
+- `server/src/tests/zap-game.test.ts` — 16 tests (setup, answer validation + clamp, auto-advance to voting, ballot eligibility, vote rejections, 100/vote + sweep bonus, tie split, answering/voting timeouts, round progression, final round = one N-way duel ×3, gameover winner, pause). `multiplayer.integration.test.ts` +1 (Zap! catalog + SELECT_GAME + START_GAME + per-player prompt isolation + generic `GAME_ACTION` + malformed rejection). **Server tests: 77 green (was 60).**
+### Changed
+- `shared/src/models/zap.ts` + `shared/src/games/zap/events.ts` (Z1, not yet committed) — generalised duel slots from `0 | 1` to `number` and `votes` from `[number, number]` to `number[]`, so the final round is modelled as a single N-way duel. `ZapBallot.options`/`votedSlot` and `ZapAction.castVote.slot` follow.
+### Why
+- A Quiplash-style loop is a sequence of timed simultaneous-submit phases, which is exactly what `TurnTimedGame` already expresses (Coup uses it for challenge windows) — so the game needs **no new platform plumbing**, and the "free-text mobile input" the roadmap flagged is purely a Z4 UI concern. Self-advancing (vs `RoundedGame` + an owner button) matches the party-game feel: the TV drives the pace.
+### Validation
+- 77 server tests green · `tsc` server + shared clean · host/mobile lint clean · 5-workspace build green.
+- **§52 held:** zero edits to `core/`, `ws-server.ts`, either shell, or `shared/protocol` — only `shared/models`+`games/zap` (the contract), `server/src/games/zap/`, and one line in `registry.ts`.
+### Out of scope (Z3+)
+- Host view + `Cover` + `HOST_GAMES` entry (Z3); mobile controller + free-text input component + `CONTROLLER_GAMES` entry (Z4); reveal animation, "ZAP!" burst, `HowToPlay`, `sound-map.ts` (Z5).
+
+## 2026-09-07 — Zap! / PR Z3 — host / TV view (branch `feature/quiplaxi`)
+### Added — code
+- `host/src/games/zap/ZapHostView.tsx` — the TV view. Renders per `pub.phase`: `answering` (prompt / "Última Chance" prompt + progress bar + `answersInCount/expected` + per-player ✍️/✅ roster derived from the `answer_submitted` event stream), `voting` (one `DuelBoard` for `currentDuelIndex` — the 2 answers big, authors hidden, tone-coloured; `votesInCount/expected`), `roundResults` (grid of every duel with vote counts, winner ring, `⚡ ZAP!` burst / `🤝 Empate`), `gameover` (`Overlay` with 🏆 winner + final standings). Side panel: live standings (`roundPoints` delta chips), event feed via `describeEvent`, pause / end buttons. Emoji reactions reused from `HostGameViewProps`.
+- `host/src/games/zap/ZapCover.tsx` — inline-SVG catalog cover (lightning bolt between two speech bubbles, "ZAP!" wordmark). No external assets.
+- `host/src/games/zap/describeEvent.ts` — `ZapGameEvent` → one feed line (or `null`).
+- `host/src/games/zap/zap-host.css` — all rules scoped under `.zap-host` (no collision with `uno-host.css` / `coup-host.css`); 2-column grid collapsing to 1 under 900px; `prefers-reduced-motion` guard on the ZAP burst / progress transition.
+- `host/src/games/registry.ts` — **+2 imports, +1 entry** (`HOST_GAMES.zap`).
+### Why
+- The host is game-agnostic: `App.tsx` hands `publicState`/`events`/`players`/`reactions`/`send` to the registered view and knows nothing about Zap!. Scoping the CSS under `.zap-host` keeps the three games' stylesheets independent even though Vite bundles all of them.
+### Validation
+- `oxlint` host clean (only the repo's pre-existing `set-state-in-effect` advisories, none in `zap/`); 5-workspace build green; 77 server tests still green.
+- **Live smoke** (host + 3 phones, real server): catalog shows the Zap! cover → "Iniciar Zap!" → host renders `answering` (timer 60→0, progress bar, ✍️ roster, standings, feed) → the self-advancing loop ran all 3 rounds (round 3 = "Última Chance" with the shared prompt + triple-points styling) → `gameover` Overlay ("🏆 Ana venceu!" + final standings + Nova partida / Encerrar). **Zero console errors** throughout. Mobile waiting screen shows the "Zap!" name + tagline. Only gap: `voting` / `roundResults` with *non-dropped* duels (the `DuelBoard` component) — no answers were submitted (no Z4 controller yet), so every duel collapsed as all-blank; that path renders from the same `pub` shape the 77 server tests cover and gets its end-to-end smoke at Z4.
+### Out of scope (Z4+)
+- Mobile controller + free-text input component + `CONTROLLER_GAMES` entry (Z4); reveal animation polish, `HowToPlay`, `sound-map.ts` (Z5).
+
+## 2026-09-07 — Zap! / PR Z4 — phone controller + free-text input (branch `feature/quiplaxi`)
+### Added — code
+- `@party/ui` `TextAnswerInput` (`ui/src/components/TextAnswerInput.tsx` + `.ui-answer*` in `components.css`) — a prompt + `<textarea>` + char counter + submit button. Self-contained draft seeded once from `submittedText`; shows "✓ enviado" and reads "Atualizar" while the draft matches what the server has. **Reusable by Fibbage (#4).**
+- `mobile/src/games/zap/ZapControllerView.tsx` — phase-driven controller: `answering` renders one `TextAnswerInput` per `priv.assignments` slot (keyed `round-slot` so drafts reset each round); `voting` renders `priv.ballot` as tap-to-vote option buttons that lock after the vote; `roundResults` shows this player's round + total points; `gameover` shows win / final rank; `paused` card. Standings list (own row highlighted), 6-emoji reaction bar + reaction feed, "? Como jogar" overlay.
+- `mobile/src/games/zap/HowToPlay.tsx` — 5-step static rules overlay.
+- `mobile/src/games/zap/zap-controller.css` — all rules under `.zap-*`.
+- `mobile/src/games/registry.ts` — **+1 import, +1 entry** (`CONTROLLER_GAMES.zap`).
+### Why
+- The controller only ever shows the ONE thing the player must do now (`priv.pendingDecision` + `pub.phase`), same principle as the Coup controller. The text-input box is a `@party/ui` component, not a Zap!-local one, because Fibbage's "invent a lie" screen is the same control.
+### Validation
+- `@party/ui` `tsc` clean + 7 ui tests green; `oxlint` mobile clean; 5-workspace build green; 77 server tests green.
+- **Full live smoke** (host TV + 3 phone controllers, real server, complete 3-round match): lobby correctly gated "Aguardando 3+ jogadores" until the 3rd phone joined → each phone got its own 2 prompts and submitted via `TextAnswerInput` → host `answering` progress filled → auto-advanced to `voting` → phones showed the 2-option ballot, contestants saw "você está neste duelo" → host `DuelBoard` one duel at a time → votes closed each duel, host `roundResults` grid revealed authors + vote counts + winner ring + **⚡ ZAP! sweep bonus (+50)** → rounds auto-advanced 1→2→3 → round 3 "Última Chance" showed the single shared prompt on every phone and the **N-way duel** on the TV, scored **×3** (Caio +600 for 2 votes) → `gameover` overlay on TV ("🏆 Caio venceu!" 1050/600/150) and per-phone win/rank. **Zero console errors in any controller.** (The host tab logged WebSocket-reconnect noise during the server-startup window / forced test reloads — the shell's own backoff, not touched by this slice; the match played through with live state on every screen.)
+### Out of scope (Z5)
+- Reveal / vote-count animation, a "ZAP!" burst effect on the phone, `host/src/games/zap/sound-map.ts`.
+
+## 2026-09-07 — Zap! / PR Z5 — polish: sound + reveal animation (branch `feature/quiplaxi`)
+### Added — code
+- `host/src/games/zap/sound-map.ts` — `soundForEvent(ZapGameEvent): SoundName | null` (mirrors `uno/sound-map.ts`): `round_started`→`turn`, `all_answers_in`→`select`, `duel_started`→`cardPlay`, `duel_revealed`→`uno` on a ZAP! else `special`, `round_finished`/`game_finished`→`win`. **First non-UNO game with sound** (Coup's is still deferred).
+- `ZapHostView` — `getSounds()` + `soundForEvent` played off the raw event stream in the feed effect (restructured so `freshRaw` is computed before the `describeEvent` filter); a "🔊 Som ligado / 🔇 Som desligado" toggle under the side actions (mute persists in `localStorage['party:sound']` via `@party/ui`).
+- `zap-host.css` — `zap-winner-pop` one-shot on `.zap-answer.is-winner` (scale + glow), `zap-foot-in` fade-up on the revealed `.zap-answer-foot`, `.zap-sound-toggle` style; all added to the `prefers-reduced-motion` off-switch.
+- `ZapControllerView` — a `⚡ +N ⚡` cheer (`.zap-cheer`, `zap-cheer-pop`) on `roundResults` when the player scored that round; `zap-chosen-pop` on the picked vote button. Both `prefers-reduced-motion`-guarded in `zap-controller.css`.
+### Validation
+- 77 server tests · 7 ui tests · `tsc` server/shared/ui clean · `oxlint` host/mobile clean · 5-workspace build green.
+- Live smoke: full 3-round match driven end-to-end (host TV + 3 scripted players) → `gameover` overlay correct (Bia 900 / Ana 600 / Caio 300), the winning answer carries the `is-winner` pop, the "🔊 Som ligado" toggle renders, **zero game/render console errors** (host tab shows only the shell's WebSocket reconnect-backoff noise from cold-starting the dev servers — `useRoomConnection` is not touched by any Zap! slice).
+### Status
+- **Zap! (game #3) is complete** — Z1 contract · Z2 engine (77 tests) · Z3 host view · Z4 controller + `@party/ui TextAnswerInput` · Z5 sound + animation. §52 held throughout: the whole game added `shared/models`+`games/zap`, `server/src/games/zap/`, `host/src/games/zap/`, `mobile/src/games/zap/`, one `@party/ui` component, and **one line in each of the 3 registries** — zero edits to `core/`, `ws-server.ts`, either shell, or `shared/protocol`.
