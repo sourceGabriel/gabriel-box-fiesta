@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CoupGameEvent, CoupPublicState } from '@party/shared';
-import { BrandMark, Button, Overlay, Timer } from '@party/ui';
+import { Avatar, BrandMark, Button, Overlay, Timer } from '@party/ui';
 import type { HostGameViewProps } from '../types';
 import { ACTION_LABEL, CHARACTER_META, getCoupCardArt, getCoupCardBackArt } from './coupCards';
 import { describeEvent } from './describeEvent';
@@ -37,6 +37,11 @@ export function CoupHostView({ publicState, events, players, connected, reaction
     for (const p of players) if (!map.has(p.id)) map.set(p.id, p.name);
     return (id: string) => map.get(id) ?? '—';
   }, [pub.players, players]);
+
+  const avatarOf = useMemo(() => {
+    const map = new Map(players.map((p) => [p.id, p.avatar] as const));
+    return (id: string) => map.get(id);
+  }, [players]);
 
   // Append newly-arrived events to the feed (keep last 9).
   useEffect(() => {
@@ -171,6 +176,7 @@ export function CoupHostView({ publicState, events, players, connected, reaction
                 >
                   <div className="coup-seat-head">
                     <span className={`conn-dot ${p.connected ? 'on' : 'off'}`} aria-hidden="true" />
+                    {avatarOf(p.id) ? <Avatar spec={avatarOf(p.id)!} size={26} className="coup-seat-avatar" /> : null}
                     <span className="coup-seat-name">{p.name}</span>
                     <span className="coup-coins">💰 {p.coins}</span>
                     <button

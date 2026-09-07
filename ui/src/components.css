@@ -251,10 +251,18 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.55rem 0.8rem;
+  gap: 0.6rem;
+  padding: 0.5rem 0.8rem;
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.03);
+}
+
+.ui-roster--list .ui-roster-name { flex: 1; min-width: 0; }
+
+.ui-roster-avatar {
+  flex: none;
+  border-radius: 8px;
+  display: block;
 }
 
 /* pills layout — mobile waiting */
@@ -282,11 +290,11 @@
 
 .ui-roster--pills li {
   display: inline-flex;
-  align-items: baseline;
+  align-items: center;
   gap: 0.4rem;
   border: 1px solid var(--line);
   border-radius: 999px;
-  padding: 0.4rem 0.8rem;
+  padding: 0.3rem 0.7rem 0.3rem 0.35rem;
   background: var(--panel-2);
   font-size: 0.9rem;
 }
@@ -294,4 +302,108 @@
 .ui-roster--pills li.is-me {
   border-color: rgba(96, 165, 250, 0.6);
   background: rgba(59, 130, 246, 0.14);
+}
+
+/* ---------- Avatar + AvatarEditor ---------- */
+.ui-avatar {
+  display: block;
+  flex: none;
+  border-radius: 6px;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.ui-avatar-editor {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.ui-ae-preview {
+  display: grid;
+  justify-items: center;
+  gap: 0.4rem;
+}
+
+.ui-ae-preview .ui-avatar {
+  border-radius: 18px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+}
+
+.ui-ae-name {
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.ui-ae-random {
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--text, inherit);
+  border-radius: 999px;
+  padding: 0.35rem 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ui-ae-random:hover { border-color: var(--accent, #f59e0b); }
+
+.ui-ae-row {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.ui-ae-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.ui-ae-scroll {
+  display: flex;
+  gap: 0.4rem;
+  overflow-x: auto;
+  padding-bottom: 0.2rem;
+  scrollbar-width: thin;
+}
+
+.ui-ae-swatch {
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.ui-ae-swatch.is-on {
+  border-color: #fff;
+  box-shadow: 0 0 0 2px var(--accent, #f59e0b);
+  transform: scale(1.12);
+}
+
+.ui-ae-chip {
+  flex: none;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: inherit;
+  border-radius: 999px;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.ui-ae-chip.is-on {
+  background: rgba(245, 158, 11, 0.18);
+  border-color: var(--accent, #f59e0b);
+  color: var(--text, inherit);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-ae-swatch { transition: none; }
 }

@@ -194,6 +194,9 @@
 }
 .coup-roster li.is-turn { border-color: #e2b13c; background: rgba(226, 177, 60, 0.14); }
 .coup-roster li.is-out { opacity: 0.45; }
+.coup-roster li { align-items: center; }
+.coup-roster-who { display: inline-flex; align-items: center; gap: 0.4rem; min-width: 0; }
+.coup-roster-who .ui-avatar { border-radius: 6px; }
 .coup-roster-meta { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 /* ---------- how to play ---------- */

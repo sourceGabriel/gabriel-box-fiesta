@@ -1,15 +1,14 @@
-import { BrandMark, Button } from '@party/ui';
+import type { AvatarSpec } from '@party/shared';
+import { AvatarEditor, BrandMark, Button } from '@party/ui';
 import { MobileHeader } from './MobileHeader';
-
-const AVATAR_OPTIONS = ['🙂', '😎', '🎉', '🔥', '🕺', '🤠', '😺', '🐼'];
 
 interface JoinScreenProps {
   roomCode: string;
   onRoomCodeChange: (code: string) => void;
   playerName: string;
   onPlayerNameChange: (name: string) => void;
-  avatar: string;
-  onAvatarChange: (avatar: string) => void;
+  avatar: AvatarSpec;
+  onAvatarChange: (avatar: AvatarSpec) => void;
   connected: boolean;
   onJoin: () => void;
   brandName?: string;
@@ -62,23 +61,11 @@ export function JoinScreen({
 
         <div className="field">
           <span className="field-label">Seu avatar</span>
-          <div className="avatar-picker" aria-label="Escolha um avatar">
-            {AVATAR_OPTIONS.map((option) => (
-              <button
-                key={option}
-                type="button"
-                className={`avatar-option ${avatar === option ? 'selected' : ''}`}
-                onClick={() => onAvatarChange(option)}
-              >
-                {option}
-              </button>
-            ))}
-          </div>
+          <AvatarEditor value={avatar} onChange={onAvatarChange} name={playerName.trim() || undefined} />
+          <span className="avatar-credit">
+            Bonecos: arte LPC / OpenGameArt (CC-BY-SA · OGA-BY · CC0)
+          </span>
         </div>
-
-        <p className="join-preview">
-          Vai entrar como <strong>{avatar} {playerName.trim() || '...'}</strong>
-        </p>
 
         <Button variant="success" className="join-submit" disabled={!canSubmit} onClick={onJoin}>
           {connected ? 'Entrar na sala' : 'Conectando…'}

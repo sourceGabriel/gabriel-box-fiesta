@@ -1,8 +1,10 @@
+import type { AvatarSpec } from './avatar';
 import type { PlayerId, RoomId, SessionId } from './common';
 
 export type Player = {
   id: PlayerId;
   name: string;
+  avatar: AvatarSpec;
   connected: boolean;
   sessionId: SessionId;
   joinedAt: number;

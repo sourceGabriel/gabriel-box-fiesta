@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { UnoCard, UnoPrivatePlayerState, UnoPublicState } from '@party/shared';
-import { Button, Timer } from '@party/ui';
+import { Avatar, Button, Timer } from '@party/ui';
 import { getCardArt } from '@party/ui/uno-cards';
 import { MobileHeader } from '../../shell/MobileHeader';
 import type { ControllerGameViewProps } from '../types';
@@ -8,9 +8,14 @@ import './uno-controller.css';
 
 const COLOR_PT: Record<string, string> = { red: 'Vermelho', yellow: 'Amarelo', green: 'Verde', blue: 'Azul' };
 
-export function UnoControllerView({ publicState, privateState, playerId, connected, roomCode, send }: ControllerGameViewProps) {
+export function UnoControllerView({ publicState, privateState, playerId, connected, roomCode, roomPlayers, send }: ControllerGameViewProps) {
   const pub = publicState as UnoPublicState;
   const priv = privateState as UnoPrivatePlayerState;
+
+  const avatarOf = useMemo(() => {
+    const map = new Map(roomPlayers.map((p) => [p.id, p.avatar] as const));
+    return (id: string) => map.get(id);
+  }, [roomPlayers]);
 
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [chosenColor, setChosenColor] = useState<'red' | 'yellow' | 'green' | 'blue'>('red');
@@ -97,6 +102,7 @@ export function UnoControllerView({ publicState, privateState, playerId, connect
                 key={player.id}
                 className={`player-pill ${player.id === playerId ? 'is-me' : ''} ${player.id === pub.currentPlayerId ? 'is-turn' : ''}`}
               >
+                {avatarOf(player.id) ? <Avatar spec={avatarOf(player.id)!} size={20} /> : null}
                 <span>{player.name}</span>
                 <small>{player.handCount}</small>
               </div>

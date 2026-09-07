@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { CoupCharacter, CoupPrivateState, CoupPublicState } from '@party/shared';
-import { Button, Timer } from '@party/ui';
+import { Avatar, Button, Timer } from '@party/ui';
 import { MobileHeader } from '../../shell/MobileHeader';
 import type { ControllerGameViewProps } from '../types';
 import { ACTIONS, ACTION_LABEL, CHARACTER_META, REACTION_EMOJIS, getCoupCardArt } from './coupCards';
@@ -9,9 +9,14 @@ import './coup-controller.css';
 
 const charLabel = (c: CoupCharacter | null | undefined): string => (c ? (CHARACTER_META[c]?.label ?? c) : '');
 
-export function CoupControllerView({ publicState, privateState, playerId, connected, roomCode, reactions, send }: ControllerGameViewProps) {
+export function CoupControllerView({ publicState, privateState, playerId, connected, roomCode, roomPlayers, reactions, send }: ControllerGameViewProps) {
   const pub = publicState as CoupPublicState;
   const priv = privateState as CoupPrivateState;
+
+  const avatarOf = useMemo(() => {
+    const map = new Map(roomPlayers.map((p) => [p.id, p.avatar] as const));
+    return (id: string) => map.get(id);
+  }, [roomPlayers]);
 
   const [pendingActionType, setPendingActionType] = useState<string | null>(null);
   const [exchangeKeep, setExchangeKeep] = useState<number[]>([]);
@@ -242,7 +247,10 @@ export function CoupControllerView({ publicState, privateState, playerId, connec
             <ul>
               {pub.players.map((p) => (
                 <li key={p.id} className={`${p.id === pub.currentPlayerId ? 'is-turn' : ''} ${p.isAlive ? '' : 'is-out'}`}>
-                  <span>{p.name}{p.id === playerId ? ' (você)' : ''}</span>
+                  <span className="coup-roster-who">
+                    {avatarOf(p.id) ? <Avatar spec={avatarOf(p.id)!} size={20} /> : null}
+                    {p.name}{p.id === playerId ? ' (você)' : ''}
+                  </span>
                   <span className="coup-roster-meta">
                     💰 {p.coins} · {p.influenceCount - p.revealedCharacters.length}🂠
                     {p.isAlive ? '' : ' · fora'}

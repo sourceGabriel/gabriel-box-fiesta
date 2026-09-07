@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import type { GameMeta, ServerMessage } from '@party/shared';
+import type { AvatarSpec, GameMeta, ServerMessage } from '@party/shared';
 import { makeMessage, serverOrigin, wsOrigin, type Send } from './messages';
 
-export type ShellPlayer = { id: string; name: string; connected: boolean };
+export type ShellPlayer = { id: string; name: string; avatar?: AvatarSpec; connected: boolean };
 export type BufferedEvent = { seq: number; event: unknown };
 export type LiveReaction = { key: number; playerId: string; reaction: string; at: number };
 
@@ -107,7 +107,7 @@ export function useRoomConnection(): RoomConnection {
         const message = JSON.parse(event.data as string) as ServerMessage;
         switch (message.type) {
           case 'ROOM_STATE':
-            setPlayers(message.payload.players.map((p) => ({ id: p.id, name: p.name, connected: p.connected })));
+            setPlayers(message.payload.players.map((p) => ({ id: p.id, name: p.name, avatar: p.avatar, connected: p.connected })));
             setJoinQrDataUrl(message.payload.joinQrDataUrl);
             setJoinUrl(message.payload.joinUrl);
             break;

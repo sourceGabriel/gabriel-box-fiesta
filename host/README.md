@@ -42,22 +42,26 @@ npm run -w host lint      # oxlint
   - `useRoomConnection.ts` — `/room` + WebSocket (reconexão + backoff), expõe
     `{ roomCode, players, catalog, selectedGameId, activeGameId, publicState,
     events, reactions, connected, send, … }`. `publicState`/`events` são opacos
-    aqui; `reactions` é a fila de emoji (auto-expira em 4s).
+    aqui; `reactions` é a fila de emoji (auto-expira em 4s). `players` inclui
+    `avatar` (do `ROOM_STATE`).
   - `AttractScreen.tsx` — marca "Box Fiesta" + código da sala; avança só manual
     (tecla/clique). Sem QR.
   - `CatalogScreen.tsx` — grade do `GAME_CATALOG` + arte de capa por jogo
     (`covers` vem do app, não do fio); navegação setas/Enter/Esc + clique. Sem QR.
-  - `LobbyScreen.tsx` — QR grande + código + jogadores + "Iniciar {jogo}" +
-    "Trocar de jogo". É a única tela com QR.
+  - `LobbyScreen.tsx` — QR grande + código + jogadores (roster `@party/ui` com
+    mini-avatar por jogador) + "Iniciar {jogo}" + "Trocar de jogo". É a única
+    tela com QR.
   - `messages.ts`, `shell.css`.
 - `src/games/{types,registry}.ts` — `HostGameViewProps` (inclui `reactions`),
   `HostGameEntry` e `HOST_GAMES = { uno: {…}, coup: {…} }` (`{ View, Cover }`).
   Adicionar um jogo = 1 import + 1 entrada.
-- `src/games/uno/` — `UnoHostView.tsx`, `UnoCover.tsx` (capa SVG),
+- `src/games/uno/` — `UnoHostView.tsx` (assentos com mini-avatar via
+  `avatarOf(id)` do prop `players`), `UnoCover.tsx` (capa SVG),
   `describeEvent.ts`, `animations.ts` (Fase 10), `sound-map.ts`, `uno-host.css`
   (arte das cartas vem de `@party/ui/uno-cards`).
-- `src/games/coup/` — `CoupHostView.tsx` (mesa, banner de fase, faixa de
-  revelação de desafio, feed, overlays, bolhas de reação), `CoupCover.tsx`,
+- `src/games/coup/` — `CoupHostView.tsx` (mesa com mini-avatar por assento,
+  banner de fase, faixa de revelação de desafio, feed, overlays, bolhas de
+  reação), `CoupCover.tsx`,
   `describeEvent.ts`, `coupCards.ts` (emoji/cor por personagem — sem assets),
   `coup-host.css`.
 - `src/index.css` — reset mínimo; tokens vêm de `@party/ui/tokens.css` (via `main.tsx`).

@@ -11,8 +11,23 @@ const base = z.object({
   payload: z.unknown(),
 });
 
+// Avatar ids are short catalog keys; the renderer (@party/ui) clamps anything
+// unknown to a default, so structural validation is enough here.
+const avatarSchema = z
+  .object({
+    gender: z.string().min(1).max(24),
+    skin: z.string().min(1).max(24),
+    hair: z.string().min(1).max(24),
+    hairColor: z.string().min(1).max(24),
+    eyes: z.string().min(1).max(24),
+    shirt: z.string().min(1).max(24),
+    hat: z.string().min(1).max(24),
+    bg: z.string().min(1).max(24),
+  })
+  .strict();
+
 const clientSchema = z.discriminatedUnion('type', [
-  base.extend({ type: z.literal('JOIN_ROOM'), payload: z.object({ roomCode: z.string().min(1), playerName: z.string().min(1).max(40), role: z.enum(['player', 'host']) }) }),
+  base.extend({ type: z.literal('JOIN_ROOM'), payload: z.object({ roomCode: z.string().min(1), playerName: z.string().min(1).max(40), role: z.enum(['player', 'host']), avatar: avatarSchema.optional() }) }),
   base.extend({ type: z.literal('RECONNECT_SESSION'), payload: z.object({ roomCode: z.string().min(1), sessionToken: z.string().min(1), role: z.enum(['player', 'host']) }) }),
   base.extend({ type: z.literal('SELECT_GAME'), payload: z.object({ gameId: z.string().min(1) }) }),
   base.extend({ type: z.literal('START_GAME'), payload: z.object({ gameId: z.string().min(1).optional() }) }),

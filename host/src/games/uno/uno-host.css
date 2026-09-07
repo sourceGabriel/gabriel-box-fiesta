@@ -221,6 +221,11 @@
   background: rgba(245, 158, 11, 0.12);
 }
 
+.p-avatar {
+  flex: none;
+  border-radius: 8px;
+}
+
 .p-name {
   flex: 1;
   min-width: 0;

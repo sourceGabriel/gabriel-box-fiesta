@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { UnoGameEvent, UnoPublicState } from '@party/shared';
-import { BrandMark, Button, getSounds, Overlay, Timer } from '@party/ui';
+import { Avatar, BrandMark, Button, getSounds, Overlay, Timer } from '@party/ui';
 import { getCardArt, getCardBackArt } from '@party/ui/uno-cards';
 import type { HostGameViewProps } from '../types';
 import { describeEvent } from './describeEvent';
@@ -101,6 +101,7 @@ export function UnoHostView({ publicState, events, players, connected, send }: H
 
   const boardPlayers = state.players;
   const nameOf = (id: string) => boardPlayers.find((p) => p.id === id)?.name ?? players.find((p) => p.id === id)?.name ?? '—';
+  const avatarOf = (id: string) => players.find((p) => p.id === id)?.avatar;
   const onlineCount = boardPlayers.filter((p) => p.connected).length;
   const currentPlayerName = nameOf(state.currentPlayerId ?? '');
   const unoCaller = boardPlayers.find((p) => p.calledUno && p.handCount === 1);
@@ -277,6 +278,7 @@ export function UnoHostView({ publicState, events, players, connected, send }: H
                 className={`${state.currentPlayerId === player.id ? 'is-turn' : ''} ${skippedPlayerId === player.id ? 'just-skipped' : ''}`}
               >
                 <span className={`conn-dot ${player.connected ? 'on' : 'off'}`} aria-hidden="true" />
+                {avatarOf(player.id) ? <Avatar spec={avatarOf(player.id)!} size={28} className="p-avatar" /> : null}
                 <span className="p-name">{player.name}</span>
                 {state.currentPlayerId === player.id && state.pendingDraw > 0
                   ? <span className="p-tag">+{state.pendingDraw}</span>

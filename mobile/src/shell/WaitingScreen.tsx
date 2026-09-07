@@ -1,11 +1,12 @@
-import { PlayerRoster } from '@party/ui';
+import type { AvatarSpec } from '@party/shared';
+import { Avatar, PlayerRoster } from '@party/ui';
 import { MobileHeader } from './MobileHeader';
 import type { ShellPlayer } from './useRoomConnection';
 
 interface WaitingScreenProps {
   roomCode: string;
   connected: boolean;
-  avatar: string;
+  avatar: AvatarSpec;
   myName: string;
   players: ShellPlayer[];
   playerId: string | null;
@@ -29,7 +30,7 @@ export function WaitingScreen({
       <MobileHeader roomCode={roomCode} connected={connected} />
 
       <section className="waiting-panel">
-        <div className="waiting-badge">{avatar}</div>
+        <Avatar spec={avatar} size={72} className="waiting-avatar" title={myName} />
         <h2>Tudo pronto!</h2>
         <p className="you-are">Você entrou como <strong>{myName}</strong></p>
         {gameName ? <p className="waiting-game">{gameName}</p> : null}

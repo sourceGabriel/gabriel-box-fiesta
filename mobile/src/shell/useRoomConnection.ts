@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { GameMeta, ServerMessage } from '@party/shared';
+import type { AvatarSpec, GameMeta, ServerMessage } from '@party/shared';
 import { getRoomCodeFromPath, makeMessage, wsOrigin, type Send } from './messages';
 import {
   clearStoredSession,
@@ -10,7 +10,7 @@ import {
   writeToken,
 } from './session';
 
-export type ShellPlayer = { id: string; name: string; connected: boolean };
+export type ShellPlayer = { id: string; name: string; avatar?: AvatarSpec; connected: boolean };
 export type LiveReaction = { key: number; playerId: string; reaction: string; at: number };
 
 const REACTION_TTL_MS = 4000;
@@ -34,7 +34,7 @@ export interface RoomConnection {
   reactions: LiveReaction[];
   send: Send;
   /** Join the room (or silently resume an existing session for this name). */
-  joinOrReconnect: (identity: { playerName: string; avatar: string }) => void;
+  joinOrReconnect: (identity: { playerName: string; avatar: AvatarSpec }) => void;
 }
 
 export function useRoomConnection(): RoomConnection {
@@ -125,7 +125,7 @@ export function useRoomConnection(): RoomConnection {
             setError('');
             break;
           case 'ROOM_STATE':
-            setRoomPlayers(message.payload.players.map((p) => ({ id: p.id, name: p.name, connected: p.connected })));
+            setRoomPlayers(message.payload.players.map((p) => ({ id: p.id, name: p.name, avatar: p.avatar, connected: p.connected })));
             break;
           case 'GAME_CATALOG':
             setCatalog(message.payload.games);
@@ -192,7 +192,7 @@ export function useRoomConnection(): RoomConnection {
     socketRef.current?.send(JSON.stringify(makeMessage(type, payload)));
   };
 
-  const joinOrReconnect = ({ playerName, avatar }: { playerName: string; avatar: string }): void => {
+  const joinOrReconnect = ({ playerName, avatar }: { playerName: string; avatar: AvatarSpec }): void => {
     const socket = socketRef.current;
     const base = playerName.trim();
     if (!socket || !roomCode || !base) {
@@ -216,8 +216,9 @@ export function useRoomConnection(): RoomConnection {
     pendingSessionStorageKeyRef.current = storageKey;
     socket.send(JSON.stringify(makeMessage('JOIN_ROOM', {
       roomCode: roomCode.toUpperCase(),
-      playerName: `${avatar} ${base}`,
+      playerName: base,
       role: 'player',
+      avatar,
     })));
   };
 

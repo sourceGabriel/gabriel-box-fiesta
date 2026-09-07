@@ -1,9 +1,22 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import type { AvatarSpec } from '@party/shared';
+import { DEFAULT_AVATAR, sanitizeAvatar } from '@party/ui';
 import { useRoomConnection } from './shell/useRoomConnection';
 import { JoinScreen } from './shell/JoinScreen';
 import { WaitingScreen } from './shell/WaitingScreen';
 import { CONTROLLER_GAMES } from './games/registry';
 import './shell/shell.css';
+
+const AVATAR_STORAGE_KEY = 'party:avatar';
+
+const loadAvatar = (): AvatarSpec => {
+  try {
+    const raw = localStorage.getItem(AVATAR_STORAGE_KEY);
+    return raw ? sanitizeAvatar(JSON.parse(raw)) : DEFAULT_AVATAR;
+  } catch {
+    return DEFAULT_AVATAR;
+  }
+};
 
 /**
  * Thin phone-controller shell: owns the room connection + session/reconnect, shows
@@ -13,11 +26,19 @@ import './shell/shell.css';
 function App() {
   const conn = useRoomConnection();
   const [playerName, setPlayerName] = useState('');
-  const [avatar, setAvatar] = useState('🙂');
+  const [avatar, setAvatar] = useState<AvatarSpec>(loadAvatar);
 
-  const myName =
-    conn.roomPlayers.find((player) => player.id === conn.playerId)?.name
-    ?? `${avatar} ${playerName.trim() || 'Você'}`;
+  useEffect(() => {
+    try {
+      localStorage.setItem(AVATAR_STORAGE_KEY, JSON.stringify(avatar));
+    } catch {
+      // ignore storage errors (private mode, quota, disabled)
+    }
+  }, [avatar]);
+
+  const me = conn.roomPlayers.find((player) => player.id === conn.playerId);
+  const myName = me?.name ?? (playerName.trim() || 'Você');
+  const myAvatar = me?.avatar ?? avatar;
   const selectedGame = conn.catalog.find((game) => game.id === conn.selectedGameId);
   const GameView = conn.activeGameId ? CONTROLLER_GAMES[conn.activeGameId] : undefined;
 
@@ -40,7 +61,7 @@ function App() {
       <WaitingScreen
         roomCode={conn.roomCode}
         connected={conn.connected}
-        avatar={avatar}
+        avatar={myAvatar}
         myName={myName}
         players={conn.roomPlayers}
         playerId={conn.playerId}
@@ -56,6 +77,7 @@ function App() {
         playerId={conn.playerId}
         connected={conn.connected}
         roomCode={conn.roomCode}
+        roomPlayers={conn.roomPlayers}
         reactions={conn.reactions}
         send={conn.send}
       />

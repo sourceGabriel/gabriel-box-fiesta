@@ -215,7 +215,7 @@ export class PartyServer {
       }
 
       logger.info({ remoteAddress, roomCode: room.code, playerName: message.payload.playerName }, 'Player join request received');
-      const { player, sessionToken } = room.joinPlayer(message.payload.playerName, Date.now());
+      const { player, sessionToken } = room.joinPlayer(message.payload.playerName, message.payload.avatar, Date.now());
       ctx.role = 'player';
       ctx.playerId = player.id;
       const playerSockets = this.playerConnections.get(player.id) ?? new Set<WebSocket>();
@@ -230,7 +230,7 @@ export class PartyServer {
         sessionToken,
       });
       this.sendGameCatalog(socket);
-      this.broadcast('PLAYER_JOINED', { playerId: player.id, name: player.name });
+      this.broadcast('PLAYER_JOINED', { playerId: player.id, name: player.name, avatar: player.avatar });
       this.broadcastRoomState();
       this.pushGameState();
       return;
@@ -428,7 +428,7 @@ export class PartyServer {
       ownerPlayerId: room.ownerPlayerId,
       joinUrl,
       joinQrDataUrl,
-      players: room.getPlayers().map((player) => ({ id: player.id, name: player.name, connected: player.connected })),
+      players: room.getPlayers().map((player) => ({ id: player.id, name: player.name, avatar: player.avatar, connected: player.connected })),
     });
   }
 

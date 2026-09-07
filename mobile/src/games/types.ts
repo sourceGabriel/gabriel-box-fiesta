@@ -1,6 +1,6 @@
 import type { FC } from 'react';
 import type { Send } from '../shell/messages';
-import type { LiveReaction } from '../shell/useRoomConnection';
+import type { LiveReaction, ShellPlayer } from '../shell/useRoomConnection';
 
 /**
  * What every game's phone-controller view receives from the shell. `publicState`
@@ -14,6 +14,8 @@ export interface ControllerGameViewProps {
   playerId: string;
   connected: boolean;
   roomCode: string;
+  /** Lobby roster (from ROOM_STATE) — game-agnostic, carries names + avatars. */
+  roomPlayers: ShellPlayer[];
   /** Emoji reactions currently on screen (auto-expire). Game-agnostic. */
   reactions: LiveReaction[];
   send: Send;

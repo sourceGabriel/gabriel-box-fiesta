@@ -1,10 +1,23 @@
 import { nanoid } from 'nanoid';
-import type { Player } from '@party/shared';
+import type { AvatarSpec, Player } from '@party/shared';
 import { SessionService } from './session-service';
 import { isPausable, isRounded, isTurnTimed, type GameInstance } from './game-plugin';
 import { DEFAULT_GAME_ID, GAMES } from '../games/registry';
 
 export type RoomState = 'accepting_players' | 'in_game' | 'paused';
+
+/** Mirror of `@party/ui`'s `DEFAULT_AVATAR` — used when a client sends no avatar
+ * (e.g. the host, or an old client). The renderer clamps unknown ids anyway. */
+const FALLBACK_AVATAR: AvatarSpec = {
+  gender: 'female',
+  skin: 'light',
+  hair: 'bob',
+  hairColor: 'chestnut',
+  eyes: 'brown',
+  shirt: 'tee',
+  hat: 'none',
+  bg: 'amber',
+};
 
 export class Room {
   readonly id: string;
@@ -35,7 +48,7 @@ export class Room {
     return this.players.get(playerId);
   }
 
-  joinPlayer(name: string, now: number): { player: Player; sessionToken: string } {
+  joinPlayer(name: string, avatar: AvatarSpec | undefined, now: number): { player: Player; sessionToken: string } {
     const normalized = name.trim().toLowerCase();
     if (!normalized) {
       throw new Error('INVALID_NAME:Player name is required');
@@ -52,6 +65,7 @@ export class Room {
     const player: Player = {
       id: playerId,
       name: name.trim(),
+      avatar: avatar ?? FALLBACK_AVATAR,
       connected: true,
       sessionId: session.id,
       joinedAt: now,

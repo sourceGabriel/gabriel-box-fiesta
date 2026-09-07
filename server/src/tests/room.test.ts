@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest';
+import type { AvatarSpec } from '@party/shared';
 import { Room } from '../core/room';
+
+const AVATAR: AvatarSpec = { gender: 'male', skin: 'brown', hair: 'afro', hairColor: 'pink', eyes: 'purple', shirt: 'polo', hat: 'crown', bg: 'teal' };
 
 describe('Room', () => {
   it('assigns first player as owner and transfers it only after the grace window', () => {
     const room = new Room('ABCD');
-    const p1 = room.joinPlayer('Alice', Date.now()).player;
-    const p2 = room.joinPlayer('Bob', Date.now()).player;
+    const p1 = room.joinPlayer('Alice', undefined, Date.now()).player;
+    const p2 = room.joinPlayer('Bob', undefined, Date.now()).player;
 
     expect(room.ownerPlayerId).toBe(p1.id);
 
@@ -18,8 +21,8 @@ describe('Room', () => {
 
   it('does not transfer ownership if the owner reconnected during the grace window', () => {
     const room = new Room('ABCD');
-    const owner = room.joinPlayer('Alice', Date.now());
-    room.joinPlayer('Bob', Date.now());
+    const owner = room.joinPlayer('Alice', undefined, Date.now());
+    room.joinPlayer('Bob', undefined, Date.now());
 
     room.markDisconnected(owner.player.id, Date.now());
     room.reconnect(owner.sessionToken, Date.now());
@@ -30,7 +33,7 @@ describe('Room', () => {
 
   it('reconnects using session token preserving identity', () => {
     const room = new Room('ABCD');
-    const joined = room.joinPlayer('Alice', Date.now());
+    const joined = room.joinPlayer('Alice', undefined, Date.now());
     room.markDisconnected(joined.player.id, Date.now());
 
     const reconnected = room.reconnect(joined.sessionToken, Date.now());
@@ -40,8 +43,8 @@ describe('Room', () => {
 
   it('endGame returns to the lobby keeping the selected game so the host can play again or switch', () => {
     const room = new Room('ABCD');
-    const owner = room.joinPlayer('Alice', Date.now()).player;
-    room.joinPlayer('Bob', Date.now());
+    const owner = room.joinPlayer('Alice', undefined, Date.now()).player;
+    room.joinPlayer('Bob', undefined, Date.now());
 
     room.startGame(owner.id, 'uno');
     expect(room.state).toBe('in_game');
@@ -55,5 +58,14 @@ describe('Room', () => {
     // selectGame works again after a game, and a fresh game can start (play again).
     expect(() => room.selectGame('uno')).not.toThrow();
     expect(() => room.startGame(owner.id, 'uno')).not.toThrow();
+  });
+
+  it('stores a per-player avatar and falls back to a default when none is given', () => {
+    const room = new Room('ABCD');
+    const withAvatar = room.joinPlayer('Alice', AVATAR, Date.now()).player;
+    const without = room.joinPlayer('Bob', undefined, Date.now()).player;
+
+    expect(withAvatar.avatar).toEqual(AVATAR);
+    expect(without.avatar).toMatchObject({ skin: expect.any(String), hair: expect.any(String), hat: expect.any(String) });
   });
 });

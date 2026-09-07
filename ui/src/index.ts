@@ -7,4 +7,20 @@
  */
 
 export * from './components';
+export {
+  GENDERS,
+  SKIN_TONES,
+  HAIR_STYLES,
+  HAIR_COLORS,
+  EYE_COLORS,
+  SHIRTS,
+  HATS,
+  BG_COLORS,
+  DEFAULT_AVATAR,
+  sanitizeAvatar,
+  randomAvatar,
+  bgHex,
+  type AvatarOption,
+  type AvatarColorOption,
+} from './avatar';
 export { createSounds, getSounds, type Sounds, type SoundName } from './sound';

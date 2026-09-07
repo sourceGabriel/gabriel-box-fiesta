@@ -1,4 +1,5 @@
 export * from './models/common';
+export * from './models/avatar';
 export * from './models/room';
 export * from './models/uno';
 export * from './models/coup';

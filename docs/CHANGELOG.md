@@ -335,5 +335,32 @@
 - 57 server tests green · host + mobile lint clean · 5-workspace build green (all 6 `.webp` bundled in both apps).
 - Live smoke (host + 2 phones): catalog cover shows portraits → Coup game → controller shows own influences as portraits, host shows card backs → bluffed Tax → challenge → Ana loses Ambassador → **revealed portrait renders face-up on the TV**. No console/server errors.
 
+## 2026-09-07 — Customizable pixel avatars (branch `feature/avatar`)
+Replaces the single-emoji "avatar" (which was just prepended to the display name) with a per-player customizable **LPC pixel-art "3x4 photo"** chosen on the join screen: body (female/male), skin, hair style + colour, eye colour, shirt, funny hat, background. Platform feature — game-agnostic, zero engine changes.
+### Added — asset pipeline
+- `tools/build-avatars.py` — dev-only extractor. `--lpc <path>` vendors the exact south-facing idle frames + body/hair/eye/cloth palettes + credits from an [Universal LPC Spritesheet Character Generator](https://github.com/LiberatedPixelCup/Universal-LPC-Spritesheet-Character-Generator) checkout into `tools/lpc-source/` (self-contained — the checkout is then unneeded). Default run reads `tools/lpc-source/` and generates `ui/src/avatar-assets/`.
+- `tools/lpc-source/` — vendored subset (56 frames + 4 palette sets + `credits-raw.json`), committed. **Nothing lives outside the repo.**
+- `ui/src/avatar-assets/` (generated, committed) — 69 PNGs (**~35 KB total**): `body-{gender}-{skin}` (12), `eyes-{colour}` (6), `shirt-{style}-{gender}` (16, baked colour), `hat-{style}` (9), `hair-{style}` + `hair-{style}-back` (26, shipped in the LPC base ramp for **runtime recolour**). Plus `palettes.ts` (hair ramps), `index.ts` (typed url maps — explicit imports, no `import.meta.glob`), `CREDITS.md` (attribution for the exact subset).
+### Added — code
+- `shared/src/models/avatar.ts` — `AvatarSpec` type (`{ gender, skin, hair, hairColor, eyes, shirt, hat, bg }`, all catalog-id strings). Types-only.
+- `ui/src/avatar.ts` (`@party/ui`) — catalogs (`GENDERS` ×2, `SKIN_TONES` ×6, `HAIR_STYLES` ×25 incl. `bald`, `HAIR_COLORS` ×12, `EYE_COLORS` ×6, `SHIRTS` ×8, `HATS` ×10 incl. `none`/crown/tophat/tiara/wizard/tricorne/bandana/ninja-band/santa/bicorne, `BG_COLORS` ×8), `DEFAULT_AVATAR`, `sanitizeAvatar()` (clamps any unknown id — the wire only needs structural validation), `randomAvatar(rng?)`, `bgHex()`.
+- `ui/src/components/Avatar.tsx` — **hybrid** layered renderer: composes background → hair-back → body+head → eyes → shirt → hair-front → hat onto a 46×46 `<canvas>` (`image-rendering: pixelated`); hair is palette-swapped at runtime from the LPC base ramp. Module-wide caches for loaded images and recoloured-hair canvases → effectively synchronous past the first render; paints the bg immediately so there is never a blank frame.
+- `ui/src/components/AvatarEditor.tsx` — controlled editor: live preview + "🎲 Surpresa" + one picker row per attribute. `ui/src/components.css` `.ui-avatar` gets pixelated rendering.
+- `ui/src/avatar.test.ts` — `sanitizeAvatar` clamping, `randomAvatar` validity, `DEFAULT_AVATAR` validity (ui suite 7 green).
+- `server/src/tests/room.test.ts` — avatar stored + default fallback. `server/src/tests/multiplayer.integration.test.ts` — avatar flows through `PLAYER_JOINED` + `ROOM_STATE`; malformed avatar → `BAD_REQUEST`. **Server tests: 60 green (was 57).**
+### Changed
+- **Wire (breaking, in-memory only):** `JOIN_ROOM` payload gained optional `avatar?: AvatarSpec`; `ROOM_STATE.players[]` and `PLAYER_JOINED` now carry `avatar: AvatarSpec`. `server/src/websocket/protocol.ts` validates avatar shape (8 string fields, ≤24 chars, `.strict()`).
+- `server/src/core/room.ts` — `joinPlayer(name, avatar, now)`; `Player.avatar` stored (falls back to a local `FALLBACK_AVATAR` mirroring `@party/ui`'s `DEFAULT_AVATAR` when absent, e.g. the host). `shared/src/models/room.ts` — `Player` gained `avatar`.
+- `mobile` — `App.tsx` holds `AvatarSpec` state persisted to `localStorage['party:avatar']` (survives reloads; server-held avatar wins once joined). `JoinScreen` renders `<AvatarEditor>` (old 8-emoji grid removed) + a small "arte LPC / OpenGameArt" credit line; `WaitingScreen` renders `<Avatar>`; `joinOrReconnect` sends the structured avatar and the **clean name** (no more `"🙂 Alice"` emoji prefix). `shell.css` dropped `.avatar-picker`/`.avatar-option`/`.join-preview`.
+- `mobile` — `ControllerGameViewProps` gained `roomPlayers` (game-agnostic roster from `ROOM_STATE`); UNO + Coup controller rosters render opponent mini-avatars.
+- `host` — `ShellPlayer` gained `avatar`; `@party/ui` `PlayerRoster` renders a mini `<Avatar>` when a player carries one (host lobby). `UnoHostView` + `CoupHostView` seat rows resolve `avatarOf(id)` from the `players` prop and render a `<Avatar size={26–28}>`.
+### Why
+- Party identity: the emoji-in-the-name hack was fragile (name string carried presentation) and limited. A structured, sanitized `AvatarSpec` + a curated LPC paperdoll gives real customization with a **cohesive pixel-art look** and a tiny footprint (35 KB). Hybrid (bake finite parts, runtime-recolour only hair) keeps the asset count flat as the catalog grows.
+- §52 held: no edits to `core/` game orchestration, `ws-server` routing, either shell's flow, or any game engine — host/controller views resolve avatars by `playerId` from the existing `ROOM_STATE` roster.
+- Local single-machine game — the LPC art (CC-BY-SA / OGA-BY / CC0) is used with the bundled `CREDITS.md` + a visible credit line; never distributed.
+### Validation
+- 60 server tests green · ui 7 green · host + mobile lint clean · 5-workspace build green (69 PNGs bundled per app).
+- Live smoke (host + 2 phones): edit avatar on join (gender, skin, hair + runtime recolour, eyes, shirt, hat, bg, Surpresa) → join → pixel avatar on waiting screen + roster pill → host lobby roster → start UNO → canvas avatars on TV seat rows + phone player pills. No console/server errors.
+
 ## Next planned change
 - **Fase D / D6 (remaining polish, optional)** — Coup `sound-map.ts` (reuse `@party/ui` `getSounds()`), card-flip animation on reveal. Then **bots** (needs a platform "virtual player" concept — `BotBrain` is ~1100 lines pure TS, portable later) and the **Reformation** expansion, both deferred from v1.

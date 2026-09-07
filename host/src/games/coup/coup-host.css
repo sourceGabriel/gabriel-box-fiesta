@@ -103,6 +103,7 @@
 .coup-seat.is-out { opacity: 0.45; }
 
 .coup-seat-head { display: flex; align-items: center; gap: 0.5rem; }
+.coup-seat-avatar { flex: none; border-radius: 7px; }
 .coup-seat-name {
   flex: 1;
   min-width: 0;

@@ -1,3 +1,4 @@
+import type { AvatarSpec } from '../models/avatar';
 import type { GameMeta, LifecycleEvent } from '../games';
 
 export type ClientMessageType =
@@ -42,7 +43,7 @@ export type Envelope<TType extends string, TPayload> = {
 };
 
 export type ClientMessage =
-  | Envelope<'JOIN_ROOM', { roomCode: string; playerName: string; role: 'player' | 'host' }>
+  | Envelope<'JOIN_ROOM', { roomCode: string; playerName: string; role: 'player' | 'host'; avatar?: AvatarSpec }>
   | Envelope<'RECONNECT_SESSION', { roomCode: string; sessionToken: string; role: 'player' | 'host' }>
   | Envelope<'SELECT_GAME', { gameId: string }>
   | Envelope<'START_GAME', { gameId?: string }>
@@ -59,9 +60,9 @@ export type ClientMessage =
 
 export type ServerMessage =
   | Envelope<'ROOM_JOINED', { roomCode: string; role: 'player' | 'host'; playerId?: string; ownerPlayerId: string | null; sessionToken?: string }>
-  | Envelope<'ROOM_STATE', { roomCode: string; ownerPlayerId: string | null; joinUrl: string; joinQrDataUrl?: string; players: { id: string; name: string; connected: boolean }[] }>
+  | Envelope<'ROOM_STATE', { roomCode: string; ownerPlayerId: string | null; joinUrl: string; joinQrDataUrl?: string; players: { id: string; name: string; avatar: AvatarSpec; connected: boolean }[] }>
   | Envelope<'GAME_CATALOG', { games: GameMeta[]; selectedGameId: string }>
-  | Envelope<'PLAYER_JOINED', { playerId: string; name: string }>
+  | Envelope<'PLAYER_JOINED', { playerId: string; name: string; avatar: AvatarSpec }>
   | Envelope<'PLAYER_RECONNECTED', { playerId: string }>
   | Envelope<'PLAYER_LEFT', { playerId: string }>
   | Envelope<'OWNER_CHANGED', { ownerPlayerId: string | null }>

@@ -36,6 +36,8 @@ npm run -w mobile lint    # oxlint
 
 - `src/App.tsx` — dispatcher fino: `JoinScreen` até entrar, `WaitingScreen` até o
   jogo começar (com estado público + privado), depois a view do jogo ativo.
+  Guarda o `AvatarSpec` do jogador em `localStorage['party:avatar']` (o avatar do
+  servidor prevalece depois de entrar).
 - `src/shell/` — parte **genérica** (nenhum conhecimento de jogo):
   - `session.ts` — subsistema de sessão/reconexão: chaves `activeSession:<SALA>` e
     `session:<SALA>:<nome>` no localStorage, `readStoredSessionKey` / `readToken` /
@@ -46,9 +48,14 @@ npm run -w mobile lint    # oxlint
     Expõe `{ roomCode, playerId, connected, error, roomPlayers, catalog,
     selectedGameId, activeGameId, publicState, privateState, reactions, send, … }`
     — `publicState`/`privateState` opacos; `reactions` é a fila de emoji (4s).
-  - `MobileHeader.tsx`, `JoinScreen.tsx`, `WaitingScreen.tsx` (mostra o nome do
-    jogo selecionado), `messages.ts`, `shell.css`.
-- `src/games/{types,registry}.ts` — `ControllerGameViewProps` (inclui `reactions`)
+  - `MobileHeader.tsx`, `JoinScreen.tsx` (`@party/ui` `<AvatarEditor>` pixel —
+    corpo, pele, cabelo + cor, olhos, camisa, chapéu, fundo, "Surpresa" +
+    crédito LPC), `WaitingScreen.tsx` (nome do jogo + `<Avatar>`), `messages.ts`,
+    `shell.css`.
+    `joinOrReconnect` envia o avatar estruturado e o **nome limpo** (sem prefixo
+    de emoji).
+- `src/games/{types,registry}.ts` — `ControllerGameViewProps` (inclui `reactions`
+  e `roomPlayers` — roster genérico do `ROOM_STATE`, com nomes + avatares)
   e `CONTROLLER_GAMES = { uno: UnoControllerView, coup: CoupControllerView }`.
   Adicionar um jogo = 1 import + 1 entrada.
 - `src/games/uno/` — `UnoControllerView.tsx` (mão, mesa, ações, modal de cor,

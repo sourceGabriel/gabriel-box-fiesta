@@ -115,6 +115,49 @@ describe('multiplayer integration', () => {
     p1Reconnect.close();
   });
 
+  it('carries a per-player avatar through PLAYER_JOINED and ROOM_STATE', async () => {
+    server = new PartyServer(0);
+    await server.start();
+    const roomCode = server.getRoomCode();
+    const port = server.getPort();
+
+    const host = new WebSocket(`ws://127.0.0.1:${port}/ws`);
+    await new Promise<void>((resolve) => host.once('open', () => resolve()));
+    host.send(makeMessage('JOIN_ROOM', { roomCode, playerName: 'HOST', role: 'host' }));
+    await waitForMessage(host, 'ROOM_JOINED');
+
+    const avatar = { gender: 'male', skin: 'brown', hair: 'afro', hairColor: 'pink', eyes: 'purple', shirt: 'polo', hat: 'crown', bg: 'teal' };
+    const p1 = new WebSocket(`ws://127.0.0.1:${port}/ws`);
+    await new Promise<void>((resolve) => p1.once('open', () => resolve()));
+    const joinedPromise = waitForMessage(host, 'PLAYER_JOINED');
+    p1.send(makeMessage('JOIN_ROOM', { roomCode, playerName: 'Alice', role: 'player', avatar }));
+    await waitForMessage(p1, 'ROOM_JOINED');
+
+    const joined = await joinedPromise;
+    expect(joined.payload.avatar).toEqual(avatar);
+
+    const roomState = await waitForMessageWhere(host, 'ROOM_STATE', (m) => m.payload.players.length === 1);
+    expect(roomState.payload.players[0].avatar).toEqual(avatar);
+
+    host.close();
+    p1.close();
+  });
+
+  it('rejects a JOIN_ROOM whose avatar has the wrong shape', async () => {
+    server = new PartyServer(0);
+    await server.start();
+    const roomCode = server.getRoomCode();
+    const port = server.getPort();
+
+    const p1 = new WebSocket(`ws://127.0.0.1:${port}/ws`);
+    await new Promise<void>((resolve) => p1.once('open', () => resolve()));
+    p1.send(makeMessage('JOIN_ROOM', { roomCode, playerName: 'Alice', role: 'player', avatar: { skin: 42 } }));
+    const err = await waitForMessage(p1, 'ERROR');
+    expect(err.payload.code).toBe('BAD_REQUEST');
+
+    p1.close();
+  });
+
   it('keeps ownership when the owner reconnects within the grace window', async () => {
     server = new PartyServer(0, 2000);
     await server.start();

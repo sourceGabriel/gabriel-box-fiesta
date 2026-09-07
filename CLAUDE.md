@@ -17,8 +17,10 @@ Local (LAN, no internet, no accounts, in-memory) "Jackbox-style" party-game plat
 - Operating standards: `.copilot/spec-kit/copilot-operating-standards.md`
 - Change history + rationale: `docs/CHANGELOG.md` · Gap vs spec: `docs/repository-gap-review.md` · Short log: `.copilot/logs/changes-log.md`
 
-## Current state (2026-09-06)
-UNO MVP **complete and validated** (Fases 1–10 + mobile visual overhaul). **Coup added as game #2** (Fase D, classic ruleset) — now with **real character card art** (D6a). Server tests: **57 green**. Build: 5 workspaces green. Branch: **`feature/coupzin`** (D1–D5 committed + D6a card art, off `feature/coup-ou-coupa`).
+## Current state (2026-09-07)
+UNO MVP **complete and validated** (Fases 1–10 + mobile visual overhaul). **Coup added as game #2** (Fase D, classic ruleset) with **real character card art** (D6a). **Customizable player avatars** added as a platform feature (branch `feature/avatar`). Server tests: **60 green**. Build: 5 workspaces green.
+
+**Customizable pixel avatars (2026-09-07, branch `feature/avatar`, off `feature/coupzin`):** the old single-emoji avatar (prepended to the name string) is replaced by a per-player LPC pixel-art "3x4 photo" `AvatarSpec` `{ gender, skin, hair, hairColor, eyes, shirt, hat, bg }` (catalog ids). Art = a curated subset of the Universal LPC Spritesheet Character Generator, extracted by `tools/build-avatars.py` (`--lpc <path>` vendors sources into `tools/lpc-source/`, then a plain run generates `ui/src/avatar-assets/` — 69 PNGs ~35 KB + `palettes.ts` + typed `index.ts` + `CREDITS.md`, all committed). **Hybrid render:** finite parts (body×skin, eyes, shirts, hats) are baked; hair ships in the LPC base ramp and is palette-swapped at runtime. `AvatarSpec` is types-only in `shared/src/models/avatar.ts`; catalogs + the `<canvas>` `<Avatar>` (46×46, layered: bg → hair-back → body+head → eyes → shirt → hair-front → hat) + `<AvatarEditor>` + `sanitizeAvatar`/`randomAvatar`/`DEFAULT_AVATAR` in `@party/ui` (`ui/src/avatar.ts` + `components/{Avatar,AvatarEditor}.tsx`). Wire: `JOIN_ROOM.avatar?` + `ROOM_STATE.players[].avatar` + `PLAYER_JOINED.avatar`; server validates shape only (`.strict()`, 8 strings ≤24) and clamps unknown ids at render time. `Room.joinPlayer(name, avatar, now)`. Mobile persists the choice in `localStorage['party:avatar']` and sends a **clean name** (no emoji prefix). Shown on join / waiting / lobby roster / UNO + Coup seat rows + phone player pills. **§52 held** — no edits to `core/` orchestration, `ws-server` routing, either shell flow, or any engine; host/controller views map `playerId` → avatar from the existing `ROOM_STATE` roster (mobile `ControllerGameViewProps` gained a game-agnostic `roomPlayers`). Local-only game — LPC art (CC-BY-SA / OGA-BY / CC0) used with bundled credits, never distributed.
 
 **Fase A (game-agnostic core, §52) — COMPLETE:**
 - ✅ **A1** — `shared/src/games/` generic contract (`GameMeta`, `GameStatus`, `LifecycleEvent`) + `GAME_ACTION`/`SELECT_GAME`/`GAME_CATALOG`/`LIFECYCLE_EVENT` messages.
@@ -48,7 +50,7 @@ UNO MVP **complete and validated** (Fases 1–10 + mobile visual overhaul). **Co
 - **Deferred from v1:** bots (needs a platform "virtual player" concept — `BotBrain` is ~1100 lines pure TS, portable later) and the **Reformation** expansion (Inquisitor/factions/Convert/Embezzle/Examine).
 - Coup timers: 15s challenge/block windows, 30s turn/decision. Every phase exposes its deadline via `getTimer()`; `onTurnTimeout()` auto-resolves (all-passed / auto-Income / forced random Coup / keep-first-N / lose-first-influence). Single-influence forced losses auto-resolve server-side.
 
-**Active plan:** `C:\Users\gabri\.claude\plans\em-paralelo-ao-que-purring-moler.md` — Fase D (Coup). Earlier plan `antes-dos-proximos-passos-elegant-clover.md` covered Fase A→C.
+**Active plan:** `C:\Users\gabri\.claude\plans\feature-avatar-pixel-avatars.md` — customizable avatars (done, `feature/avatar`). Earlier: `em-paralelo-ao-que-purring-moler.md` (Fase D / Coup), `antes-dos-proximos-passos-elegant-clover.md` (Fase A→C).
 Locked decisions:
 - Do **Fase A (agnostic core) before finishing Fase 11** — deliberate reorder (2nd game blocked on the abstraction).
 - **One React shell per role** + games as in-bundle modules in a static registry. No per-game apps.
@@ -60,7 +62,9 @@ Monorepo, npm workspaces: `server` · `shared` (**types-only, no runtime, no zod
 
 | Concern | Where |
 |---|---|
-| Shared UI (`@party/ui`) | `ui/src/tokens.css` (design tokens) + `ui/src/components/` (`BrandMark`, `Button`, `Panel`, `Overlay`, `Timer`, `QrPanel`, `PlayerRoster`) + `ui/src/components.css` + `ui/src/sound.ts` (synth Web Audio, `getSounds()`). Both CSS files imported in each app's `main.tsx`. Game-specific colours (`--uno-*`) stay in that game's module; per-game sound maps live in `<app>/src/games/<id>/sound-map.ts`. |
+| Shared UI (`@party/ui`) | `ui/src/tokens.css` (design tokens) + `ui/src/components/` (`BrandMark`, `Button`, `Panel`, `Overlay`, `Timer`, `QrPanel`, `PlayerRoster`, `Avatar`, `AvatarEditor`) + `ui/src/components.css` + `ui/src/sound.ts` (synth Web Audio, `getSounds()`). Both CSS files imported in each app's `main.tsx`. Game-specific colours (`--uno-*`) stay in that game's module; per-game sound maps live in `<app>/src/games/<id>/sound-map.ts`. |
+| Player avatars | Type: `shared/src/models/avatar.ts` (`AvatarSpec`, 8 catalog-id fields). Catalogs + `<canvas>` renderer + editor + `sanitizeAvatar`/`randomAvatar`/`DEFAULT_AVATAR`: `ui/src/avatar.ts` + `ui/src/components/{Avatar,AvatarEditor}.tsx` (exported from `@party/ui`). Art pack: `ui/src/avatar-assets/` (generated) ← `tools/build-avatars.py` ← `tools/lpc-source/` (vendored LPC subset). Stored on `Player` (`server/src/core/room.ts`, `FALLBACK_AVATAR` when absent); wire via `JOIN_ROOM`/`ROOM_STATE`/`PLAYER_JOINED`; zod shape-only in `server/src/websocket/protocol.ts`. Mobile persists `localStorage['party:avatar']`. |
+| Avatar art pipeline | `tools/build-avatars.py` (Python + Pillow, dev-only). `--lpc <checkout>` copies south idle frames + palettes + credits → `tools/lpc-source/`; plain run bakes/recolours/crops → `ui/src/avatar-assets/*.png` + `palettes.ts` + `index.ts` + `CREDITS.md`. Catalog tables at the top of the script must match `ui/src/avatar.ts`. See `tools/README.md`. |
 | Plugin contract | `server/src/core/game-plugin.ts` (`GamePlugin`, `GameInstance`, `GameContext`, `TurnTimedGame`/`RoundedGame`/`PausableGame`/`TickingGame`, `isX()` guards) |
 | Game registry | `server/src/games/registry.ts` (`GAMES` map — add a game = 1 import + 1 entry) |
 | Room / player / owner / reconnect / 30s grace / `selectGame`/`startGame(gameId)` | `server/src/core/room.ts` (game-agnostic after A2) |
@@ -90,7 +94,7 @@ Monorepo, npm workspaces: `server` · `shared` (**types-only, no runtime, no zod
 ## Validation
 `/validate` runs it all and reports one line. Under the hood:
 ```
-npm run -w server test       # must stay green (currently 57)
+npm run -w server test       # must stay green (currently 60)
 npm run -w server lint        # tsc --noEmit
 npm run -w host lint          # oxlint
 npm run -w mobile lint        # oxlint
@@ -108,4 +112,4 @@ Smoke (`/run`): host catalog → pick a game → 2 mobiles via `/join/<code>` �
 - Work on `feature/*` branches; never commit directly to `main`/`develop`.
 - Commit message trailer: `Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>`.
 - PR body trailer: `🤖 Generated with [Claude Code](https://claude.com/claude-code)`.
-- History: Fases 5–10 via PR #2 (`feature/testa-claudin`, `c8b602e` on `main`/`develop`). Fases A–C on `feature/coup-ou-coupa` (`22f19b3`). **Fase D (Coup) on `feature/coupzin`** (`d98f58a`..`0c114d4`, pushed), branched off `feature/coup-ou-coupa`.
+- History: Fases 5–10 via PR #2 (`feature/testa-claudin`, `c8b602e` on `main`/`develop`). Fases A–C on `feature/coup-ou-coupa` (`22f19b3`). **Fase D (Coup) on `feature/coupzin`** (`d98f58a`..`7d65968`, pushed), branched off `feature/coup-ou-coupa`. **Customizable avatars on `feature/avatar`**, branched off `feature/coupzin`.
