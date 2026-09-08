@@ -1,0 +1,183 @@
+/* FDP — Foi De Propósito phone controller. Loaded only when FDP is active. */
+
+.fdp-panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 1rem;
+  display: grid;
+  gap: 0.75rem;
+}
+.fdp-center { justify-items: center; text-align: center; }
+.fdp-big { font-size: 2.4rem; }
+
+.fdp-banner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  text-align: center;
+  padding: 0.7rem;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  font-weight: 700;
+  color: var(--muted);
+}
+.fdp-banner.is-live {
+  color: #0b0f17;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-color: transparent;
+  background: linear-gradient(90deg, #fbbf24, #fb7185);
+}
+.fdp-round-tag { font-size: 0.72rem; font-weight: 700; opacity: 0.75; letter-spacing: 0.03em; }
+
+.fdp-prompt {
+  margin: 0;
+  font-weight: 700;
+  font-size: 1.1rem;
+  line-height: 1.3;
+  text-align: center;
+}
+
+.fdp-done { margin: 0; text-align: center; color: #34d399; font-weight: 700; }
+
+/* ---------- voting ---------- */
+.fdp-vote-opts { display: grid; gap: 0.55rem; }
+.fdp-vote-btn {
+  width: 100%;
+  text-align: left;
+  border-radius: 12px;
+  border: 2px solid var(--line);
+  background: var(--panel-2);
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  cursor: pointer;
+}
+.fdp-vote-btn:disabled { cursor: default; opacity: 0.7; }
+.fdp-vote-btn.is-chosen {
+  border-color: #fbbf24;
+  background: rgba(251, 191, 36, 0.16);
+  opacity: 1;
+  animation: fdp-chosen-pop 0.4s ease-out;
+}
+.fdp-vote-check { font-size: 0.75rem; font-weight: 700; color: #fbbf24; }
+@keyframes fdp-chosen-pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.03); }
+  100% { transform: scale(1); }
+}
+
+.fdp-round-score { margin: 0; font-weight: 700; color: #fbbf24; }
+.fdp-cheer {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #fbbf24;
+  animation: fdp-cheer-pop 0.55s ease-out;
+}
+@keyframes fdp-cheer-pop {
+  0% { transform: scale(0.6); opacity: 0; }
+  55% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+/* ---------- roster ---------- */
+.fdp-roster-head { display: flex; align-items: center; justify-content: space-between; }
+.fdp-roster-head h2 { margin: 0; font-size: 1.05rem; }
+.fdp-howto-open {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.fdp-roster ul { display: grid; gap: 0.35rem; }
+.fdp-roster li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: 10px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+}
+.fdp-roster li.is-me { border-color: #fbbf24; }
+.fdp-roster-who { display: flex; align-items: center; gap: 0.45rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fdp-roster-score { font-weight: 800; color: #fbbf24; }
+
+/* ---------- reactions ---------- */
+.fdp-reactions-bar { display: flex; gap: 0.4rem; justify-content: space-between; }
+.fdp-reactions-bar button {
+  flex: 1;
+  font-size: 1.4rem;
+  padding: 0.5rem 0;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  cursor: pointer;
+}
+.fdp-reaction-feed {
+  position: fixed;
+  right: 0.6rem;
+  bottom: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  pointer-events: none;
+}
+.fdp-reaction-pop {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.25rem 0.6rem;
+}
+.fdp-reaction-pop small { color: var(--muted); }
+
+/* ---------- how to play ---------- */
+.fdp-howto {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 8, 13, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 50;
+}
+.fdp-howto-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 1.2rem;
+  max-width: 26rem;
+  display: grid;
+  gap: 0.8rem;
+}
+.fdp-howto-card h2 { margin: 0; }
+.fdp-howto-list { margin: 0; padding-left: 1.2rem; display: grid; gap: 0.5rem; }
+.fdp-howto-close {
+  border: none;
+  border-radius: 12px;
+  padding: 0.7rem;
+  font-weight: 700;
+  background: linear-gradient(90deg, #e11d48, #fb7185);
+  color: #fff;
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fdp-vote-btn.is-chosen, .fdp-cheer { animation: none; }
+}

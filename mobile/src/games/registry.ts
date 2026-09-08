@@ -4,6 +4,7 @@ import { CoupControllerView } from './coup/CoupControllerView';
 import { ZapControllerView } from './zap/ZapControllerView';
 import { LorotaControllerView } from './lorota/LorotaControllerView';
 import { SabeTudoControllerView } from './sabetudo/SabeTudoControllerView';
+import { FdpControllerView } from './fdp/FdpControllerView';
 
 /**
  * Maps a game id (from GAME_CATALOG / the started game) to its phone-controller view.
@@ -15,4 +16,5 @@ export const CONTROLLER_GAMES: Record<string, ControllerGameView> = {
   zap: ZapControllerView,
   lorota: LorotaControllerView,
   sabetudo: SabeTudoControllerView,
+  fdp: FdpControllerView,
 };

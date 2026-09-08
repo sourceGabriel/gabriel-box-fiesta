@@ -212,3 +212,14 @@ The project is currently between the room lifecycle phase and the actual host ga
 - `sabetudo-game.test.ts` (11) + integration path (+1). **Server 94 → 106.** tsc + oxlint + 5-ws build green.
 - Full live smoke: host + 2 controllers — question/reveal/pause/resume, speed bonus (+727 fast), streak 🔥2 (+858), +18 pack in rotation, END_GAME → lobby. 0 console errors.
 - **§52 held** — nothing in `core/`, `ws-server`, shells, `shared/protocol`. **5 games in the catalog.**
+
+## 2026-09-08 — FDP — Foi De Propósito (game #6, Cards-Against-Humanity-style, +18) — full slice (branch `feature/fdp`, off `main`)
+- §47 name **"FDP — Foi De Propósito"** (`gameId: "fdp"`; in-game `BrandMark` = "FDP"). Loop: shared prompt with a blank → each player writes one answer → TV shows them shuffled + anonymous → vote the best (never own) → +100/vote + 150 sweep bonus → 5 rounds, round 5 "Final FDP" ×2. minPlayers 3.
+- The game the user asked to be properly +18. Guardrails: no protected group as punchline, no real private people, nothing sexual involving minors.
+- `shared/src/models/fdp.ts` + `shared/src/games/fdp/events.ts` (types-only). `shared/src/index.ts` +2 exports.
+- `server/src/games/fdp/`: `constants`, `prompts.ts` (58 original PT-BR +18 prompts), `fdp-game.ts` (`implements PausableGame, TurnTimedGame`; answers anonymised; skips vote if nobody wrote; sweep bonus; round winner null on tie; self-advancing `writing`→`voting`→`roundResults`), `action-schema` (zod), `plugin`. **+1 line in `GAMES`.**
+- `host/src/games/fdp/` (`FdpHostView` phase-driven, `FdpCover` SVG, `describeEvent`, `sound-map`, `fdp-host.css` scoped) +2 imports +1 entry in `HOST_GAMES`.
+- `mobile/src/games/fdp/` (`FdpControllerView` reusing `@party/ui TextAnswerInput`, `HowToPlay`, css) +1 line in `CONTROLLER_GAMES`.
+- `fdp-game.test.ts` (13) + integration path (+1). **Server 106 → 120.** tsc + oxlint + 5-ws build green.
+- Full live smoke: host + 3 controllers — writing/voting/results/pause paths, anonymity, own-answer excluded from ballot, +100/vote + 150 sweep (Bia +350), 👑 round winner, scores carried to round 2, END_GAME → lobby. 0 console errors.
+- **§52 held** — nothing in `core/`, `ws-server`, shells, `shared/protocol`. **6 games in the catalog (UNO/Coup/Zap!/Lorota!/Sabe-Tudo/FDP).**

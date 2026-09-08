@@ -1,6 +1,6 @@
 # Revisão do repositório: lacunas em relação ao prompt mestre
 
-_Atualizado em 2026-09-08 (Fases A–D + Zap! + UX polish em `main` @ `ecfcf00`; branch `feature/fibbage` — **jogo #4 "Lorota!" COMPLETO**, 94 testes de servidor; 4 jogos no catálogo)._
+_Atualizado em 2026-09-08 (run autônoma: Lorota! + pack adulto +18 + Sabe-Tudo mergeados em `main`; branch `feature/fdp` — **jogo #6 "FDP — Foi De Propósito" COMPLETO**, 120 testes de servidor; 6 jogos no catálogo)._
 
 > **2026-09-07 — Avatares customizáveis (plataforma, agnóstico de jogo).** O "avatar" antigo era um único emoji colado no nome. Agora cada jogador monta um retrato pixel-art "foto 3x4" na tela de entrada: corpo (feminino/masculino), pele, cabelo (25 estilos) + cor, cor dos olhos, camisa, chapéu engraçado, fundo. Arte = subconjunto curado do Universal LPC Spritesheet Character Generator, extraído por `tools/build-avatars.py` para `ui/src/avatar-assets/` (69 PNGs, ~35 KB; fontes em `tools/lpc-source/`, nada fora do repo). Render híbrido: partes finitas assadas, cabelo recolorido em runtime num `<canvas>` 46×46. `AvatarSpec` (types-only em `shared`), catálogos + renderer + editor em `@party/ui`, `sanitizeAvatar` no cliente + validação estrutural no servidor. Aparece no join, sala de espera, roster do lobby (TV) e nos assentos/pills dentro de UNO e Coup. Créditos LPC em `ui/src/avatar-assets/CREDITS.md` + linha no join. **60 testes de servidor verdes.** §52 preservado — nenhuma edição em `core/`, `ws-server`, shells ou engines.
 
@@ -91,5 +91,14 @@ Loop: `prompt → cada jogador escreve respostas no celular → TV mostra duelos
 - `mobile/src/games/sabetudo/` (`SabeTudoControllerView` grade A/B/C/D toca-pra-responder que trava, `HowToPlay`, css) +1 linha em `CONTROLLER_GAMES`.
 - `sabetudo-game.test.ts` (11) + caminho no integration. **Testes de servidor 94 → 106.** §52 preservado. Smoke completo ao vivo (host + 2 controllers: question/reveal/pause/resume, bônus de velocidade + sequência 🔥2, pack picante em rotação, END_GAME → lobby, 0 erros de console).
 
-**5 jogos no catálogo: UNO, Coup, Zap!, Lorota!, Sabe-Tudo.** Próximo: **#6 "FDP — Foi De Propósito"** (estilo Cards Against Humanity, +18).
+## Jogo #6 — FDP — Foi De Propósito (estilo Cards Against Humanity, +18) — COMPLETO (branch `feature/fdp`)
+`gameId: "fdp"`, §47 nome próprio **"FDP — Foi De Propósito"** (BrandMark in-game = "FDP"). Loop: `frase com lacuna na TV → cada jogador escreve UMA resposta → TV mostra tudo embaralhado e anônimo → todos votam na melhor (menos a própria) → +100/voto + 150 de bônus se varrer → 5 rodadas, a última "Final FDP" ×2`. mín. 3.
+- É o jogo que o usuário pediu pra ser +18 de verdade — humor negro, sexo, escatologia, mórbido. Guardrails: sem grupo protegido como punchline, sem pessoa real privada, nada sexual com menor.
+- `shared/src/models/fdp.ts` + `shared/src/games/fdp/events.ts` (types-only); autoria/votos ocultos até `roundResults`.
+- `server/src/games/fdp/` (`constants`, `prompts` 58 PT-BR +18 originais, `fdp-game` `implements PausableGame, TurnTimedGame` self-advancing `writing`→`voting`→`roundResults`, respostas anonimizadas, pula o voto se ninguém escreveu, bônus de varredura, vencedor null em empate, `action-schema` zod, `plugin`) + 1 linha em `GAMES`.
+- `host/src/games/fdp/` (`FdpHostView` por fase, `FdpCover` SVG, `describeEvent`, `sound-map`, css `.fdp-host`) +2 imports +1 entrada em `HOST_GAMES`.
+- `mobile/src/games/fdp/` (`FdpControllerView` reusa `@party/ui TextAnswerInput`, `HowToPlay`, css) +1 linha em `CONTROLLER_GAMES`.
+- `fdp-game.test.ts` (13) + integration. **Testes de servidor 106 → 120.** §52 preservado. Smoke ao vivo completo (host + 3 controllers: writing/voting/results, anonimato, +100/voto + varredura Bia +350, 👑 vencedor da rodada, placar carrega, END_GAME → lobby, 0 erros).
+
+**6 jogos no catálogo: UNO, Coup, Zap!, Lorota!, Sabe-Tudo, FDP.**
 Plano: `C:\Users\gabri\.claude\plans\quiplax-e-proximos-jogos.md`.

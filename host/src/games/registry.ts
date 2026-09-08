@@ -9,6 +9,8 @@ import { LorotaHostView } from './lorota/LorotaHostView';
 import { LorotaCover } from './lorota/LorotaCover';
 import { SabeTudoHostView } from './sabetudo/SabeTudoHostView';
 import { SabeTudoCover } from './sabetudo/SabeTudoCover';
+import { FdpHostView } from './fdp/FdpHostView';
+import { FdpCover } from './fdp/FdpCover';
 
 /**
  * Maps a game id (from the server's GAME_CATALOG / the started game) to its host
@@ -21,4 +23,5 @@ export const HOST_GAMES: Record<string, HostGameEntry> = {
   zap: { View: ZapHostView, Cover: ZapCover },
   lorota: { View: LorotaHostView, Cover: LorotaCover },
   sabetudo: { View: SabeTudoHostView, Cover: SabeTudoCover },
+  fdp: { View: FdpHostView, Cover: FdpCover },
 };

@@ -801,6 +801,66 @@ describe('multiplayer integration', () => {
     for (const ws of phones) ws.close();
   });
 
+  it('runs FDP: SELECT_GAME + START_GAME, shared prompt, answers advance to voting', async () => {
+    server = new PartyServer(0);
+    await server.start();
+    const roomCode = server.getRoomCode();
+    const port = server.getPort();
+
+    const host = await connect(port);
+    const catalogPromise = waitForMessage(host, 'GAME_CATALOG');
+    host.send(makeMessage('JOIN_ROOM', { roomCode, playerName: 'HOST', role: 'host' }));
+    await waitForMessage(host, 'ROOM_JOINED');
+
+    const catalog = await catalogPromise;
+    expect(catalog.payload.games.map((game) => game.id)).toEqual(
+      expect.arrayContaining(['uno', 'coup', 'zap', 'lorota', 'sabetudo', 'fdp']),
+    );
+
+    const reselected = waitForMessageWhere(host, 'GAME_CATALOG', (m) => m.payload.selectedGameId === 'fdp');
+    host.send(makeMessage('SELECT_GAME', { gameId: 'fdp' }));
+    await reselected;
+
+    const phones = [] as Awaited<ReturnType<typeof connect>>[];
+    for (const name of ['Ana', 'Bia', 'Caio']) {
+      const ws = await connect(port);
+      ws.send(makeMessage('JOIN_ROOM', { roomCode, playerName: name, role: 'player' }));
+      await waitForMessage(ws, 'ROOM_JOINED');
+      phones.push(ws);
+    }
+
+    const firstPublic = waitForMessage(host, 'GAME_STATE_PUBLIC');
+    const started = waitForMessage(host, 'GAME_STARTED');
+    host.send(makeMessage('START_GAME', { gameId: 'fdp' }));
+    expect((await started).payload.gameId).toBe('fdp');
+
+    const pub = (await firstPublic).payload.state as { phase: string; prompt: string; answersExpectedCount: number };
+    expect(pub.phase).toBe('writing');
+    expect(pub.prompt).toBeTruthy();
+    expect(pub.answersExpectedCount).toBe(3);
+
+    const privs = await Promise.all(phones.map((ws) => waitForMessage(ws, 'PLAYER_STATE_PRIVATE')));
+    for (const p of privs) {
+      expect((p.payload.state as { pendingDecision: string }).pendingDecision).toBe('write');
+    }
+
+    const votingReached = waitForMessageWhere(
+      host,
+      'GAME_STATE_PUBLIC',
+      (m) => (m.payload.state as { phase: string }).phase === 'voting',
+    );
+    phones.forEach((ws, i) => ws.send(makeMessage('GAME_ACTION', { action: { type: 'submitAnswer', text: `resposta ${i}` } })));
+    const votingState = (await votingReached).payload.state as { answers: unknown[] };
+    expect(votingState.answers).toHaveLength(3);
+
+    const actionError = waitForMessage(phones[0], 'ERROR');
+    phones[0].send(makeMessage('GAME_ACTION', { action: { type: 'garbage' } }));
+    expect((await actionError).payload.message).toMatch(/INVALID_ACTION/i);
+
+    host.close();
+    for (const ws of phones) ws.close();
+  });
+
   it('rebroadcasts emoji reactions to the whole room and rejects oversized ones', async () => {
     server = new PartyServer(0);
     await server.start();
