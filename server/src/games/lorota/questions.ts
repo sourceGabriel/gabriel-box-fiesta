@@ -7,6 +7,10 @@
  * spacing and trailing punctuation on its own). Keep answers short — one or two
  * words is easiest to bluff around.
  *
+ * Two sections: the general bank and the PACK ADULTO (+18) — real facts, but the
+ * gross/sexual/morbid kind. Every +18 entry is a genuinely verifiable fact (or a
+ * clearly-labelled myth); players still hunt the real answer.
+ *
  * The engine shuffles this list per match and reshuffles when it runs out.
  */
 export type LorotaQuestion = { text: string; answer: string; alt?: string[] };
@@ -57,4 +61,29 @@ export const LOROTA_QUESTIONS: readonly LorotaQuestion[] = [
   { text: 'Uma colher de chá de estrela de nêutrons pesaria cerca de um ___ de toneladas.', answer: 'bilhão' },
   { text: 'O país que consome mais chocolate por pessoa é a ___.', answer: 'Suíça' },
   { text: 'A Mona Lisa não tem ___.', answer: 'sobrancelhas' },
+
+  // ─── PACK ADULTO (+18) ──────────────────────────────────────────────────────
+  { text: 'A palavra "orquídea" vem do grego antigo para ___.', answer: 'testículo', alt: ['testiculos', 'testículos', 'testiculo'] },
+  { text: 'A palavra "vagina" vem do latim para ___.', answer: 'bainha', alt: ['bainha de espada'] },
+  { text: 'O pênis do pato-macho tem o formato de ___.', answer: 'espiral', alt: ['saca-rolha', 'saca rolha', 'saca-rolhas'] },
+  { text: 'A equidna, mamífero australiano, tem um pênis com ___ cabeças.', answer: 'quatro' },
+  { text: 'O animal com o maior pênis do mundo em proporção ao corpo é a ___.', answer: 'craca', alt: ['cracas', 'barnacle'] },
+  { text: 'Os testículos ficam do lado de fora do corpo porque o esperma precisa de uma temperatura mais ___ que a corporal.', answer: 'baixa', alt: ['fria'] },
+  { text: 'Estudos recentes contaram cerca de ___ mil terminações nervosas no clitóris.', answer: 'dez', alt: ['10'] },
+  { text: 'O composto químico que dá o cheiro característico do sêmen chama-se ___.', answer: 'espermina' },
+  { text: 'No Egito Antigo, um método anticoncepcional era um pessário feito com ___ de crocodilo.', answer: 'fezes', alt: ['esterco', 'cocô', 'coco', 'bosta'] },
+  { text: 'Antes dos testes modernos, injetava-se a urina da mulher numa ___ para descobrir se ela estava grávida.', answer: 'rã', alt: ['sapo', 'ra'] },
+  { text: 'Os antigos romanos limpavam a bunda no banheiro público com uma ___ compartilhada presa num cabo.', answer: 'esponja' },
+  { text: 'Os romanos usavam ___ humana como enxaguante para clarear os dentes.', answer: 'urina', alt: ['xixi', 'mijo', 'chico'] },
+  { text: 'Os romanos tinham uma deusa que protegia a rede de esgotos, chamada ___.', answer: 'Cloacina', alt: ['Cloaca'] },
+  { text: 'Numa carta famosa, Napoleão pediu que Josefina não ___ nas semanas até ele voltar.', answer: 'tomasse banho', alt: ['se lavasse', 'tomasse banho ', 'lavasse'] },
+  { text: 'Charles Darwin tinha o hábito de ___ os animais exóticos que descobria.', answer: 'comer', alt: ['comê-los', 'devorar'] },
+  { text: 'Fazer muita força sentado no vaso pode parar o coração — essa força chama-se manobra de ___.', answer: 'Valsalva' },
+  { text: 'Uma pessoa solta gases, em média, cerca de ___ vezes por dia.', answer: 'quatorze', alt: ['14', 'catorze'] },
+  { text: 'O cheiro de ovo podre do peido vem de um gás chamado ___.', answer: 'sulfeto de hidrogênio', alt: ['gás sulfídrico', 'acido sulfidrico', 'ácido sulfídrico', 'gas sulfidrico'] },
+  { text: 'Um beijo de língua de dez segundos transfere cerca de ___ milhões de bactérias entre as duas bocas.', answer: 'oitenta', alt: ['80'] },
+  { text: 'O hipopótamo espalha as próprias fezes girando o ___ como uma hélice.', answer: 'rabo', alt: ['cauda'] },
+  { text: 'Os dois compostos que dão o cheiro de cadáver em decomposição são a putrescina e a ___.', answer: 'cadaverina' },
+  { text: 'Unhas e cabelo parecem crescer depois da morte só porque a ___ resseca e encolhe.', answer: 'pele' },
+  { text: 'Segundo o mito popular (que é falso), o homem pensa em sexo a cada ___ segundos.', answer: 'sete', alt: ['7'] },
 ];

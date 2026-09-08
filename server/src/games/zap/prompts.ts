@@ -1,10 +1,13 @@
 /**
  * Original PT-BR prompt bank for Zap!. Written for this repo — not lifted from
- * Quiplash, Jackbox, `rumpus`, or any other deck. Keep them short, open-ended and
- * safe for a living-room crowd: the funny part is whatever the players type.
+ * Quiplash, Jackbox, `rumpus`, or any other deck. Keep them short and open-ended:
+ * the funny part is whatever the players type.
  *
- * Add freely. The engine shuffles this list per match and reshuffles when it runs
- * out, so order here does not matter.
+ * Two sections: the general bank (living-room safe) and the PACK ADULTO (+18) —
+ * dark humour, palavrão, sexo, morte, escatologia. The user asked for the edge;
+ * the whole list is merged and shuffled per match. Keep the +18 stuff crude but
+ * never using a protected group as the punchline and never about real private
+ * people. Add freely — order here does not matter.
  */
 export const ZAP_PROMPTS: readonly string[] = [
   'O pior nome possível para um pet',
@@ -61,4 +64,38 @@ export const ZAP_PROMPTS: readonly string[] = [
   'O nome do próximo furacão brasileiro',
   'Uma promessa de político que daria pra cumprir de verdade',
   'O que o elevador diria se estivesse cansado',
+
+  // ─── PACK ADULTO (+18) ─────────────────────────────────────────────────────
+  'A pior hora para o preservativo estourar',
+  'Uma frase que mata o clima na cama na hora',
+  'O nome de um puteiro temático que daria certo',
+  'Algo que você NÃO quer que o crush descubra no seu histórico',
+  'A desculpa mais esfarrapada para não usar camisinha',
+  'O pior lugar do corpo para tatuar o nome da ex',
+  'Uma fantasia sexual que ninguém tem coragem de admitir no grupo',
+  'O que realmente estava naquele vídeo que você mandou sem querer no grupo da família',
+  'A pior coisa para o médico dizer segurando o resultado do exame',
+  'Um motivo constrangedor para ter ido parar no pronto-socorro',
+  'O último pensamento de alguém antes de fazer uma burrada fatal',
+  'Uma cláusula estranha para colocar no próprio testamento',
+  'O pior elogio possível durante o sexo',
+  'Algo que você grita sem querer no meio de um orgasmo e se arrepende',
+  'Uma placa que faltava na porta do banheiro do bar',
+  'O nome de um aplicativo de pegação que seria banido no primeiro dia',
+  'A pior forma de descobrir que foi corno',
+  'Um brinde sincero demais para um velório',
+  'O que o motorista de app ouviu você fazer no banco de trás',
+  'Uma matéria que deveriam ensinar na escola mas dá cadeia',
+  'O pior nome artístico para um ator pornô brasileiro',
+  'Algo que fica muito pior quando dito pela sua avó',
+  'A verdadeira razão de o padre ter pedido para conversar depois da missa',
+  'Um fetiche que você fingiu ter para não decepcionar alguém',
+  'O que estava escrito no bilhete que veio junto com a herança',
+  'A pior coisa para encontrar no quarto dos seus pais',
+  'Uma frase para terminar um relacionamento por mensagem de voz',
+  'O motivo real de você ter sido demitido, mas na versão honesta',
+  'Algo que só parece crime porque você explicou mal',
+  'O que o urologista anotou no prontuário e não te contou',
+  'Uma tradição de Natal que acaba sempre em briga de família e polícia',
+  'O pior momento para o vibrador ligar sozinho na bolsa',
 ];

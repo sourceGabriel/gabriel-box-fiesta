@@ -195,3 +195,10 @@ The project is currently between the room lifecycle phase and the actual host ga
 - `lorota-game.test.ts` (14) + integration path (+1). **Server 79 → 94.** tsc + ui(7) + oxlint + 5-ws build green.
 - Full live smoke: 3-round match host + 4 controllers — lying/guessing/reveal/gameover all render, truth-collision nudge, identical-lie collapse, scoring (truth +1000, fool +500, final ×2). 0 game console errors.
 - **§52 held** — nothing in `core/`, `ws-server`, shells, `shared/protocol`. **4 games in the catalog.**
+
+## 2026-09-08 — Pack adulto (+18): Zap! + Lorota! (branch `feature/pack-adulto`, off `main`)
+- User asked for dark / crude / +18 humour in the party games. Content-only.
+- `server/src/games/zap/prompts.ts` — +32 PT-BR prompts in a `PACK ADULTO (+18)` section (64 → 96), merged into the same shuffled `ZAP_PROMPTS`.
+- `server/src/games/lorota/questions.ts` — +22 "fato com lacuna" entries (45 → 67), all real facts (or a labelled myth) so the truth-hunt still works.
+- Guardrails: crude but no protected group as punchline, no real private people.
+- No engine / schema / wire change. No test asserts bank length. **94 server tests green**, tsc + 5-ws build green.

@@ -497,3 +497,14 @@ your lie fools (+500 each). 3 rounds; the last ("Lorota Final") pays double.
 - **Full live smoke** (host TV + 4 controllers, real server): catalog cover → lobby gated "AGUARDANDO 3+ JOGADORES" → start → `lying` renders (prompt, progress, roster; phone `TextAnswerInput` + the truth-collision nudge fired on a real "44" attempt) → auto-advanced to `guessing` (host numbered list, phone tap ballot with the player's own lie excluded) → `reveal` (host: ✅ VERDADE on "Q", "mentira de Ana" → "Bia, Caio", Ana +2000 = 1000 truth + 500×2 fooled; phone: "✅ você achou a verdade! +1000") → 3 rounds → `gameover` overlay ("🏆 Ana venceu!" 4000/2000/1000). Identical-lie collapse verified via script (`"Gobi"` + `"gobi."` → one option, both authors credited). **Zero game/render console errors** (host tab shows only the shell's WebSocket reconnect-backoff noise from cold-starting the dev servers — `useRoomConnection` untouched).
 ### §52
 - The whole game = `shared/{models,games}/lorota` + `server/src/games/lorota/` + `host/src/games/lorota/` + `mobile/src/games/lorota/` (reusing `@party/ui TextAnswerInput` from Zap!) + **one line in each of the 3 registries**. Zero edits to `core/`, `ws-server.ts`, either shell, or `shared/protocol`. **4 games in the catalog.**
+
+## 2026-09-08 — Pack adulto (+18) para Zap! e Lorota! (branch `feature/pack-adulto`)
+The user asked for the party games to carry dark / crude / +18 humour. Content-only change — no engine, no schema, no wire.
+### Added — content
+- `server/src/games/zap/prompts.ts` — a `PACK ADULTO (+18)` section, +32 original PT-BR prompts (sexo, palavrão, morte, escatologia, corno, chifre, pronto-socorro). Merged into the same `ZAP_PROMPTS` list the engine shuffles per match (64 → 96 prompts).
+- `server/src/games/lorota/questions.ts` — a `PACK ADULTO (+18)` section, +22 "fato com lacuna" entries — all genuinely verifiable facts (or a clearly-labelled myth): etimologia de "orquídea"/"vagina", pênis de pato/equidna/craca, anticoncepcional egípcio, esponja compartilhada romana, teste de gravidez na rã, manobra de Valsalva, cadaverina, sulfeto de hidrogênio, etc. (45 → 67 questions).
+### Guardrails
+- Crude, never using a protected group as the punchline; nothing about real private people; the Lorota! facts stay real so the "hunt the truth" loop still works.
+### Validation
+- No test asserts either bank's length; **94 server tests green**, `tsc` server/shared clean, 5-workspace build green. No frontend change.
+
