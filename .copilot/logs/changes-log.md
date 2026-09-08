@@ -202,3 +202,13 @@ The project is currently between the room lifecycle phase and the actual host ga
 - `server/src/games/lorota/questions.ts` — +22 "fato com lacuna" entries (45 → 67), all real facts (or a labelled myth) so the truth-hunt still works.
 - Guardrails: crude but no protected group as punchline, no real private people.
 - No engine / schema / wire change. No test asserts bank length. **94 server tests green**, tsc + 5-ws build green.
+
+## 2026-09-08 — Sabe-Tudo (game #5, multiple-choice trivia) — full slice (branch `feature/sabetudo`, off `main`)
+- §47 name **"Sabe-Tudo"** (`gameId: "sabetudo"`). Loop: question + 4 options on TV → tap one on phone → base 500 + speed bonus (≤500, linear decay) + streak bonus (+100/consecutive, cap 5) → reveal → 8 questions → ranking. minPlayers 2.
+- `shared/src/models/sabetudo.ts` + `shared/src/games/sabetudo/events.ts` (types-only). `shared/src/index.ts` +2 exports.
+- `server/src/games/sabetudo/`: `constants`, `questions.ts` (59 original PT-BR incl. an 18-entry PACK PICANTE +18), `sabetudo-game.ts` (`implements PausableGame, TurnTimedGame`; options shuffled per question; self-advancing `question`→`reveal`), `action-schema` (zod), `plugin`. **+1 line in `GAMES`.**
+- `host/src/games/sabetudo/` (`SabeTudoHostView` phase-driven, `SabeTudoCover` SVG, `describeEvent`, `sound-map`, `sabetudo-host.css` scoped) +2 imports +1 entry in `HOST_GAMES`.
+- `mobile/src/games/sabetudo/` (`SabeTudoControllerView` A/B/C/D tap grid, `HowToPlay`, css) +1 line in `CONTROLLER_GAMES`.
+- `sabetudo-game.test.ts` (11) + integration path (+1). **Server 94 → 106.** tsc + oxlint + 5-ws build green.
+- Full live smoke: host + 2 controllers — question/reveal/pause/resume, speed bonus (+727 fast), streak 🔥2 (+858), +18 pack in rotation, END_GAME → lobby. 0 console errors.
+- **§52 held** — nothing in `core/`, `ws-server`, shells, `shared/protocol`. **5 games in the catalog.**

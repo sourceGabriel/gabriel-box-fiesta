@@ -1,0 +1,190 @@
+/* Sabe-Tudo phone controller. Loaded only when the Sabe-Tudo game is active. */
+
+.sabetudo-panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 1rem;
+  display: grid;
+  gap: 0.75rem;
+}
+.sabetudo-center { justify-items: center; text-align: center; }
+.sabetudo-big { font-size: 2.4rem; }
+
+.sabetudo-banner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  text-align: center;
+  padding: 0.7rem;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  font-weight: 700;
+  color: var(--muted);
+}
+.sabetudo-banner.is-live {
+  color: #0b0f17;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-color: transparent;
+  background: linear-gradient(90deg, #a78bfa, #22c55e);
+}
+.sabetudo-round-tag { font-size: 0.72rem; font-weight: 700; opacity: 0.75; letter-spacing: 0.03em; }
+
+.sabetudo-category {
+  margin: 0;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #a78bfa;
+}
+.sabetudo-prompt {
+  margin: 0;
+  font-weight: 700;
+  font-size: 1.1rem;
+  line-height: 1.3;
+  text-align: center;
+}
+
+/* ---------- answer grid ---------- */
+.sabetudo-answer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.55rem; }
+.sabetudo-answer-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3rem;
+  min-height: 4.5rem;
+  border-radius: 14px;
+  border: 2px solid var(--line);
+  background: var(--panel-2);
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  padding: 0.75rem 0.85rem;
+  text-align: left;
+  cursor: pointer;
+}
+.sabetudo-answer-btn:disabled { cursor: default; opacity: 0.55; }
+.sabetudo-answer-btn.is-chosen {
+  border-color: #22c55e;
+  background: rgba(34, 197, 94, 0.16);
+  opacity: 1;
+  animation: sabetudo-chosen-pop 0.4s ease-out;
+}
+.sabetudo-answer-letter { font-weight: 800; color: #a78bfa; }
+.sabetudo-answer-text { font-size: 0.95rem; line-height: 1.2; }
+@keyframes sabetudo-chosen-pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+  100% { transform: scale(1); }
+}
+
+.sabetudo-cheer { font-size: 1.4rem; font-weight: 800; animation: sabetudo-cheer-pop 0.55s ease-out; }
+.sabetudo-cheer.ok { color: #22c55e; }
+.sabetudo-cheer.bad { color: #f87171; }
+.sabetudo-streak-tag { margin: 0; font-weight: 700; color: #fb923c; }
+.sabetudo-total { margin: 0; font-weight: 700; color: #22c55e; }
+@keyframes sabetudo-cheer-pop {
+  0% { transform: scale(0.6); opacity: 0; }
+  55% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+/* ---------- roster ---------- */
+.sabetudo-roster-head { display: flex; align-items: center; justify-content: space-between; }
+.sabetudo-roster-head h2 { margin: 0; font-size: 1.05rem; }
+.sabetudo-howto-open {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.sabetudo-roster ul { display: grid; gap: 0.35rem; }
+.sabetudo-roster li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: 10px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+}
+.sabetudo-roster li.is-me { border-color: #22c55e; }
+.sabetudo-roster-who { display: flex; align-items: center; gap: 0.45rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sabetudo-roster-score { font-weight: 800; color: #22c55e; }
+
+/* ---------- reactions ---------- */
+.sabetudo-reactions-bar { display: flex; gap: 0.4rem; justify-content: space-between; }
+.sabetudo-reactions-bar button {
+  flex: 1;
+  font-size: 1.4rem;
+  padding: 0.5rem 0;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  cursor: pointer;
+}
+.sabetudo-reaction-feed {
+  position: fixed;
+  right: 0.6rem;
+  bottom: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  pointer-events: none;
+}
+.sabetudo-reaction-pop {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.25rem 0.6rem;
+}
+.sabetudo-reaction-pop small { color: var(--muted); }
+
+/* ---------- how to play ---------- */
+.sabetudo-howto {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 8, 13, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 50;
+}
+.sabetudo-howto-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 1.2rem;
+  max-width: 26rem;
+  display: grid;
+  gap: 0.8rem;
+}
+.sabetudo-howto-card h2 { margin: 0; }
+.sabetudo-howto-list { margin: 0; padding-left: 1.2rem; display: grid; gap: 0.5rem; }
+.sabetudo-howto-close {
+  border: none;
+  border-radius: 12px;
+  padding: 0.7rem;
+  font-weight: 700;
+  background: linear-gradient(90deg, #7c5cff, #22c55e);
+  color: #fff;
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sabetudo-answer-btn.is-chosen, .sabetudo-cheer { animation: none; }
+}

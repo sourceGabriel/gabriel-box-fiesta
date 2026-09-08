@@ -508,3 +508,21 @@ The user asked for the party games to carry dark / crude / +18 humour. Content-o
 ### Validation
 - No test asserts either bank's length; **94 server tests green**, `tsc` server/shared clean, 5-workspace build green. No frontend change.
 
+## 2026-09-08 — Sabe-Tudo — game #5 (multiple-choice trivia), full slice (branch `feature/sabetudo`)
+A shared-TV trivia race: the TV shows a question with four options, each player taps one on the phone, and whoever is right scores a flat base + a speed bonus (faster = more) + a streak bonus. A match is 8 questions; the top score wins.
+
+**§47:** the game's own name is **"Sabe-Tudo"**, `gameId: "sabetudo"`. Rename point: `sabeTudoPlugin.meta.name` + the `BrandMark text`.
+
+### Added — code
+- `shared/src/models/sabetudo.ts` + `shared/src/games/sabetudo/events.ts` (types-only): `SabeTudoPublicState` / `SabeTudoPrivateState` / `SabeTudoPhase` (`question|reveal|gameover|paused`) / `SabeTudoOptionResult` / `SabeTudoAction` (`submitAnswer`) / `SabeTudoGameEvent`. `correctIndex` + per-option `optionResults` (tally + who-picked) are `null` until `reveal`; events never carry the option a player picked. `shared/src/index.ts` re-exports both.
+- `server/src/games/sabetudo/`: `constants.ts` (2–8 players; 8 questions; 22s/7s windows; `CORRECT_POINTS 500`, `SPEED_BONUS_MAX 500` decaying linearly, `STREAK_STEP 100` up to 5), `questions.ts` (`SABETUDO_QUESTIONS` — 59 original PT-BR 4-option questions incl. a **PACK PICANTE (+18)** of 18 real-but-morbid/crude facts), `sabetudo-game.ts` (`SabeTudoGame implements PausableGame, TurnTimedGame` — self-advancing off one server-ticked deadline; options shuffled per question per match; `getStatus()` = `active` → `complete`), `action-schema.ts` (zod), `plugin.ts` (`sabeTudoPlugin`). **+1 line in `GAMES`.**
+- `host/src/games/sabetudo/`: `SabeTudoHostView` (phase-driven — `question` shows the 2×2 option grid + a progress bar + a ✅/⏳ roster from the event stream; `reveal` glows the correct card green, marks wrong-picked red, dims the rest, and lists who picked each; side panel = live standings with 🔥streak + `+N` deltas + `describeEvent` feed + pause/end + `sound-map.ts` "🔊 Som" toggle; `gameover` Overlay), `SabeTudoCover` (inline SVG — a lit bulb over A/B/C/D chips), `describeEvent.ts`, `sabetudo-host.css` (scoped under `.sabetudo-host`, `prefers-reduced-motion`-guarded). **+2 imports + 1 entry in `HOST_GAMES`.**
+- `mobile/src/games/sabetudo/`: `SabeTudoControllerView` (phase-driven — `question` = a 2×2 A/B/C/D tap grid that locks on pick; `reveal` = "✅ Acertou! +N" / "❌ Errou — era a B" + 🔥streak tag + running total; standings + reactions), `HowToPlay.tsx`, `sabetudo-controller.css`. **+1 line in `CONTROLLER_GAMES`.**
+### Tests
+- `server/src/tests/sabetudo-game.test.ts` — 11 tests (setup, answer-lock, min-players, auto-advance to reveal + option tally, wrong = 0 + streak reset, faster-correct-scores-more, streak bonus over consecutive rounds, question timeout, full 8-question match to a winner, pause). `multiplayer.integration.test.ts` +1 (Sabe-Tudo catalog + SELECT_GAME + START_GAME + four options + `submitAnswer` via `GAME_ACTION` advancing to reveal + malformed rejection). **Server tests: 94 → 106.**
+### Validation
+- 106 server tests · `tsc` server/shared clean · `oxlint` host/mobile clean (only the codebase's established `set-state-in-effect` advisory in the feed effect, same as the other 4 host views) · 5-workspace build green.
+- **Full live smoke** (host TV + 2 controllers, real server): catalog cover → lobby gated "AGUARDANDO 2+ JOGADORES" → start → `question` renders (category, 4 shuffled options, timer, progress, roster) → phone tap locks the answer → auto-advanced to `reveal` (correct card green + picker names, wrong dimmed with picker, `+727` speed-weighted delta) → question 2 from the +18 pack → `reveal` shows 🔥2 streak + `+858` → pause/resume both surfaces → `END_GAME` → back to the Sabe-Tudo lobby, phones to waiting. **Zero console errors** on host or controllers.
+### §52
+- The whole game = `shared/{models,games}/sabetudo` + `server/src/games/sabetudo/` + `host/src/games/sabetudo/` + `mobile/src/games/sabetudo/` + **one line in each of the 3 registries**. Zero edits to `core/`, `ws-server.ts`, either shell, or `shared/protocol`. **5 games in the catalog.**
+

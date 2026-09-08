@@ -83,5 +83,13 @@ Loop: `prompt → cada jogador escreve respostas no celular → TV mostra duelos
 - `mobile/src/games/lorota/` (`LorotaControllerView` reusando `@party/ui TextAnswerInput`, `HowToPlay`, css) +1 linha em `CONTROLLER_GAMES`.
 - `lorota-game.test.ts` (14) + caminho no integration. **Testes de servidor 79 → 94.** §52 preservado. Smoke completo ao vivo (3 rodadas, host + 4 controllers, colapso de mentiras idênticas, placar, Lorota Final ×2, 0 erros).
 
-**4 jogos no catálogo: UNO, Coup, Zap!, Lorota!**
+## Jogo #5 — Sabe-Tudo (trivia de múltipla escolha) — COMPLETO (branch `feature/sabetudo`)
+`gameId: "sabetudo"`, §47 nome próprio **"Sabe-Tudo"**. Loop: `pergunta com 4 alternativas na TV → cada jogador toca uma no celular → acerto vale base + bônus de velocidade + bônus de sequência → reveal → 8 perguntas → ranking`. mín. 2 jogadores.
+- `shared/src/models/sabetudo.ts` + `shared/src/games/sabetudo/events.ts` (types-only); `correctIndex`/`optionResults` ocultos até `reveal`, eventos sem a alternativa escolhida.
+- `server/src/games/sabetudo/` (`constants`, `questions` 59 PT-BR originais incl. um **PACK PICANTE (+18)**, `sabetudo-game` `implements PausableGame, TurnTimedGame` self-advancing `question`→`reveal`, alternativas embaralhadas por pergunta, `action-schema` zod, `plugin`) + 1 linha em `GAMES`. Pontuação: 500 base + até 500 de velocidade (decai linear) + sequência (+100/acerto seguido, teto 5).
+- `host/src/games/sabetudo/` (`SabeTudoHostView` orientado por fase, `SabeTudoCover` SVG, `describeEvent`, `sound-map`, css escopado `.sabetudo-host`) +2 imports +1 entrada em `HOST_GAMES`.
+- `mobile/src/games/sabetudo/` (`SabeTudoControllerView` grade A/B/C/D toca-pra-responder que trava, `HowToPlay`, css) +1 linha em `CONTROLLER_GAMES`.
+- `sabetudo-game.test.ts` (11) + caminho no integration. **Testes de servidor 94 → 106.** §52 preservado. Smoke completo ao vivo (host + 2 controllers: question/reveal/pause/resume, bônus de velocidade + sequência 🔥2, pack picante em rotação, END_GAME → lobby, 0 erros de console).
+
+**5 jogos no catálogo: UNO, Coup, Zap!, Lorota!, Sabe-Tudo.** Próximo: **#6 "FDP — Foi De Propósito"** (estilo Cards Against Humanity, +18).
 Plano: `C:\Users\gabri\.claude\plans\quiplax-e-proximos-jogos.md`.

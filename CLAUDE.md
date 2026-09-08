@@ -18,9 +18,9 @@ Local (LAN, no internet, no accounts, in-memory) "Jackbox-style" party-game plat
 - Change history + rationale: `docs/CHANGELOG.md` · Gap vs spec: `docs/repository-gap-review.md` · Short log: `.copilot/logs/changes-log.md`
 
 ## Current state (2026-09-08)
-**Autonomous run in progress (2026-09-08):** finalize Lorota! → #5 "Sabe-Tudo" (Trivia) → #6 "FDP — Foi De Propósito" (Cards-Against-Humanity-style, +18). User wants dark / crude / +18 humour across the party games. ✅ Lorota! merged to `main`+`develop` (`8a06d03`). ✅ Pack adulto (+18) for Zap! (+32 prompts) & Lorota! (+22 facts) on `feature/pack-adulto`. Guardrails: no protected group as punchline, no real private people.
+**Autonomous run in progress (2026-09-08):** finalize Lorota! → #5 "Sabe-Tudo" (Trivia) → #6 "FDP — Foi De Propósito" (Cards-Against-Humanity-style, +18). User wants dark / crude / +18 humour across the party games. ✅ Lorota! merged to `main`+`develop` (`8a06d03`). ✅ Pack adulto (+18) for Zap! & Lorota! merged (`a9158b6`). ✅ **Sabe-Tudo (game #5)** — multiple-choice trivia, 59 PT-BR questions (incl. +18 pack), speed + streak scoring, `feature/sabetudo`, 106 server tests, full live smoke. **5 games in the catalog.** Guardrails: no protected group as punchline, no real private people. Next: **#6 FDP**.
 
-UNO MVP **complete and validated** (Fases 1–10 + mobile visual overhaul). **Coup added as game #2** (Fase D, classic ruleset) with **real character card art** (D6a). **Customizable LPC pixel avatars** added as a platform feature. **Zap! (game #3, Quiplash-inspired) COMPLETE on `feature/quiplaxi`** (Z1–Z5) — shared contract, server engine (77 tests), host view, mobile controller + `@party/ui TextAnswerInput`, sound + reveal animation. **Lorota! (game #4, Fibbage-inspired) COMPLETE on `feature/fibbage`** — bluffing trivia; both games full-slice smoke-tested end-to-end. **4 games in the catalog (UNO/Coup/Zap!/Lorota!).** UX polish (2026-09-08): lobby avatar re-edit (`UPDATE_AVATAR`) + cancelable UNO colour picker. Server tests: **94 green**. Build: 5 workspaces green.
+UNO MVP **complete and validated** (Fases 1–10 + mobile visual overhaul). **Coup added as game #2** (Fase D, classic ruleset) with **real character card art** (D6a). **Customizable LPC pixel avatars** added as a platform feature. **Zap! (game #3, Quiplash-inspired) COMPLETE on `feature/quiplaxi`** (Z1–Z5) — shared contract, server engine (77 tests), host view, mobile controller + `@party/ui TextAnswerInput`, sound + reveal animation. **Lorota! (game #4, Fibbage-inspired) COMPLETE on `feature/fibbage`** — bluffing trivia; both games full-slice smoke-tested end-to-end. **Sabe-Tudo (game #5, multiple-choice trivia) COMPLETE on `feature/sabetudo`.** **5 games in the catalog (UNO/Coup/Zap!/Lorota!/Sabe-Tudo).** UX polish (2026-09-08): lobby avatar re-edit (`UPDATE_AVATAR`) + cancelable UNO colour picker. Server tests: **106 green**. Build: 5 workspaces green.
 
 **Stack merged (2026-09-07):** `main`/`develop` are now at `0079344` — the whole Fases A–D + pixel-avatars stack is on `main`. No more unmerged branch stack. **Current branch: `feature/quiplaxi`** (off `main`, empty) — for **game #3, a Quiplash-inspired party game**.
 
@@ -95,6 +95,7 @@ Monorepo, npm workspaces: `server` · `shared` (**types-only, no runtime, no zod
 | Coup engine (classic) + plugin + action zod | `server/src/games/coup/{coup-game,action-resolver,game,player,deck,constants,types,plugin,action-schema}.ts` (ported from `Jogos/Coup/src/engine/`) |
 | Zap! engine (Quiplash-inspired) + plugin + action zod | `server/src/games/zap/{zap-game,pairing,prompts,constants,action-schema,plugin}.ts`. `zap-game` `implements PausableGame, TurnTimedGame`; self-advancing phase timer; `pairing.ts` is pure. PT-BR prompt bank in `prompts.ts` |
 | Lorota! engine (Fibbage-inspired) + plugin + action zod | `server/src/games/lorota/{lorota-game,questions,constants,action-schema,plugin}.ts`. `lorota-game` `implements PausableGame, TurnTimedGame`; self-advancing (`lying`→`guessing`→`reveal`); accent-insensitive `normalize`; identical-lie collapse. PT-BR "fact with a blank" bank in `questions.ts` |
+| Sabe-Tudo engine (multiple-choice trivia) + plugin + action zod | `server/src/games/sabetudo/{sabetudo-game,questions,constants,action-schema,plugin}.ts`. `sabetudo-game` `implements PausableGame, TurnTimedGame`; self-advancing (`question`→`reveal`); options shuffled per question; scoring = base + speed bonus + streak bonus. PT-BR 4-option bank (incl. +18 pack) in `questions.ts` |
 | Emoji reactions (generic) | `SEND_REACTION`/`REACTION` in `shared/src/protocol/messages.ts` + `ws-server.ts` rebroadcast; `reactions` in both `useRoomConnection` + game-view props |
 | Host UI (shell + game module) | `host/src/shell/` (`useRoomConnection`, `AttractScreen`, `CatalogScreen`, `LobbyScreen`, `messages`, `shell.css`) + `host/src/games/{types,registry}.ts` (`HOST_GAMES[id] = { View, Cover }`) + `host/src/games/uno/` (`UnoHostView`, `UnoCover`, …) + `App.tsx` (flow machine) |
 | Mobile UI (shell + game module, after A4) | `mobile/src/shell/` (`session`, `useRoomConnection`, `MobileHeader`, `JoinScreen`, `WaitingScreen`, `shell.css`) + `mobile/src/games/{types,registry}.ts` + `mobile/src/games/uno/` + thin `App.tsx` + `index.css` (theme/tokens) |
@@ -116,7 +117,7 @@ Monorepo, npm workspaces: `server` · `shared` (**types-only, no runtime, no zod
 ## Validation
 `/validate` runs it all and reports one line. Under the hood:
 ```
-npm run -w server test       # must stay green (currently 94)
+npm run -w server test       # must stay green (currently 106)
 npm run -w server lint        # tsc --noEmit
 npm run -w host lint          # oxlint
 npm run -w mobile lint        # oxlint

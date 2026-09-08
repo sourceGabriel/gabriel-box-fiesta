@@ -741,6 +741,66 @@ describe('multiplayer integration', () => {
     for (const ws of phones) ws.close();
   });
 
+  it('runs Sabe-Tudo: SELECT_GAME + START_GAME, question with four options, answers advance to reveal', async () => {
+    server = new PartyServer(0);
+    await server.start();
+    const roomCode = server.getRoomCode();
+    const port = server.getPort();
+
+    const host = await connect(port);
+    const catalogPromise = waitForMessage(host, 'GAME_CATALOG');
+    host.send(makeMessage('JOIN_ROOM', { roomCode, playerName: 'HOST', role: 'host' }));
+    await waitForMessage(host, 'ROOM_JOINED');
+
+    const catalog = await catalogPromise;
+    expect(catalog.payload.games.map((game) => game.id)).toEqual(
+      expect.arrayContaining(['uno', 'coup', 'zap', 'lorota', 'sabetudo']),
+    );
+
+    const reselected = waitForMessageWhere(host, 'GAME_CATALOG', (m) => m.payload.selectedGameId === 'sabetudo');
+    host.send(makeMessage('SELECT_GAME', { gameId: 'sabetudo' }));
+    await reselected;
+
+    const phones = [] as Awaited<ReturnType<typeof connect>>[];
+    for (const name of ['Ana', 'Bia']) {
+      const ws = await connect(port);
+      ws.send(makeMessage('JOIN_ROOM', { roomCode, playerName: name, role: 'player' }));
+      await waitForMessage(ws, 'ROOM_JOINED');
+      phones.push(ws);
+    }
+
+    const firstPublic = waitForMessage(host, 'GAME_STATE_PUBLIC');
+    const started = waitForMessage(host, 'GAME_STARTED');
+    host.send(makeMessage('START_GAME', { gameId: 'sabetudo' }));
+    expect((await started).payload.gameId).toBe('sabetudo');
+
+    const pub = (await firstPublic).payload.state as { phase: string; options: string[]; answersExpectedCount: number };
+    expect(pub.phase).toBe('question');
+    expect(pub.options).toHaveLength(4);
+    expect(pub.answersExpectedCount).toBe(2);
+
+    const privs = await Promise.all(phones.map((ws) => waitForMessage(ws, 'PLAYER_STATE_PRIVATE')));
+    for (const p of privs) {
+      expect((p.payload.state as { pendingDecision: string }).pendingDecision).toBe('answer');
+    }
+
+    const revealReached = waitForMessageWhere(
+      host,
+      'GAME_STATE_PUBLIC',
+      (m) => (m.payload.state as { phase: string }).phase === 'reveal',
+    );
+    phones.forEach((ws) => ws.send(makeMessage('GAME_ACTION', { action: { type: 'submitAnswer', optionIndex: 0 } })));
+    const revealState = (await revealReached).payload.state as { correctIndex: number };
+    expect(typeof revealState.correctIndex).toBe('number');
+
+    const actionError = waitForMessage(phones[0], 'ERROR');
+    phones[0].send(makeMessage('GAME_ACTION', { action: { type: 'garbage' } }));
+    expect((await actionError).payload.message).toMatch(/INVALID_ACTION/i);
+
+    host.close();
+    for (const ws of phones) ws.close();
+  });
+
   it('rebroadcasts emoji reactions to the whole room and rejects oversized ones', async () => {
     server = new PartyServer(0);
     await server.start();
