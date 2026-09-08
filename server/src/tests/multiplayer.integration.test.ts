@@ -741,6 +741,39 @@ describe('multiplayer integration', () => {
     for (const ws of phones) ws.close();
   });
 
+  it('SET_CONTENT_TIER: owner flips it in the lobby and the catalog reflects it', async () => {
+    server = new PartyServer(0);
+    await server.start();
+    const roomCode = server.getRoomCode();
+    const port = server.getPort();
+
+    const host = await connect(port);
+    const firstCatalog = waitForMessage(host, 'GAME_CATALOG');
+    host.send(makeMessage('JOIN_ROOM', { roomCode, playerName: 'HOST', role: 'host' }));
+    await waitForMessage(host, 'ROOM_JOINED');
+    expect((await firstCatalog).payload.contentTier).toBe('pesado');
+
+    const flipped = waitForMessageWhere(host, 'GAME_CATALOG', (m) => m.payload.contentTier === 'leve');
+    host.send(makeMessage('SET_CONTENT_TIER', { tier: 'leve' }));
+    await flipped;
+
+    // A non-owner player cannot flip it (first player to join is the owner).
+    const owner = await connect(port);
+    owner.send(makeMessage('JOIN_ROOM', { roomCode, playerName: 'Ana', role: 'player' }));
+    await waitForMessage(owner, 'ROOM_JOINED');
+    const guest = await connect(port);
+    guest.send(makeMessage('JOIN_ROOM', { roomCode, playerName: 'Bob', role: 'player' }));
+    await waitForMessage(guest, 'ROOM_JOINED');
+
+    const denied = waitForMessage(guest, 'ERROR');
+    guest.send(makeMessage('SET_CONTENT_TIER', { tier: 'pesado' }));
+    expect((await denied).payload.message).toMatch(/owner/i);
+
+    host.close();
+    owner.close();
+    guest.close();
+  });
+
   it('runs Sabe-Tudo: SELECT_GAME + START_GAME, question with four options, answers advance to reveal', async () => {
     server = new PartyServer(0);
     await server.start();

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { AvatarSpec, GameMeta, ServerMessage } from '@party/shared';
+import type { AvatarSpec, ContentTier, GameMeta, ServerMessage } from '@party/shared';
 import { getRoomCodeFromPath, makeMessage, wsOrigin, type Send } from './messages';
 import {
   clearStoredSession,
@@ -25,6 +25,7 @@ export interface RoomConnection {
   roomPlayers: ShellPlayer[];
   catalog: GameMeta[];
   selectedGameId: string;
+  contentTier: ContentTier;
   /** The game in progress for this player, or null while waiting in the lobby. */
   activeGameId: string | null;
   /** Latest GAME_STATE_PUBLIC / PLAYER_STATE_PRIVATE payloads — opaque; the game view casts them. */
@@ -45,6 +46,7 @@ export function useRoomConnection(): RoomConnection {
   const [roomPlayers, setRoomPlayers] = useState<ShellPlayer[]>([]);
   const [catalog, setCatalog] = useState<GameMeta[]>([]);
   const [selectedGameId, setSelectedGameId] = useState('');
+  const [contentTier, setContentTier] = useState<ContentTier>('pesado');
   const [activeGameId, setActiveGameId] = useState<string | null>(null);
   const [publicState, setPublicState] = useState<unknown | null>(null);
   const [privateState, setPrivateState] = useState<unknown | null>(null);
@@ -130,6 +132,7 @@ export function useRoomConnection(): RoomConnection {
           case 'GAME_CATALOG':
             setCatalog(message.payload.games);
             setSelectedGameId(message.payload.selectedGameId);
+            setContentTier(message.payload.contentTier);
             break;
           case 'GAME_STARTED':
             setActiveGameId(message.payload.gameId);
@@ -231,6 +234,7 @@ export function useRoomConnection(): RoomConnection {
     roomPlayers,
     catalog,
     selectedGameId,
+    contentTier,
     activeGameId,
     publicState,
     privateState,

@@ -1,4 +1,5 @@
 import type {
+  ContentTier,
   GameStatus as PlatformGameStatus,
   LorotaGameEvent,
   LorotaOption,
@@ -23,7 +24,7 @@ import {
   TOTAL_ROUNDS,
   TRUTH_POINTS,
 } from './constants';
-import { LOROTA_QUESTIONS, type LorotaQuestion } from './questions';
+import { lorotaQuestions, type LorotaQuestion } from './questions';
 
 function assertCondition(condition: unknown, code: string, message: string): asserts condition {
   if (!condition) {
@@ -64,6 +65,7 @@ type InternalOption = {
 export class LorotaGame implements PausableGame, TurnTimedGame {
   private readonly now: () => number;
   private readonly random: () => number;
+  private readonly contentTier: ContentTier | undefined;
   private readonly roomCode: string;
   private readonly players: Player[];
   private readonly nameById = new Map<string, string>();
@@ -103,6 +105,7 @@ export class LorotaGame implements PausableGame, TurnTimedGame {
   constructor(ctx: GameContext) {
     this.now = ctx.now;
     this.random = ctx.random;
+    this.contentTier = ctx.contentTier;
     this.roomCode = ctx.roomCode;
     this.players = ctx.players.map((p) => ({ id: p.id, name: p.name }));
     for (const p of this.players) {
@@ -122,7 +125,7 @@ export class LorotaGame implements PausableGame, TurnTimedGame {
       `Lorota requires ${MIN_PLAYERS}-${MAX_PLAYERS} players`,
     );
     this.started = true;
-    this.deck = this.shuffled(LOROTA_QUESTIONS);
+    this.deck = this.shuffled(lorotaQuestions(this.contentTier));
     this.emit({ type: 'game_started', totalRounds: TOTAL_ROUNDS });
     this.beginRound(1);
   }
@@ -339,7 +342,7 @@ export class LorotaGame implements PausableGame, TurnTimedGame {
 
   private drawQuestion(): LorotaQuestion {
     if (this.deck.length === 0) {
-      this.deck = this.shuffled(LOROTA_QUESTIONS);
+      this.deck = this.shuffled(lorotaQuestions(this.contentTier));
     }
     return this.deck.pop()!;
   }

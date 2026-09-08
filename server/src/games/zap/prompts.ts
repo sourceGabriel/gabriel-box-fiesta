@@ -1,15 +1,25 @@
+import type { ContentTier } from '@party/shared';
+
 /**
  * Original PT-BR prompt bank for Zap!. Written for this repo — not lifted from
  * Quiplash, Jackbox, `rumpus`, or any other deck. Keep them short and open-ended:
  * the funny part is whatever the players type.
  *
- * Two sections: the general bank (living-room safe) and the PACK ADULTO (+18) —
- * dark humour, palavrão, sexo, morte, escatologia. The user asked for the edge;
- * the whole list is merged and shuffled per match. Keep the +18 stuff crude but
- * never using a protected group as the punchline and never about real private
- * people. Add freely — order here does not matter.
+ * Two tiers, chosen by the room's `contentTier` (host toggle in the lobby):
+ *  - `ZAP_PROMPTS_LEVE`   — crude at most, nothing explicit.
+ *  - `ZAP_PROMPTS_PESADO` — the +18 pack: explicit sex, palavrão, escatologia,
+ *    humor de forca, drogas, tabu, sátira de figura pública como arquétipo.
+ * `pesado` mode plays both lists; `leve` mode plays only the first.
+ *
+ * Guardrails on the +18 pack (do not cross, even here): never a protected group
+ * (raça, religião, orientação, deficiência) as the punchline; never a real private
+ * person; nothing sexual involving minors; no graphic sex about a named real
+ * person; no real specific atrocity with real victims; nothing written to defame
+ * a real named business. `beco torto`-style inside jokes about real venues are
+ * for the group to add by hand to this file.
  */
-export const ZAP_PROMPTS: readonly string[] = [
+
+export const ZAP_PROMPTS_LEVE: readonly string[] = [
   'O pior nome possível para um pet',
   'Uma matéria escolar que ninguém pediu',
   'O verdadeiro motivo de o Wi-Fi ter caído',
@@ -64,8 +74,9 @@ export const ZAP_PROMPTS: readonly string[] = [
   'O nome do próximo furacão brasileiro',
   'Uma promessa de político que daria pra cumprir de verdade',
   'O que o elevador diria se estivesse cansado',
+];
 
-  // ─── PACK ADULTO (+18) ─────────────────────────────────────────────────────
+export const ZAP_PROMPTS_PESADO: readonly string[] = [
   'A pior hora para o preservativo estourar',
   'Uma frase que mata o clima na cama na hora',
   'O nome de um puteiro temático que daria certo',
@@ -98,4 +109,44 @@ export const ZAP_PROMPTS: readonly string[] = [
   'O que o urologista anotou no prontuário e não te contou',
   'Uma tradição de Natal que acaba sempre em briga de família e polícia',
   'O pior momento para o vibrador ligar sozinho na bolsa',
+  'O que rolou no after que ninguém pode contar pra namorada de ninguém',
+  'O nome do drink da promoção de quarta que ninguém sabe o que leva dentro',
+  'O que o político genérico prometeu no palanque e ninguém cobrou depois',
+  'O que a popstar internacional joga pra plateia em vez de rosas',
+  'A letra verdadeira do hit do momento se fosse honesta',
+  'A pior coisa para sentir o gosto no meio de um oral',
+  'O que o cachorro comeu escondido no quintal e devolveu no seu tapete',
+  'A frase de Tinder que garante que você vai morrer sozinho',
+  'O que exatamente tinha no cigarro que te ofereceram na festa',
+  'A desculpa que você deu pro RH depois que o vídeo vazou',
+  'O que o urologista viu na consulta e nunca vai conseguir desver',
+  'O último Stories da pessoa antes de ela sumir do mapa',
+  'A fantasia que o casal tentou uma vez e nunca mais tocou no assunto',
+  'O que o coveiro comenta baixinho enquanto trabalha',
+  'A pior coisa para descobrir sobre o seu affair no meio da transa',
+  'O que a vovó guardava no criado-mudo e a família fingiu não ver',
+  'O motivo pelo qual o seu plano de saúde te cancelou',
+  'A frase que o padre não esperava ouvir do outro lado do confessionário',
+  'O que o entregador flagrou pela janela ao deixar o pedido',
+  'A verdadeira composição da linguiça daquele espetinho de esquina',
+  'O que o cara mandou de nude e devia ter pensado mais dez minutos',
+  'O plano de aposentadoria de quem nunca fez plano de aposentadoria',
+  'O que sai do subwoofer do vizinho às 4 da manhã',
+  'A frase que encerra a terapia de casal já na primeira sessão',
+  'O que o segurança da balada revistou e preferiu devolver na hora',
+  'A pior herança que um parente distante pode te deixar',
+  'O que a inteligência artificial vai fazer com a nossa pasta de fotos',
+  'A pergunta que você NÃO faz durante um teste de DST',
+  'O que o enfermeiro do plantão de sábado já viu chegar entalado',
+  'A verdade sobre o que aconteceu na despedida de solteiro',
+  'O que você faria com uma mala de dinheiro e nenhuma câmera por perto',
+  'A real função daquele cômodo sempre trancado na casa dos sogros',
+  'O que o motorista de app fingiu não escutar no banco de trás',
 ];
+
+/** The prompt bank for a given room content tier. `pesado` = both lists. */
+export const zapPrompts = (tier: ContentTier | undefined): string[] =>
+  tier === 'leve' ? [...ZAP_PROMPTS_LEVE] : [...ZAP_PROMPTS_LEVE, ...ZAP_PROMPTS_PESADO];
+
+/** @deprecated kept for any external reference — use `zapPrompts(tier)`. */
+export const ZAP_PROMPTS: readonly string[] = [...ZAP_PROMPTS_LEVE, ...ZAP_PROMPTS_PESADO];

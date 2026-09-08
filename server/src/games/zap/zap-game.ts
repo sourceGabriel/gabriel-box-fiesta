@@ -1,4 +1,5 @@
 import type {
+  ContentTier,
   GameStatus as PlatformGameStatus,
   TurnTimer,
   ZapBallot,
@@ -27,7 +28,7 @@ import {
   VOTE_MS,
 } from './constants';
 import { planFinalRound, planNormalRound, type Assignment, type RoundPlan } from './pairing';
-import { ZAP_PROMPTS } from './prompts';
+import { zapPrompts } from './prompts';
 
 function assertCondition(condition: unknown, code: string, message: string): asserts condition {
   if (!condition) {
@@ -63,6 +64,7 @@ type InternalDuel = {
 export class ZapGame implements PausableGame, TurnTimedGame {
   private readonly now: () => number;
   private readonly random: () => number;
+  private readonly contentTier: ContentTier | undefined;
   private readonly roomCode: string;
   private readonly players: Player[];
   private readonly nameById = new Map<string, string>();
@@ -105,6 +107,7 @@ export class ZapGame implements PausableGame, TurnTimedGame {
   constructor(ctx: GameContext) {
     this.now = ctx.now;
     this.random = ctx.random;
+    this.contentTier = ctx.contentTier;
     this.roomCode = ctx.roomCode;
     this.players = ctx.players.map((p) => ({ id: p.id, name: p.name }));
     for (const p of this.players) {
@@ -124,7 +127,7 @@ export class ZapGame implements PausableGame, TurnTimedGame {
       `Zap requires ${MIN_PLAYERS}-${MAX_PLAYERS} players`,
     );
     this.started = true;
-    this.deck = this.shuffled(ZAP_PROMPTS);
+    this.deck = this.shuffled(zapPrompts(this.contentTier));
     this.emit({ type: 'game_started', totalRounds: TOTAL_ROUNDS });
     this.beginRound(1);
   }
@@ -403,7 +406,7 @@ export class ZapGame implements PausableGame, TurnTimedGame {
 
   private drawPrompts(n: number): string[] {
     if (this.deck.length < n) {
-      this.deck = this.shuffled(ZAP_PROMPTS);
+      this.deck = this.shuffled(zapPrompts(this.contentTier));
     }
     return this.deck.splice(0, n);
   }

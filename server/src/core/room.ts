@@ -1,5 +1,6 @@
 import { nanoid } from 'nanoid';
-import type { AvatarSpec, Player } from '@party/shared';
+import type { AvatarSpec, ContentTier, Player } from '@party/shared';
+import { DEFAULT_CONTENT_TIER } from '@party/shared';
 import { SessionService } from './session-service';
 import { isPausable, isRounded, isTurnTimed, type GameInstance } from './game-plugin';
 import { DEFAULT_GAME_ID, GAMES } from '../games/registry';
@@ -28,6 +29,8 @@ export class Room {
   state: RoomState = 'accepting_players';
   game: GameInstance | null = null;
   selectedGameId: string = DEFAULT_GAME_ID;
+  /** Content intensity for the text games. Host flips it in the lobby. */
+  contentTier: ContentTier = DEFAULT_CONTENT_TIER;
   stateVersion = 0;
 
   private readonly sessionService = new SessionService();
@@ -147,6 +150,14 @@ export class Room {
     this.selectedGameId = gameId;
   }
 
+  /** Owner sets the content intensity for the text games. Only valid before a game starts. */
+  setContentTier(tier: ContentTier): void {
+    if (this.state !== 'accepting_players') {
+      throw new Error('GAME_IN_PROGRESS:Cannot change content intensity after the game started');
+    }
+    this.contentTier = tier;
+  }
+
   startGame(requestedBy: string | null, gameId: string = this.selectedGameId): void {
     if (!requestedBy) {
       throw new Error('NOT_ALLOWED:Player context required');
@@ -169,6 +180,7 @@ export class Room {
       roomCode: this.code,
       now: () => Date.now(),
       random: Math.random,
+      contentTier: this.contentTier,
     });
     this.game.start();
     this.state = 'in_game';

@@ -1,3 +1,5 @@
+import type { ContentTier } from '@party/shared';
+
 /**
  * Original PT-BR multiple-choice bank for Sabe-Tudo. Written for this repo — not
  * lifted from any quiz deck.
@@ -6,11 +8,12 @@
  * four options per question per match, so the position does not matter. Keep every
  * question to exactly four options.
  *
- * Two sections: the general bank and the PACK PICANTE (+18) — real facts, just the
- * morbid / crude / drugs / sex / história-macabra kind. Every picante entry is a
- * genuinely verifiable fact so the quiz still rewards knowing the answer.
+ * `tier: 'pesado'` marks a +18 entry (morbid / crude / drugs / sex / história-macabra).
+ * Still a genuinely verifiable fact so the quiz rewards knowing the answer. The
+ * room's `contentTier` decides whether those are dealt: `leve` skips them, `pesado`
+ * deals everything.
  *
- * The engine shuffles this list per match and reshuffles when it runs out.
+ * The engine shuffles the resulting list per match and reshuffles when it runs out.
  */
 export type SabeTudoQuestion = {
   text: string;
@@ -18,6 +21,7 @@ export type SabeTudoQuestion = {
   /** Index into `options` of the correct answer, as written here. */
   correct: number;
   category: string;
+  tier?: 'pesado';
 };
 
 export const SABETUDO_QUESTIONS: readonly SabeTudoQuestion[] = [
@@ -65,23 +69,38 @@ export const SABETUDO_QUESTIONS: readonly SabeTudoQuestion[] = [
   { text: 'Qual é o maior estado do Brasil em área?', options: ['Amazonas', 'Pará', 'Mato Grosso', 'Bahia'], correct: 0, category: 'Geografia' },
   { text: 'Qual é o único mamífero capaz de voar de verdade?', options: ['Morcego', 'Esquilo-voador', 'Colugo', 'Bugio'], correct: 0, category: 'Ciência' },
 
-  // ─── PACK PICANTE (+18) ───────────────────────────────────────────────────
-  { text: 'Qual bactéria causou a Peste Negra que dizimou a Europa medieval?', options: ['Yersinia pestis', 'Escherichia coli', 'Vibrio cholerae', 'Clostridium tetani'], correct: 0, category: 'História macabra' },
-  { text: 'O que os antigos romanos usavam como enxaguante bucal para clarear os dentes?', options: ['Urina', 'Vinagre de vinho', 'Cinza de madeira', 'Mel diluído'], correct: 0, category: 'Nojeira histórica' },
-  { text: 'Qual droga a Bayer vendeu como xarope para tosse (inclusive infantil) no fim do século 19?', options: ['Heroína', 'Cocaína', 'Morfina', 'Ópio'], correct: 0, category: 'Drogas' },
-  { text: 'Qual animal tem o maior pênis do mundo em proporção ao próprio corpo?', options: ['Craca', 'Baleia-azul', 'Elefante-africano', 'Pato-selvagem'], correct: 0, category: 'Bizarrices animais' },
-  { text: 'No embalsamamento egípcio, por onde o cérebro era retirado do corpo?', options: ['Pelo nariz', 'Pela boca', 'Por um corte no crânio', 'Pelos ouvidos'], correct: 0, category: 'História macabra' },
-  { text: 'Qual método de execução foi usado pela última vez na França em 1977?', options: ['Guilhotina', 'Cadeira elétrica', 'Enforcamento', 'Fuzilamento'], correct: 0, category: 'História macabra' },
-  { text: 'Quais dois compostos dão o cheiro característico de um corpo em decomposição?', options: ['Putrescina e cadaverina', 'Amônia e cloro', 'Metano e etanol', 'Ácido láctico e ureia'], correct: 0, category: 'Ciência mórbida' },
-  { text: 'Qual bebida alcoólica era distribuída todo dia aos marinheiros da Marinha Real Britânica até 1970?', options: ['Rum', 'Uísque', 'Gim', 'Conhaque'], correct: 0, category: 'História' },
-  { text: 'Qual inseto costuma ser o primeiro a colonizar um cadáver e ajuda a estimar a hora da morte?', options: ['Mosca-varejeira', 'Barata', 'Formiga-lava-pés', 'Besouro-rola-bosta'], correct: 0, category: 'Ciência mórbida' },
-  { text: 'O que os romanos compartilhavam num banheiro público para se limpar depois de cagar?', options: ['Uma esponja presa num cabo', 'Folhas de figueira', 'Panos de linho', 'Apenas água corrente'], correct: 0, category: 'Nojeira histórica' },
-  { text: 'Qual órgão uma pessoa viva pode doar e continuar vivendo normalmente?', options: ['Um dos rins', 'O coração', 'O fígado inteiro', 'Os dois pulmões'], correct: 0, category: 'Corpo humano' },
-  { text: 'Qual infecção sexualmente transmissível voltou a assustar por criar cepas resistentes a quase todos os antibióticos?', options: ['Gonorreia', 'Herpes genital', 'HPV', 'Sífilis'], correct: 0, category: 'Saúde +18' },
-  { text: 'No Egito Antigo, que material entrava na receita de um dos primeiros métodos anticoncepcionais?', options: ['Fezes de crocodilo', 'Pó de ouro', 'Leite de cabra', 'Cera de abelha'], correct: 0, category: 'Sexo & história' },
-  { text: 'Qual rei francês, o "Rei-Sol", tinha fama de tomar banho pouquíssimas vezes na vida?', options: ['Luís XIV', 'Luís XVI', 'Henrique IV', 'Francisco I'], correct: 0, category: 'História' },
-  { text: 'Antes dos testes de farmácia, a urina da mulher era injetada em qual animal para diagnosticar gravidez?', options: ['Rã', 'Coelho branco', 'Rato', 'Galinha'], correct: 0, category: 'Ciência bizarra' },
-  { text: 'A palavra "orquídea" vem do grego antigo para qual parte do corpo?', options: ['Testículo', 'Coração', 'Olho', 'Língua'], correct: 0, category: 'Curiosidades +18' },
-  { text: 'Qual veneno foi usado por espiões e assassinatos famosos por caber na ponta de um guarda-chuva?', options: ['Ricina', 'Cianeto', 'Arsênico', 'Estricnina'], correct: 0, category: 'História macabra' },
-  { text: 'Qual parte do tubarão-da-groenlândia é comida fermentada na Islândia, apesar de cheirar a amônia (mijo)?', options: ['A carne (hákarl)', 'As brânquias', 'O fígado', 'A cartilagem'], correct: 0, category: 'Comida nojenta' },
+  // ─── PACK PESADO (+18) — fatos reais, do tipo mórbido / nojento / sexo / drogas ──
+  { tier: 'pesado', text: 'Qual bactéria causou a Peste Negra que dizimou a Europa medieval?', options: ['Yersinia pestis', 'Escherichia coli', 'Vibrio cholerae', 'Clostridium tetani'], correct: 0, category: 'História macabra' },
+  { tier: 'pesado', text: 'O que os antigos romanos usavam como enxaguante bucal para clarear os dentes?', options: ['Urina', 'Vinagre de vinho', 'Cinza de madeira', 'Mel diluído'], correct: 0, category: 'Nojeira histórica' },
+  { tier: 'pesado', text: 'Qual droga a Bayer vendeu como xarope para tosse (inclusive infantil) no fim do século 19?', options: ['Heroína', 'Cocaína', 'Morfina', 'Ópio'], correct: 0, category: 'Drogas' },
+  { tier: 'pesado', text: 'Qual animal tem o maior pênis do mundo em proporção ao próprio corpo?', options: ['Craca', 'Baleia-azul', 'Elefante-africano', 'Pato-selvagem'], correct: 0, category: 'Bizarrices animais' },
+  { tier: 'pesado', text: 'No embalsamamento egípcio, por onde o cérebro era retirado do corpo?', options: ['Pelo nariz', 'Pela boca', 'Por um corte no crânio', 'Pelos ouvidos'], correct: 0, category: 'História macabra' },
+  { tier: 'pesado', text: 'Qual método de execução foi usado pela última vez na França em 1977?', options: ['Guilhotina', 'Cadeira elétrica', 'Enforcamento', 'Fuzilamento'], correct: 0, category: 'História macabra' },
+  { tier: 'pesado', text: 'Quais dois compostos dão o cheiro característico de um corpo em decomposição?', options: ['Putrescina e cadaverina', 'Amônia e cloro', 'Metano e etanol', 'Ácido láctico e ureia'], correct: 0, category: 'Ciência mórbida' },
+  { tier: 'pesado', text: 'Qual bebida alcoólica era distribuída todo dia aos marinheiros da Marinha Real Britânica até 1970?', options: ['Rum', 'Uísque', 'Gim', 'Conhaque'], correct: 0, category: 'História' },
+  { tier: 'pesado', text: 'Qual inseto costuma ser o primeiro a colonizar um cadáver e ajuda a estimar a hora da morte?', options: ['Mosca-varejeira', 'Barata', 'Formiga-lava-pés', 'Besouro-rola-bosta'], correct: 0, category: 'Ciência mórbida' },
+  { tier: 'pesado', text: 'O que os romanos compartilhavam num banheiro público para se limpar depois de cagar?', options: ['Uma esponja presa num cabo', 'Folhas de figueira', 'Panos de linho', 'Apenas água corrente'], correct: 0, category: 'Nojeira histórica' },
+  { tier: 'pesado', text: 'Qual órgão uma pessoa viva pode doar e continuar vivendo normalmente?', options: ['Um dos rins', 'O coração', 'O fígado inteiro', 'Os dois pulmões'], correct: 0, category: 'Corpo humano' },
+  { tier: 'pesado', text: 'Qual infecção sexualmente transmissível voltou a assustar por criar cepas resistentes a quase todos os antibióticos?', options: ['Gonorreia', 'Herpes genital', 'HPV', 'Sífilis'], correct: 0, category: 'Saúde +18' },
+  { tier: 'pesado', text: 'No Egito Antigo, que material entrava na receita de um dos primeiros métodos anticoncepcionais?', options: ['Fezes de crocodilo', 'Pó de ouro', 'Leite de cabra', 'Cera de abelha'], correct: 0, category: 'Sexo & história' },
+  { tier: 'pesado', text: 'Qual rei francês, o "Rei-Sol", tinha fama de tomar banho pouquíssimas vezes na vida?', options: ['Luís XIV', 'Luís XVI', 'Henrique IV', 'Francisco I'], correct: 0, category: 'História' },
+  { tier: 'pesado', text: 'Antes dos testes de farmácia, a urina da mulher era injetada em qual animal para diagnosticar gravidez?', options: ['Rã', 'Coelho branco', 'Rato', 'Galinha'], correct: 0, category: 'Ciência bizarra' },
+  { tier: 'pesado', text: 'A palavra "orquídea" vem do grego antigo para qual parte do corpo?', options: ['Testículo', 'Coração', 'Olho', 'Língua'], correct: 0, category: 'Curiosidades +18' },
+  { tier: 'pesado', text: 'Qual veneno foi usado por espiões e assassinatos famosos por caber na ponta de um guarda-chuva?', options: ['Ricina', 'Cianeto', 'Arsênico', 'Estricnina'], correct: 0, category: 'História macabra' },
+  { tier: 'pesado', text: 'Qual parte do tubarão-da-groenlândia é comida fermentada na Islândia, apesar de cheirar a amônia (mijo)?', options: ['A carne (hákarl)', 'As brânquias', 'O fígado', 'A cartilagem'], correct: 0, category: 'Comida nojenta' },
+  { tier: 'pesado', text: 'A cocaína fazia parte da fórmula original de qual refrigerante até 1903?', options: ['Coca-Cola', 'Guaraná Antarctica', 'Pepsi', 'Fanta'], correct: 0, category: 'Drogas' },
+  { tier: 'pesado', text: 'De onde vem a palavra "vagina", no latim?', options: ['Bainha (de espada)', 'Flor', 'Caverna', 'Fonte'], correct: 0, category: 'Curiosidades +18' },
+  { tier: 'pesado', text: 'O que acontece com o zangão (abelha-macho) logo depois de acasalar com a rainha?', options: ['O órgão sexual se rompe e ele morre', 'Ele vira operário', 'Ele produz mel', 'Ele hiberna'], correct: 0, category: 'Bizarrices animais' },
+  { tier: 'pesado', text: 'Quantas terminações nervosas estudos recentes contaram no clitóris?', options: ['Cerca de 10 mil', 'Cerca de 800', 'Cerca de 2 mil', 'Cerca de 50 mil'], correct: 0, category: 'Corpo humano' },
+  { tier: 'pesado', text: 'A pílula anticoncepcional tem uma semana de placebo principalmente para quê?', options: ['A mulher menstruar e o método ser aceito pela Igreja', 'Dar uma folga ao fígado', 'Aumentar a fertilidade depois', 'Reduzir o custo'], correct: 0, category: 'Sexo & história' },
+  { tier: 'pesado', text: 'Os vitorianos vendiam qual material radioativo como creme de beleza e tônico de "vigor"?', options: ['Rádio', 'Urânio', 'Plutônio', 'Tório'], correct: 0, category: 'História macabra' },
+  { tier: 'pesado', text: 'O sangue azul de qual animal é usado até hoje para testar contaminação em vacinas?', options: ['Caranguejo-ferradura', 'Polvo', 'Lula', 'Água-viva'], correct: 0, category: 'Ciência bizarra' },
+  { tier: 'pesado', text: 'A lobotomia transorbital era feita enfiando um picador de gelo pela órbita do olho até qual parte do cérebro?', options: ['O lobo frontal', 'O cerebelo', 'O tronco encefálico', 'O lobo occipital'], correct: 0, category: 'História macabra' },
+  { tier: 'pesado', text: 'Além do metano, qual gás inflamável está presente no peido humano?', options: ['Hidrogênio', 'Hélio', 'Oxigênio', 'Nitrogênio'], correct: 0, category: 'Corpo humano' },
+  { tier: 'pesado', text: 'Qual apelido popular a gonorreia ganhou no Brasil por causa da ardência ao urinar?', options: ['Esquentamento', 'Fogo selvagem', 'Corrimento frio', 'Cistite brava'], correct: 0, category: 'Saúde +18' },
+  { tier: 'pesado', text: 'A que velocidade pode sair a ejaculação masculina?', options: ['Até uns 45 km/h', 'Até uns 5 km/h', 'Até uns 150 km/h', 'Até uns 300 km/h'], correct: 0, category: 'Curiosidades +18' },
 ];
+
+/** The question bank for a given room content tier. `pesado` = every entry. */
+export const sabeTudoQuestions = (tier: ContentTier | undefined): SabeTudoQuestion[] =>
+  tier === 'leve' ? SABETUDO_QUESTIONS.filter((q) => q.tier !== 'pesado') : [...SABETUDO_QUESTIONS];

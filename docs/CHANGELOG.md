@@ -544,3 +544,36 @@ A shared-TV fill-in-the-blank party game for a grown-up crowd: one prompt (usual
 ### §52
 - The whole game = `shared/{models,games}/fdp` + `server/src/games/fdp/` + `host/src/games/fdp/` + `mobile/src/games/fdp/` (reusing `@party/ui TextAnswerInput`) + **one line in each of the 3 registries**. Zero edits to `core/`, `ws-server.ts`, either shell, or `shared/protocol`. **6 games in the catalog (UNO / Coup / Zap! / Lorota! / Sabe-Tudo / FDP).**
 
+
+## 2026-09-08 — Toggle "Leve / Pesado" (content intensity) + heavier +18 packs (branch `feature/modo-pesado`)
+A room-level content-intensity setting the host flips in the lobby, so a table of test users can dial the humour up or down. Platform feature (like reactions / avatars) — it touches `shared/protocol`, `ws-server`, `Room`, `GameContext` and both shells, but no game engine's rules.
+
+### Added — platform
+- `shared/src/games/content-tier.ts`: `ContentTier = 'leve' | 'pesado'`, `CONTENT_TIERS`, `DEFAULT_CONTENT_TIER = 'pesado'` (everything on — matches pre-toggle behaviour).
+- `shared/src/protocol/messages.ts`: new client message `SET_CONTENT_TIER { tier }`; `GAME_CATALOG` payload gains `contentTier`.
+- `server/src/websocket/protocol.ts`: zod for `SET_CONTENT_TIER`.
+- `server/src/core/room.ts`: `Room.contentTier` (default `pesado`) + `setContentTier(tier)` (throws `GAME_IN_PROGRESS` outside `accepting_players`); passed into `plugin.create(ctx)`.
+- `server/src/core/game-plugin.ts`: `GameContext.contentTier?: ContentTier` (optional → engines default to `pesado`).
+- `server/src/websocket/ws-server.ts`: `SET_CONTENT_TIER` handler (owner-gated, lobby-only) → re-broadcast `GAME_CATALOG`; both catalog sends carry `room.contentTier`.
+- `host/src/shell/LobbyScreen.tsx`: a "Conteúdo · 😇 Leve / 🔞 Pesado" segmented toggle, shown only for the tiered games (zap / lorota / sabetudo / fdp), owner-only, with a one-line hint. `host/src/shell/useRoomConnection.ts` + `App.tsx` thread `contentTier` + `onSetContentTier`.
+- `mobile/src/shell/WaitingScreen.tsx`: a "😇 Modo leve" / "🔞 Modo pesado (+18)" tag on the waiting screen for the tiered games. `mobile/src/shell/useRoomConnection.ts` + `App.tsx` thread `contentTier`.
+
+### Added — content
+Each text game's bank is now split. `leve` = the tamer subset; `pesado` = everything.
+- `server/src/games/zap/prompts.ts` — `ZAP_PROMPTS_LEVE` (54) + `ZAP_PROMPTS_PESADO` (65: the old +18 pack + ~34 heavier — explicit sex, escatologia, gore, humor de forca, drogas, sátira de político/popstar como arquétipo, bares fictícios) + `zapPrompts(tier)`.
+- `server/src/games/lorota/questions.ts` — `tier: 'pesado'` on every +18 entry + ~16 more heavier real facts (Coca-Cola/cocaína, zangão que explode ao acasalar, sangue azul do caranguejo-ferradura, lobotomia transorbital, rádio como creme vitoriano, gonorreia = "esquentamento", etc.) + `lorotaQuestions(tier)`.
+- `server/src/games/sabetudo/questions.ts` — `tier: 'pesado'` on the picante pack + ~11 more (Coca-Cola/cocaína, clitóris ~10 mil terminações, zangão, placebo da pílula, etc.) + `sabeTudoQuestions(tier)`.
+- `server/src/games/fdp/prompts.ts` — `FDP_PROMPTS_LEVE` (38 awkward/suggestive) + `FDP_PROMPTS_PESADO` (62: the explicit half of the old deck + ~40 new — the flagship, hardest within the guardrails) + `fdpPrompts(tier)`.
+
+### Guardrails — unchanged, documented in each content file
+Even in `pesado`: never a protected group (raça, religião — inclui crente, orientação, deficiência) as the punchline; never a real private person; nothing sexual involving minors; no graphic sex about a named real person; no real specific atrocity with real victims (Mariana/Brumadinho, 9/11, real named killers); nothing written to defame a real named business (Hot Pub, Beco Torto). Inside jokes about real venues are for the group to add by hand.
+
+### Tests
+- `server/src/tests/content-tier.test.ts` (5) — every game's `leve` bank is a strict subset with no pesado-tagged entries; undefined tier deals everything.
+- `room.test.ts` +1 — tier defaults to `pesado`, is set only in the lobby, and a `leve` FDP engine only holds a `leve` deck.
+- `multiplayer.integration.test.ts` +1 — owner flips `SET_CONTENT_TIER`, catalog reflects it; a non-owner player is denied.
+- **Server tests: 120 → 127.**
+
+### Validation
+- 127 server tests · `tsc` server/shared clean · `oxlint` host/mobile clean · 5-workspace build green.
+- **Live smoke** (host + 3 controllers): FDP lobby shows the toggle → flip to Leve (hint text changes, roundtrips via `GAME_CATALOG`) → phones' waiting screens show "😇 Modo leve" → start → every prompt across rounds 1–2 came from `FDP_PROMPTS_LEVE`. Toggle also renders on the Sabe-Tudo lobby and the setting persists across a game switch. Fresh page loads: zero console errors.

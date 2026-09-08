@@ -1,4 +1,4 @@
-import type { GameMeta, GameStatus, TurnTimer } from '@party/shared';
+import type { ContentTier, GameMeta, GameStatus, TurnTimer } from '@party/shared';
 
 /**
  * Everything a game engine gets from the platform. No `pushCallback` here on
@@ -11,6 +11,12 @@ export interface GameContext {
   readonly now: () => number;
   /** Injected RNG in [0, 1) — engines must not call `Math.random()` directly. */
   readonly random: () => number;
+  /**
+   * Room content-intensity setting. Text games filter their prompt/question bank
+   * by this; games with no `leve`/`pesado` split ignore it. Absent → `'pesado'`
+   * (everything), matching the behaviour before the toggle existed.
+   */
+  readonly contentTier?: ContentTier;
 }
 
 /**

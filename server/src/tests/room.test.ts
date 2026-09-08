@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { AvatarSpec } from '@party/shared';
 import { Room } from '../core/room';
+import { FDP_PROMPTS_LEVE } from '../games/fdp/prompts';
 
 const AVATAR: AvatarSpec = { gender: 'male', skin: 'brown', hair: 'afro', hairColor: 'pink', eyes: 'purple', shirt: 'polo', hat: 'crown', bg: 'teal' };
 
@@ -80,5 +81,24 @@ describe('Room', () => {
 
     room.startGame(owner.id, 'uno');
     expect(() => room.setAvatar(owner.id, AVATAR)).toThrow(/GAME_IN_PROGRESS/);
+  });
+
+  it('content tier defaults to pesado, is set in the lobby only, and reaches the game engine', () => {
+    const room = new Room('ABCD');
+    const owner = room.joinPlayer('Alice', undefined, Date.now()).player;
+    room.joinPlayer('Bob', undefined, Date.now());
+    room.joinPlayer('Caio', undefined, Date.now());
+
+    expect(room.contentTier).toBe('pesado');
+    room.setContentTier('leve');
+    expect(room.contentTier).toBe('leve');
+
+    // The running FDP engine only holds a `leve` deck now — no pesado prompt gets dealt.
+    room.selectGame('fdp');
+    room.startGame(owner.id, 'fdp');
+    const prompt = (room.game!.getPublicState() as { prompt: string }).prompt;
+    expect(FDP_PROMPTS_LEVE).toContain(prompt);
+
+    expect(() => room.setContentTier('pesado')).toThrow(/GAME_IN_PROGRESS/);
   });
 });

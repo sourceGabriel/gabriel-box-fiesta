@@ -92,8 +92,10 @@ function App() {
       lastError={conn.lastError}
       catalog={conn.catalog}
       selectedGameId={conn.selectedGameId}
+      contentTier={conn.contentTier}
       onStart={() => conn.send('START_GAME', {})}
       onChangeGame={() => setFlow('catalog')}
+      onSetContentTier={(tier) => conn.send('SET_CONTENT_TIER', { tier })}
     />
   );
 }

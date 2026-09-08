@@ -40,6 +40,7 @@ const clientSchema = z.discriminatedUnion('type', [
   base.extend({ type: z.literal('KICK_PLAYER'), payload: z.object({ targetPlayerId: z.string().min(1) }) }),
   base.extend({ type: z.literal('SEND_REACTION'), payload: z.object({ reaction: z.string().min(1).max(16) }) }),
   base.extend({ type: z.literal('UPDATE_AVATAR'), payload: z.object({ avatar: avatarSchema }) }),
+  base.extend({ type: z.literal('SET_CONTENT_TIER'), payload: z.object({ tier: z.enum(['leve', 'pesado']) }) }),
   base.extend({ type: z.literal('PING'), payload: z.object({}) }),
 ]);
 

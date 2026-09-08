@@ -109,6 +109,53 @@ ul, ol {
   flex-wrap: wrap;
 }
 
+.lobby-tier {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel-2);
+}
+.lobby-tier-label {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+.lobby-tier-switch {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.lobby-tier-switch button {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 700;
+  padding: 0.5rem 1.1rem;
+  cursor: pointer;
+}
+.lobby-tier-switch button.is-on {
+  background: var(--accent, #f59e0b);
+  color: #0b0f17;
+}
+.lobby-tier-switch button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+.lobby-tier-hint {
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-align: center;
+  max-width: 42ch;
+}
+
 /* ---------- Attract ---------- */
 .attract-screen {
   align-items: center;

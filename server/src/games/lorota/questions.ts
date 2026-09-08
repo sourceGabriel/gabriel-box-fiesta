@@ -1,19 +1,21 @@
+import type { ContentTier } from '@party/shared';
+
 /**
  * Original PT-BR "fato com lacuna" bank for Lorota!. Written for this repo — not
  * lifted from Fibbage, Jackbox, `rumpus`, or any other deck.
  *
  * `text` contains a single `___` blank. `answer` is the real answer; `alt` lists
  * other spellings that should count as the truth (the engine normalises casing,
- * spacing and trailing punctuation on its own). Keep answers short — one or two
- * words is easiest to bluff around.
+ * spacing, trailing punctuation and accents on its own). Keep answers short.
  *
- * Two sections: the general bank and the PACK ADULTO (+18) — real facts, but the
- * gross/sexual/morbid kind. Every +18 entry is a genuinely verifiable fact (or a
- * clearly-labelled myth); players still hunt the real answer.
+ * `tier: 'pesado'` marks a +18 entry (gross / sexual / morbid). Still a genuinely
+ * verifiable fact (or a clearly-labelled myth) so the truth-hunt keeps working.
+ * The room's `contentTier` decides whether those are dealt: `leve` skips them,
+ * `pesado` deals everything.
  *
- * The engine shuffles this list per match and reshuffles when it runs out.
+ * The engine shuffles the resulting list per match and reshuffles when it runs out.
  */
-export type LorotaQuestion = { text: string; answer: string; alt?: string[] };
+export type LorotaQuestion = { text: string; answer: string; alt?: string[]; tier?: 'pesado' };
 
 export const LOROTA_QUESTIONS: readonly LorotaQuestion[] = [
   { text: 'O animal terrestre mais rápido do mundo é o ___.', answer: 'guepardo', alt: ['chita', 'cheetah'] },
@@ -62,28 +64,47 @@ export const LOROTA_QUESTIONS: readonly LorotaQuestion[] = [
   { text: 'O país que consome mais chocolate por pessoa é a ___.', answer: 'Suíça' },
   { text: 'A Mona Lisa não tem ___.', answer: 'sobrancelhas' },
 
-  // ─── PACK ADULTO (+18) ──────────────────────────────────────────────────────
-  { text: 'A palavra "orquídea" vem do grego antigo para ___.', answer: 'testículo', alt: ['testiculos', 'testículos', 'testiculo'] },
-  { text: 'A palavra "vagina" vem do latim para ___.', answer: 'bainha', alt: ['bainha de espada'] },
-  { text: 'O pênis do pato-macho tem o formato de ___.', answer: 'espiral', alt: ['saca-rolha', 'saca rolha', 'saca-rolhas'] },
-  { text: 'A equidna, mamífero australiano, tem um pênis com ___ cabeças.', answer: 'quatro' },
-  { text: 'O animal com o maior pênis do mundo em proporção ao corpo é a ___.', answer: 'craca', alt: ['cracas', 'barnacle'] },
-  { text: 'Os testículos ficam do lado de fora do corpo porque o esperma precisa de uma temperatura mais ___ que a corporal.', answer: 'baixa', alt: ['fria'] },
-  { text: 'Estudos recentes contaram cerca de ___ mil terminações nervosas no clitóris.', answer: 'dez', alt: ['10'] },
-  { text: 'O composto químico que dá o cheiro característico do sêmen chama-se ___.', answer: 'espermina' },
-  { text: 'No Egito Antigo, um método anticoncepcional era um pessário feito com ___ de crocodilo.', answer: 'fezes', alt: ['esterco', 'cocô', 'coco', 'bosta'] },
-  { text: 'Antes dos testes modernos, injetava-se a urina da mulher numa ___ para descobrir se ela estava grávida.', answer: 'rã', alt: ['sapo', 'ra'] },
-  { text: 'Os antigos romanos limpavam a bunda no banheiro público com uma ___ compartilhada presa num cabo.', answer: 'esponja' },
-  { text: 'Os romanos usavam ___ humana como enxaguante para clarear os dentes.', answer: 'urina', alt: ['xixi', 'mijo', 'chico'] },
-  { text: 'Os romanos tinham uma deusa que protegia a rede de esgotos, chamada ___.', answer: 'Cloacina', alt: ['Cloaca'] },
-  { text: 'Numa carta famosa, Napoleão pediu que Josefina não ___ nas semanas até ele voltar.', answer: 'tomasse banho', alt: ['se lavasse', 'tomasse banho ', 'lavasse'] },
-  { text: 'Charles Darwin tinha o hábito de ___ os animais exóticos que descobria.', answer: 'comer', alt: ['comê-los', 'devorar'] },
-  { text: 'Fazer muita força sentado no vaso pode parar o coração — essa força chama-se manobra de ___.', answer: 'Valsalva' },
-  { text: 'Uma pessoa solta gases, em média, cerca de ___ vezes por dia.', answer: 'quatorze', alt: ['14', 'catorze'] },
-  { text: 'O cheiro de ovo podre do peido vem de um gás chamado ___.', answer: 'sulfeto de hidrogênio', alt: ['gás sulfídrico', 'acido sulfidrico', 'ácido sulfídrico', 'gas sulfidrico'] },
-  { text: 'Um beijo de língua de dez segundos transfere cerca de ___ milhões de bactérias entre as duas bocas.', answer: 'oitenta', alt: ['80'] },
-  { text: 'O hipopótamo espalha as próprias fezes girando o ___ como uma hélice.', answer: 'rabo', alt: ['cauda'] },
-  { text: 'Os dois compostos que dão o cheiro de cadáver em decomposição são a putrescina e a ___.', answer: 'cadaverina' },
-  { text: 'Unhas e cabelo parecem crescer depois da morte só porque a ___ resseca e encolhe.', answer: 'pele' },
-  { text: 'Segundo o mito popular (que é falso), o homem pensa em sexo a cada ___ segundos.', answer: 'sete', alt: ['7'] },
+  // ─── PACK PESADO (+18) — fatos reais, do tipo nojento / sexual / mórbido ────
+  { tier: 'pesado', text: 'A palavra "orquídea" vem do grego antigo para ___.', answer: 'testículo', alt: ['testiculos', 'testículos', 'testiculo'] },
+  { tier: 'pesado', text: 'A palavra "vagina" vem do latim para ___.', answer: 'bainha', alt: ['bainha de espada'] },
+  { tier: 'pesado', text: 'A palavra "esperma" vem do grego para ___.', answer: 'semente' },
+  { tier: 'pesado', text: 'O pênis do pato-macho tem o formato de ___.', answer: 'espiral', alt: ['saca-rolha', 'saca rolha', 'saca-rolhas'] },
+  { tier: 'pesado', text: 'A equidna, mamífero australiano, tem um pênis com ___ cabeças.', answer: 'quatro' },
+  { tier: 'pesado', text: 'O animal com o maior pênis do mundo em proporção ao corpo é a ___.', answer: 'craca', alt: ['cracas', 'barnacle'] },
+  { tier: 'pesado', text: 'O zangão (abelha-macho) literalmente ___ e morre logo depois de acasalar com a rainha.', answer: 'explode', alt: ['estoura', 'arrebenta'] },
+  { tier: 'pesado', text: 'Os testículos ficam do lado de fora do corpo porque o esperma precisa de uma temperatura mais ___ que a corporal.', answer: 'baixa', alt: ['fria'] },
+  { tier: 'pesado', text: 'Estudos recentes contaram cerca de ___ mil terminações nervosas no clitóris.', answer: 'dez', alt: ['10'] },
+  { tier: 'pesado', text: 'O composto químico que dá o cheiro característico do sêmen chama-se ___.', answer: 'espermina' },
+  { tier: 'pesado', text: 'O hormônio liberado no orgasmo que aumenta o apego entre o casal é a ___.', answer: 'ocitocina', alt: ['oxitocina'] },
+  { tier: 'pesado', text: 'A ejaculação masculina pode sair a uma velocidade de até ___ km/h.', answer: '45', alt: ['quarenta e cinco'] },
+  { tier: 'pesado', text: 'A pílula anticoncepcional tem uma semana de placebo só para a mulher ___ e o método ser aceito pela Igreja.', answer: 'menstruar', alt: ['sangrar'] },
+  { tier: 'pesado', text: 'No Egito Antigo, um método anticoncepcional era um pessário feito com ___ de crocodilo.', answer: 'fezes', alt: ['esterco', 'cocô', 'coco', 'bosta'] },
+  { tier: 'pesado', text: 'Segundo a lenda, Cleópatra usava uma cabaça cheia de ___ como um dos primeiros vibradores.', answer: 'abelhas' },
+  { tier: 'pesado', text: 'Antes dos testes modernos, injetava-se a urina da mulher numa ___ para descobrir se ela estava grávida.', answer: 'rã', alt: ['sapo', 'ra'] },
+  { tier: 'pesado', text: 'A gonorreia ganhou no Brasil o apelido popular de "___" por causa da ardência ao urinar.', answer: 'esquentamento', alt: ['esquentamento venéreo'] },
+  { tier: 'pesado', text: 'A cocaína fazia parte da fórmula original da ___ até 1903.', answer: 'Coca-Cola', alt: ['coca cola', 'coca'] },
+  { tier: 'pesado', text: 'Os vitorianos vendiam ___ radioativo como creme de beleza e "tônico de vigor".', answer: 'rádio', alt: ['radium'] },
+  { tier: 'pesado', text: 'A lobotomia mais comum era feita enfiando um picador de gelo pela órbita do olho até o lobo ___.', answer: 'frontal' },
+  { tier: 'pesado', text: 'O sangue azul do ___ é usado até hoje para testar contaminação bacteriana em vacinas e remédios.', answer: 'caranguejo-ferradura', alt: ['límulo', 'caranguejo ferradura', 'horseshoe crab'] },
+  { tier: 'pesado', text: 'Rir forte demais pode, em casos raros, causar uma parada ___.', answer: 'cardíaca', alt: ['do coração', 'cardiaca'] },
+  { tier: 'pesado', text: 'Os antigos romanos limpavam a bunda no banheiro público com uma ___ compartilhada presa num cabo.', answer: 'esponja' },
+  { tier: 'pesado', text: 'Os romanos usavam ___ humana como enxaguante para clarear os dentes.', answer: 'urina', alt: ['xixi', 'mijo', 'chico'] },
+  { tier: 'pesado', text: 'Numa carta famosa, Napoleão pediu que Josefina não ___ nas semanas até ele voltar.', answer: 'tomasse banho', alt: ['se lavasse', 'lavasse'] },
+  { tier: 'pesado', text: 'Charles Darwin tinha o hábito de ___ os animais exóticos que descobria.', answer: 'comer', alt: ['comê-los', 'devorar'] },
+  { tier: 'pesado', text: 'Fazer muita força sentado no vaso pode parar o coração — essa força chama-se manobra de ___.', answer: 'Valsalva' },
+  { tier: 'pesado', text: 'Uma pessoa solta gases, em média, cerca de ___ vezes por dia.', answer: 'quatorze', alt: ['14', 'catorze'] },
+  { tier: 'pesado', text: 'O peido pega fogo porque, além de metano, contém ___.', answer: 'hidrogênio', alt: ['gás hidrogênio', 'hidrogenio'] },
+  { tier: 'pesado', text: 'O cheiro de ovo podre do peido vem de um gás chamado ___.', answer: 'sulfeto de hidrogênio', alt: ['gás sulfídrico', 'ácido sulfídrico', 'gas sulfidrico', 'acido sulfidrico'] },
+  { tier: 'pesado', text: 'A ressaca dá dor de cabeça em parte porque o álcool te faz ___ demais e desidrata.', answer: 'urinar', alt: ['mijar'] },
+  { tier: 'pesado', text: 'Um beijo de língua de dez segundos transfere cerca de ___ milhões de bactérias entre as duas bocas.', answer: 'oitenta', alt: ['80'] },
+  { tier: 'pesado', text: 'O hipopótamo espalha as próprias fezes girando o ___ como uma hélice.', answer: 'rabo', alt: ['cauda'] },
+  { tier: 'pesado', text: 'Os dois compostos que dão o cheiro de cadáver em decomposição são a putrescina e a ___.', answer: 'cadaverina' },
+  { tier: 'pesado', text: 'Os gases da decomposição podem inflar o corpo a ponto de ele ___ dentro do caixão.', answer: 'explodir', alt: ['estourar', 'arrebentar'] },
+  { tier: 'pesado', text: 'Unhas e cabelo parecem crescer depois da morte só porque a ___ resseca e encolhe.', answer: 'pele' },
+  { tier: 'pesado', text: 'O filme pornô mais antigo que se tem registro tem mais de ___ anos.', answer: 'cem', alt: ['100'] },
+  { tier: 'pesado', text: 'Segundo o mito popular (que é falso), o homem pensa em sexo a cada ___ segundos.', answer: 'sete', alt: ['7'] },
 ];
+
+/** The question bank for a given room content tier. `pesado` = every entry. */
+export const lorotaQuestions = (tier: ContentTier | undefined): LorotaQuestion[] =>
+  tier === 'leve' ? LOROTA_QUESTIONS.filter((q) => q.tier !== 'pesado') : [...LOROTA_QUESTIONS];

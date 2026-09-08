@@ -100,5 +100,14 @@ Loop: `prompt → cada jogador escreve respostas no celular → TV mostra duelos
 - `mobile/src/games/fdp/` (`FdpControllerView` reusa `@party/ui TextAnswerInput`, `HowToPlay`, css) +1 linha em `CONTROLLER_GAMES`.
 - `fdp-game.test.ts` (13) + integration. **Testes de servidor 106 → 120.** §52 preservado. Smoke ao vivo completo (host + 3 controllers: writing/voting/results, anonimato, +100/voto + varredura Bia +350, 👑 vencedor da rodada, placar carrega, END_GAME → lobby, 0 erros).
 
+## Toggle "Leve / Pesado" (intensidade de conteúdo) — COMPLETO (branch `feature/modo-pesado`)
+Setting de sala que o host vira no lobby, pros jogos de texto (Zap!/Lorota!/Sabe-Tudo/FDP). Feature de plataforma (como reactions/avatars).
+- `shared/src/games/content-tier.ts` (`ContentTier`, default `pesado`) + `SET_CONTENT_TIER` msg + `contentTier` no `GAME_CATALOG` + zod.
+- `Room.contentTier` + `setContentTier` (lobby-only) → `GameContext.contentTier?` → cada engine escolhe qual array embaralhar (`<jogo>Prompts(tier)` / `<jogo>Questions(tier)`).
+- `ws-server` handler owner-gated. Host `LobbyScreen` toggle (😇 Leve / 🔞 Pesado) + hint; mobile `WaitingScreen` tag "Modo leve/pesado".
+- Bancos divididos leve/pesado + **packs pesados bem maiores** (Zap +34, Lorota +16, Sabe-Tudo +11, FDP reestruturado 38 leve / 62 pesado com ~40 novos). Guardrails escritos no header de cada arquivo de conteúdo: sem grupo protegido como punchline, sem pessoa real privada, sem menor, sem sexo gráfico de pessoa real com nome, sem tragédia real específica com vítimas reais, sem difamar negócio real com nome.
+- `content-tier.test.ts` (5) + `room.test.ts` +1 + integration +1. **Testes de servidor 120 → 127.** Smoke ao vivo: FDP em Leve só serviu prompts leves; toggle roundtrip + persiste na troca de jogo; 0 erros de console.
+- §52: nenhuma *regra* de jogo mudou; toca protocol/ws-server/Room/GameContext/shells como qualquer feature de plataforma.
+
 **6 jogos no catálogo: UNO, Coup, Zap!, Lorota!, Sabe-Tudo, FDP.**
 Plano: `C:\Users\gabri\.claude\plans\quiplax-e-proximos-jogos.md`.

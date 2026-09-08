@@ -1,5 +1,5 @@
 import type { AvatarSpec } from '../models/avatar';
-import type { GameMeta, LifecycleEvent } from '../games';
+import type { ContentTier, GameMeta, LifecycleEvent } from '../games';
 
 export type ClientMessageType =
   | 'JOIN_ROOM'
@@ -14,6 +14,7 @@ export type ClientMessageType =
   | 'KICK_PLAYER'
   | 'SEND_REACTION'
   | 'UPDATE_AVATAR'
+  | 'SET_CONTENT_TIER'
   | 'PING';
 
 export type ServerMessageType =
@@ -59,12 +60,14 @@ export type ClientMessage =
   | Envelope<'SEND_REACTION', { reaction: string }>
   /** Change your avatar. Accepted only while the room is still `accepting_players` (no game running). */
   | Envelope<'UPDATE_AVATAR', { avatar: AvatarSpec }>
+  /** Owner sets the room's content intensity for the text games. Lobby only. */
+  | Envelope<'SET_CONTENT_TIER', { tier: ContentTier }>
   | Envelope<'PING', {}>;
 
 export type ServerMessage =
   | Envelope<'ROOM_JOINED', { roomCode: string; role: 'player' | 'host'; playerId?: string; ownerPlayerId: string | null; sessionToken?: string }>
   | Envelope<'ROOM_STATE', { roomCode: string; ownerPlayerId: string | null; joinUrl: string; joinQrDataUrl?: string; players: { id: string; name: string; avatar: AvatarSpec; connected: boolean }[] }>
-  | Envelope<'GAME_CATALOG', { games: GameMeta[]; selectedGameId: string }>
+  | Envelope<'GAME_CATALOG', { games: GameMeta[]; selectedGameId: string; contentTier: ContentTier }>
   | Envelope<'PLAYER_JOINED', { playerId: string; name: string; avatar: AvatarSpec }>
   | Envelope<'PLAYER_RECONNECTED', { playerId: string }>
   | Envelope<'PLAYER_LEFT', { playerId: string }>

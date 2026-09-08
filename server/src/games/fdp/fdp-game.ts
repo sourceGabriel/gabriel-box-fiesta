@@ -1,4 +1,5 @@
 import type {
+  ContentTier,
   FdpAnswer,
   FdpGameEvent,
   FdpPhase,
@@ -23,7 +24,7 @@ import {
   VOTING_MS,
   WRITING_MS,
 } from './constants';
-import { FDP_PROMPTS } from './prompts';
+import { fdpPrompts } from './prompts';
 
 function assertCondition(condition: unknown, code: string, message: string): asserts condition {
   if (!condition) {
@@ -50,6 +51,7 @@ type InternalAnswer = {
 export class FdpGame implements PausableGame, TurnTimedGame {
   private readonly now: () => number;
   private readonly random: () => number;
+  private readonly contentTier: ContentTier | undefined;
   private readonly roomCode: string;
   private readonly players: Player[];
   private readonly nameById = new Map<string, string>();
@@ -88,6 +90,7 @@ export class FdpGame implements PausableGame, TurnTimedGame {
   constructor(ctx: GameContext) {
     this.now = ctx.now;
     this.random = ctx.random;
+    this.contentTier = ctx.contentTier;
     this.roomCode = ctx.roomCode;
     this.players = ctx.players.map((p) => ({ id: p.id, name: p.name }));
     for (const p of this.players) {
@@ -107,7 +110,7 @@ export class FdpGame implements PausableGame, TurnTimedGame {
       `FDP requires ${MIN_PLAYERS}-${MAX_PLAYERS} players`,
     );
     this.started = true;
-    this.deck = this.shuffled(FDP_PROMPTS);
+    this.deck = this.shuffled(fdpPrompts(this.contentTier));
     this.emit({ type: 'game_started', totalRounds: TOTAL_ROUNDS });
     this.beginRound(1);
   }
@@ -331,7 +334,7 @@ export class FdpGame implements PausableGame, TurnTimedGame {
 
   private drawPrompt(): string {
     if (this.deck.length === 0) {
-      this.deck = this.shuffled(FDP_PROMPTS);
+      this.deck = this.shuffled(fdpPrompts(this.contentTier));
     }
     return this.deck.pop()!;
   }

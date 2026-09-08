@@ -280,6 +280,19 @@ export class PartyServer {
       return;
     }
 
+    if (message.type === 'SET_CONTENT_TIER') {
+      this.assertOwner(ctx.playerId, ctx.role);
+      try {
+        room.setContentTier(message.payload.tier);
+      } catch (error) {
+        const [code, msg] = (error as Error).message.split(/:(.*)/s);
+        this.send(socket, 'ERROR', { code: code ?? 'BAD_REQUEST', message: msg ?? 'Cannot change content intensity', recoverable: true });
+        return;
+      }
+      this.broadcastGameCatalog();
+      return;
+    }
+
     if (message.type === 'START_GAME') {
       this.assertOwner(ctx.playerId, ctx.role);
       room.startGame(ctx.playerId ?? room.ownerPlayerId ?? null, message.payload.gameId);
@@ -381,12 +394,12 @@ export class PartyServer {
 
   private broadcastGameCatalog(): void {
     const room = this.roomManager.getRoom();
-    this.broadcast('GAME_CATALOG', { games: gameCatalog(), selectedGameId: room.selectedGameId });
+    this.broadcast('GAME_CATALOG', { games: gameCatalog(), selectedGameId: room.selectedGameId, contentTier: room.contentTier });
   }
 
   private sendGameCatalog(socket: WebSocket): void {
     const room = this.roomManager.getRoom();
-    this.send(socket, 'GAME_CATALOG', { games: gameCatalog(), selectedGameId: room.selectedGameId });
+    this.send(socket, 'GAME_CATALOG', { games: gameCatalog(), selectedGameId: room.selectedGameId, contentTier: room.contentTier });
   }
 
   private flushGameEvents(): void {

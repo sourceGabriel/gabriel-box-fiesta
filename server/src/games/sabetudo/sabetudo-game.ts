@@ -1,4 +1,5 @@
 import type {
+  ContentTier,
   GameStatus as PlatformGameStatus,
   SabeTudoGameEvent,
   SabeTudoOptionResult,
@@ -22,7 +23,7 @@ import {
   STREAK_STEP,
   TOTAL_ROUNDS,
 } from './constants';
-import { SABETUDO_QUESTIONS, type SabeTudoQuestion } from './questions';
+import { sabeTudoQuestions, type SabeTudoQuestion } from './questions';
 
 function assertCondition(condition: unknown, code: string, message: string): asserts condition {
   if (!condition) {
@@ -49,6 +50,7 @@ type ActiveQuestion = {
 export class SabeTudoGame implements PausableGame, TurnTimedGame {
   private readonly now: () => number;
   private readonly random: () => number;
+  private readonly contentTier: ContentTier | undefined;
   private readonly roomCode: string;
   private readonly players: Player[];
   private readonly nameById = new Map<string, string>();
@@ -83,6 +85,7 @@ export class SabeTudoGame implements PausableGame, TurnTimedGame {
   constructor(ctx: GameContext) {
     this.now = ctx.now;
     this.random = ctx.random;
+    this.contentTier = ctx.contentTier;
     this.roomCode = ctx.roomCode;
     this.players = ctx.players.map((p) => ({ id: p.id, name: p.name }));
     for (const p of this.players) {
@@ -103,7 +106,7 @@ export class SabeTudoGame implements PausableGame, TurnTimedGame {
       `Sabe-Tudo requires ${MIN_PLAYERS}-${MAX_PLAYERS} players`,
     );
     this.started = true;
-    this.deck = this.shuffled(SABETUDO_QUESTIONS);
+    this.deck = this.shuffled(sabeTudoQuestions(this.contentTier));
     this.emit({ type: 'game_started', totalRounds: TOTAL_ROUNDS });
     this.beginRound(1);
   }
@@ -263,7 +266,7 @@ export class SabeTudoGame implements PausableGame, TurnTimedGame {
 
   private drawQuestion(): ActiveQuestion {
     if (this.deck.length === 0) {
-      this.deck = this.shuffled(SABETUDO_QUESTIONS);
+      this.deck = this.shuffled(sabeTudoQuestions(this.contentTier));
     }
     const q = this.deck.pop()!;
     const indices = this.shuffled([...q.options.keys()]);
