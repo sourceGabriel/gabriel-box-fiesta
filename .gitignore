@@ -3,9 +3,6 @@ node_modules/
 **/dist/
 coverage/
 *.log
-
-# "Tarefas da casa" helper — local persisted state
-server/data/
 .DS_Store
 !/.idea/
 !/.idea/workspace.xml

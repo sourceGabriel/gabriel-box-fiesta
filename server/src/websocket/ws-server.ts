@@ -1,4 +1,4 @@
-import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
+import { createServer } from 'node:http';
 import { URL } from 'node:url';
 import pino from 'pino';
 import QRCode from 'qrcode';
@@ -8,8 +8,6 @@ import { isTurnTimed } from '../core/game-plugin';
 import { RoomManager } from '../core/room-manager';
 import { gameCatalog } from '../games/registry';
 import { pickPrimaryLocalIPv4 } from '../network/local-ip';
-import { handleTarefasRequest } from '../tarefas/handler';
-import { tarefasDataFile } from '../tarefas/store';
 import { makeServerMessage, parseClientMessage } from './protocol';
 
 const logger = pino({ name: 'party-server' });
@@ -33,10 +31,6 @@ export class PartyServer {
   private readonly disconnectTimers = new Map<string, NodeJS.Timeout>();
 
   private readonly http = createServer((req, res) => {
-    void this.handleHttp(req, res);
-  });
-
-  private async handleHttp(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const url = new URL(req.url ?? '/', `http://${req.headers.host}`);
     const origin = req.headers.origin;
     const isLocalOrigin = typeof origin === 'string' && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
@@ -48,27 +42,13 @@ export class PartyServer {
     } else {
       res.setHeader('Access-Control-Allow-Origin', '*');
     }
-    res.setHeader('Access-Control-Allow-Methods', 'GET, PUT, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     res.setHeader('Vary', 'Origin');
 
     if (req.method === 'OPTIONS') {
       res.writeHead(204);
       res.end();
-      return;
-    }
-
-    // "Tarefas da casa" helper page + its disk-backed persistence (not a game feature).
-    if (url.pathname === '/tarefas' || url.pathname.startsWith('/tarefas/')) {
-      try {
-        await handleTarefasRequest(req, res, url.pathname);
-      } catch (error) {
-        logger.error({ error }, 'tarefas request failed');
-        if (!res.headersSent) {
-          res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
-          res.end('internal error');
-        }
-      }
       return;
     }
 
@@ -87,7 +67,7 @@ export class PartyServer {
 
     res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' });
     res.end('Party server is running. Use host/mobile apps to connect.');
-  }
+  });
 
   private readonly wss = new WebSocketServer({
     server: this.http,
@@ -115,9 +95,7 @@ export class PartyServer {
     const ip = pickPrimaryLocalIPv4();
     const room = this.roomManager.getRoom();
     const joinUrl = this.getJoinUrl(ip, room.code);
-    const tarefasUrl = `http://${ip}:${this.startedPort}/tarefas`;
-    logger.info({ roomCode: room.code, joinUrl, tarefasUrl, serverPort: this.startedPort }, 'Party server started');
-    logger.info({ tarefasUrl, dataFile: tarefasDataFile }, 'Tarefas da casa disponível');
+    logger.info({ roomCode: room.code, joinUrl, serverPort: this.startedPort }, 'Party server started');
   }
 
   async stop(): Promise<void> {

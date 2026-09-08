@@ -179,8 +179,3 @@ The project is currently between the room lifecycle phase and the actual host ga
 - Animations (all `prefers-reduced-motion`-guarded): host `zap-winner-pop` on the winning answer + `zap-foot-in` on reveal; controller `⚡ +N ⚡` cheer on roundResults when you scored + `zap-chosen-pop` on the picked vote.
 - 77 server + 7 ui tests, tsc + oxlint clean, 5-ws build green. Live smoke: full 3-round match to gameover, winner pop + sound toggle render, 0 game console errors.
 - **Zap! (game #3) COMPLETE** (Z1–Z5). §52 held: whole game = `shared/{models,games}/zap`, `server/src/games/zap/`, `host/src/games/zap/`, `mobile/src/games/zap/`, one `@party/ui` component, +1 line in each of 3 registries. Zero edits to `core/`/`ws-server`/shells/`shared/protocol`.
-
-## 2026-09-07 — "Tarefas da casa" helper page (branch `feature/tarefas-casa`)
-- New `server/src/tarefas/` (`page.html` + `store.ts` disk KV + `handler.ts`): the server now also serves a personal house-tasks organizer at `GET /tarefas` and persists its state to `server/data/tarefas-casa.json` (gitignored) across restarts. Startup log prints `tarefasUrl` alongside `joinUrl`.
-- `ws-server.ts` HTTP handler made async; `/tarefas*` routed before game routes; CORS += `PUT, POST`.
-- Not a game / not in the spec — a side utility. §52 game plumbing untouched. tsc + 77 tests + 5-ws build green; live-smoked (save → disk → reload).
