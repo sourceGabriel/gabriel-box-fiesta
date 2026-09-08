@@ -683,6 +683,64 @@ describe('multiplayer integration', () => {
     for (const ws of phones) ws.close();
   });
 
+  it('runs Lorota!: SELECT_GAME + START_GAME, per-player prompt, lies advance to guessing', async () => {
+    server = new PartyServer(0);
+    await server.start();
+    const roomCode = server.getRoomCode();
+    const port = server.getPort();
+
+    const host = await connect(port);
+    const catalogPromise = waitForMessage(host, 'GAME_CATALOG');
+    host.send(makeMessage('JOIN_ROOM', { roomCode, playerName: 'HOST', role: 'host' }));
+    await waitForMessage(host, 'ROOM_JOINED');
+
+    const catalog = await catalogPromise;
+    expect(catalog.payload.games.map((game) => game.id)).toEqual(expect.arrayContaining(['uno', 'coup', 'zap', 'lorota']));
+
+    const reselected = waitForMessageWhere(host, 'GAME_CATALOG', (m) => m.payload.selectedGameId === 'lorota');
+    host.send(makeMessage('SELECT_GAME', { gameId: 'lorota' }));
+    await reselected;
+
+    const phones = [] as Awaited<ReturnType<typeof connect>>[];
+    for (const name of ['Ana', 'Bia', 'Caio']) {
+      const ws = await connect(port);
+      ws.send(makeMessage('JOIN_ROOM', { roomCode, playerName: name, role: 'player' }));
+      await waitForMessage(ws, 'ROOM_JOINED');
+      phones.push(ws);
+    }
+
+    const firstPublic = waitForMessage(host, 'GAME_STATE_PUBLIC');
+    const started = waitForMessage(host, 'GAME_STARTED');
+    host.send(makeMessage('START_GAME', { gameId: 'lorota' }));
+    expect((await started).payload.gameId).toBe('lorota');
+
+    const pub = (await firstPublic).payload.state as { phase: string; prompt: string; liesExpectedCount: number };
+    expect(pub.phase).toBe('lying');
+    expect(pub.prompt).toMatch(/___/);
+    expect(pub.liesExpectedCount).toBe(3);
+
+    const privs = await Promise.all(phones.map((ws) => waitForMessage(ws, 'PLAYER_STATE_PRIVATE')));
+    for (const p of privs) {
+      expect((p.payload.state as { pendingDecision: string }).pendingDecision).toBe('lie');
+    }
+
+    const guessingReached = waitForMessageWhere(
+      host,
+      'GAME_STATE_PUBLIC',
+      (m) => (m.payload.state as { phase: string }).phase === 'guessing',
+    );
+    phones.forEach((ws, i) => ws.send(makeMessage('GAME_ACTION', { action: { type: 'submitLie', text: `mentira ${i}` } })));
+    const guessState = (await guessingReached).payload.state as { options: unknown[] };
+    expect(guessState.options).toHaveLength(4); // 3 lies + truth
+
+    const actionError = waitForMessage(phones[0], 'ERROR');
+    phones[0].send(makeMessage('GAME_ACTION', { action: { type: 'garbage' } }));
+    expect((await actionError).payload.message).toMatch(/INVALID_ACTION/i);
+
+    host.close();
+    for (const ws of phones) ws.close();
+  });
+
   it('rebroadcasts emoji reactions to the whole room and rejects oversized ones', async () => {
     server = new PartyServer(0);
     await server.start();

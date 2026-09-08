@@ -3,6 +3,7 @@ import type { GamePlugin } from '../core/game-plugin';
 import { unoPlugin } from './uno/plugin';
 import { coupPlugin } from './coup/plugin';
 import { zapPlugin } from './zap/plugin';
+import { lorotaPlugin } from './lorota/plugin';
 
 /**
  * The platform's game catalog. Adding a game = one import + one entry here.
@@ -12,6 +13,7 @@ export const GAMES: Readonly<Record<string, GamePlugin>> = {
   [unoPlugin.meta.id]: unoPlugin,
   [coupPlugin.meta.id]: coupPlugin,
   [zapPlugin.meta.id]: zapPlugin,
+  [lorotaPlugin.meta.id]: lorotaPlugin,
 };
 
 export const DEFAULT_GAME_ID = unoPlugin.meta.id;

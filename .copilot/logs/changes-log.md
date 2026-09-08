@@ -185,3 +185,13 @@ The project is currently between the room lifecycle phase and the actual host ga
 - Mobile `WaitingScreen`: "✏️ Editar avatar" → inline `<AvatarEditor>` (Cancelar/Salvar) → `App.changeAvatar` persists locally + sends `UPDATE_AVATAR`.
 - Mobile `UnoControllerView`: wild cards pick colour BEFORE playing — "Jogar" opens a local popup with ✕ (cancel keeps the card selected, nothing sent); a colour sends `play_card { cardId, chosenColor }` in one shot. Server `awaiting_color_choice` modal kept as timeout/reconnect fallback. No engine change.
 - Tests: `room.test.ts` +1, `multiplayer.integration.test.ts` +1. **Server 77 → 79.** tsc + ui(7) + oxlint + 5-ws build green. Live smoke passed both flows.
+
+## 2026-09-08 — Lorota! (game #4, Fibbage-inspired) — full slice (branch `feature/fibbage`, off `main` @ ecfcf00)
+- §47 name **"Lorota!"** (`gameId: "lorota"`). Loop: fact-with-blank → invent a lie → server shuffles lies + truth → hunt the truth. +1000 find truth, +500 per player fooled, final round ×2, 3 rounds, minPlayers 3.
+- `shared/src/models/lorota.ts` + `shared/src/games/lorota/events.ts` (types-only). `shared/src/index.ts` +2 exports.
+- `server/src/games/lorota/`: `constants`, `questions.ts` (45 original PT-BR "fato com lacuna"), `lorota-game.ts` (`implements PausableGame, TurnTimedGame`; accent/case/punct-insensitive `normalize`; truth-collision bounced silently + `lieWasTheTruth` flag; identical lies collapse crediting all authors; self-advancing), `action-schema` (zod), `plugin`. **+1 line in `GAMES`.**
+- `host/src/games/lorota/` (`LorotaHostView` phase-driven, `LorotaCover` SVG, `describeEvent`, `sound-map.ts`, `lorota-host.css` scoped `.lorota-host`) +2 imports +1 entry in `HOST_GAMES`.
+- `mobile/src/games/lorota/` (`LorotaControllerView` reusing `@party/ui TextAnswerInput`, `HowToPlay`, `lorota-controller.css`) +1 line in `CONTROLLER_GAMES`.
+- `lorota-game.test.ts` (14) + integration path (+1). **Server 79 → 94.** tsc + ui(7) + oxlint + 5-ws build green.
+- Full live smoke: 3-round match host + 4 controllers — lying/guessing/reveal/gameover all render, truth-collision nudge, identical-lie collapse, scoring (truth +1000, fool +500, final ×2). 0 game console errors.
+- **§52 held** — nothing in `core/`, `ws-server`, shells, `shared/protocol`. **4 games in the catalog.**
