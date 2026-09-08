@@ -355,6 +355,22 @@ export class PartyServer {
       return;
     }
 
+    if (message.type === 'UPDATE_AVATAR') {
+      if (ctx.role !== 'player' || !ctx.playerId) {
+        this.send(socket, 'ERROR', { code: 'NOT_ALLOWED', message: 'Only a joined player can change avatar', recoverable: true });
+        return;
+      }
+      try {
+        room.setAvatar(ctx.playerId, message.payload.avatar);
+      } catch (error) {
+        const [code, msg] = (error as Error).message.split(/:(.*)/s);
+        this.send(socket, 'ERROR', { code: code ?? 'BAD_REQUEST', message: msg ?? 'Cannot change avatar', recoverable: true });
+        return;
+      }
+      this.broadcastRoomState();
+      return;
+    }
+
     this.send(socket, 'ERROR', { code: 'NOT_IMPLEMENTED', message: 'Unsupported action', recoverable: true });
   }
 

@@ -82,6 +82,18 @@ export class Room {
     return { player, sessionToken: token };
   }
 
+  /** Change a player's avatar. Only valid before a game starts (lobby / between games). */
+  setAvatar(playerId: string, avatar: AvatarSpec): void {
+    if (this.state !== 'accepting_players') {
+      throw new Error('GAME_IN_PROGRESS:Cannot change avatar after the game started');
+    }
+    const player = this.players.get(playerId);
+    if (!player) {
+      throw new Error('PLAYER_NOT_FOUND:No such player in room');
+    }
+    player.avatar = avatar;
+  }
+
   reconnect(sessionToken: string, now: number): Player {
     const session = this.sessionService.validate(sessionToken, now);
     if (!session) {

@@ -349,6 +349,7 @@
 }
 
 .color-modal-card {
+  position: relative;
   width: min(360px, 92vw);
   display: grid;
   gap: 1.1rem;
@@ -358,6 +359,21 @@
   background: var(--panel);
   border: 1px solid var(--line);
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+}
+
+.color-modal-close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--text);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
 }
 
 .color-modal-card h2 {

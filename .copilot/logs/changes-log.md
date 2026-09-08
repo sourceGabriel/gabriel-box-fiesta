@@ -179,3 +179,9 @@ The project is currently between the room lifecycle phase and the actual host ga
 - Animations (all `prefers-reduced-motion`-guarded): host `zap-winner-pop` on the winning answer + `zap-foot-in` on reveal; controller `⚡ +N ⚡` cheer on roundResults when you scored + `zap-chosen-pop` on the picked vote.
 - 77 server + 7 ui tests, tsc + oxlint clean, 5-ws build green. Live smoke: full 3-round match to gameover, winner pop + sound toggle render, 0 game console errors.
 - **Zap! (game #3) COMPLETE** (Z1–Z5). §52 held: whole game = `shared/{models,games}/zap`, `server/src/games/zap/`, `host/src/games/zap/`, `mobile/src/games/zap/`, one `@party/ui` component, +1 line in each of 3 registries. Zero edits to `core/`/`ws-server`/shells/`shared/protocol`.
+
+## 2026-09-08 — UX: lobby avatar re-edit + cancelable UNO colour picker (branch `feature/quiplaxi`)
+- New `UPDATE_AVATAR { avatar }` (shared/protocol + server/protocol reusing `avatarSchema`); `Room.setAvatar` (gated to `accepting_players`); `ws-server` handler → `broadcastRoomState`. Platform message, like `SEND_REACTION`.
+- Mobile `WaitingScreen`: "✏️ Editar avatar" → inline `<AvatarEditor>` (Cancelar/Salvar) → `App.changeAvatar` persists locally + sends `UPDATE_AVATAR`.
+- Mobile `UnoControllerView`: wild cards pick colour BEFORE playing — "Jogar" opens a local popup with ✕ (cancel keeps the card selected, nothing sent); a colour sends `play_card { cardId, chosenColor }` in one shot. Server `awaiting_color_choice` modal kept as timeout/reconnect fallback. No engine change.
+- Tests: `room.test.ts` +1, `multiplayer.integration.test.ts` +1. **Server 77 → 79.** tsc + ui(7) + oxlint + 5-ws build green. Live smoke passed both flows.

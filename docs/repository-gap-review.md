@@ -61,6 +61,10 @@ Múltiplas salas, espectadores, contas, banco, cloud — fora de escopo do MVP.
 - "Jogar a carta recém-comprada" (`playDrawnCardId`) não exposto na UI mobile.
 - Seletor de interface de IP com múltiplas NICs (§39) — hoje auto-escolhe.
 
+## UX polish (2026-09-08, branch `feature/quiplaxi`)
+- **Reeditar avatar no lobby** — `UPDATE_AVATAR { avatar }` (msg de plataforma, como `SEND_REACTION`); `Room.setAvatar` só em `accepting_players`. `WaitingScreen` ganhou "✏️ Editar avatar" → `<AvatarEditor>` inline. Server 77 → 79 testes.
+- **Popup de cor do UNO cancelável** — coringa agora escolhe a cor ANTES de jogar: "Jogar" abre um popup local com ✕ (cancelar mantém a carta selecionada, nada é enviado); a cor manda `play_card { cardId, chosenColor }` de uma vez. Sem mudança no engine — o modal `awaiting_color_choice` do servidor vira rede de segurança (timeout/reconexão).
+
 ## Jogo #3 — Zap! (estilo Quiplash) — EM ANDAMENTO (branch `feature/quiplaxi`)
 Loop: `prompt → cada jogador escreve respostas no celular → TV mostra duelos 2-a-2 → sala vota duelo a duelo → placar → 3 rodadas (a 3ª = "Última Chance", 3× pontos) → final`. Mecânica: Quiplash real (duelos), **mín. 3 jogadores**, pareamento em círculo (`prompt_i → jogador_i + jogador_{i+1}`), 100/voto + bônus "ZAP!" (varre 100% dos votos). Referência de mecânica: `Jogos/rumpus/games/quiplash.js` (AGPL — reimplementar, não copiar). Depois: #4 Fibbage-like, #5 Trivia.
 - ✅ **Z1** — contrato `shared` types-only: `shared/src/models/zap.ts` + `shared/src/games/zap/events.ts` (`ZapPublicState`/`ZapPrivateState`/`ZapPhase`/`ZapDuel`/`ZapAction`/`ZapGameEvent`). Autores das respostas ocultos no estado público durante `voting`; eventos sem texto de resposta/voto.

@@ -39,6 +39,12 @@ function App() {
   const me = conn.roomPlayers.find((player) => player.id === conn.playerId);
   const myName = me?.name ?? (playerName.trim() || 'Você');
   const myAvatar = me?.avatar ?? avatar;
+
+  // Re-edit the avatar from the waiting screen (server accepts it only pre-game).
+  const changeAvatar = (next: AvatarSpec) => {
+    setAvatar(next);
+    conn.send('UPDATE_AVATAR', { avatar: next });
+  };
   const selectedGame = conn.catalog.find((game) => game.id === conn.selectedGameId);
   const GameView = conn.activeGameId ? CONTROLLER_GAMES[conn.activeGameId] : undefined;
 
@@ -67,6 +73,7 @@ function App() {
         playerId={conn.playerId}
         gameName={selectedGame?.name}
         gameTagline={selectedGame?.tagline}
+        onAvatarChange={changeAvatar}
       />
     );
   } else {

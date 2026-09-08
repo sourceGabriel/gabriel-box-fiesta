@@ -143,6 +143,54 @@ describe('multiplayer integration', () => {
     p1.close();
   });
 
+  it('UPDATE_AVATAR changes the avatar in the lobby and is rejected once the game started', async () => {
+    server = new PartyServer(0);
+    await server.start();
+    const roomCode = server.getRoomCode();
+    const port = server.getPort();
+
+    const a1 = { gender: 'male', skin: 'brown', hair: 'afro', hairColor: 'pink', eyes: 'purple', shirt: 'polo', hat: 'crown', bg: 'teal' } as const;
+    const a2 = { ...a1, hat: 'none', bg: 'rose' } as const;
+
+    const host = new WebSocket(`ws://127.0.0.1:${port}/ws`);
+    await new Promise<void>((resolve) => host.once('open', () => resolve()));
+    host.send(makeMessage('JOIN_ROOM', { roomCode, playerName: 'HOST', role: 'host' }));
+    await waitForMessage(host, 'ROOM_JOINED');
+
+    const p1 = new WebSocket(`ws://127.0.0.1:${port}/ws`);
+    await new Promise<void>((resolve) => p1.once('open', () => resolve()));
+    p1.send(makeMessage('JOIN_ROOM', { roomCode, playerName: 'Alice', role: 'player', avatar: a1 }));
+    await waitForMessage(p1, 'ROOM_JOINED');
+    const p2 = new WebSocket(`ws://127.0.0.1:${port}/ws`);
+    await new Promise<void>((resolve) => p2.once('open', () => resolve()));
+    p2.send(makeMessage('JOIN_ROOM', { roomCode, playerName: 'Bob', role: 'player' }));
+    await waitForMessage(p2, 'ROOM_JOINED');
+
+    p1.send(makeMessage('UPDATE_AVATAR', { avatar: a2 }));
+    const updated = await waitForMessageWhere(
+      host,
+      'ROOM_STATE',
+      (m) => m.payload.players.find((pl) => pl.name === 'Alice')?.avatar.hat === 'none',
+    );
+    expect(updated.payload.players.find((pl) => pl.name === 'Alice')?.avatar).toEqual(a2);
+
+    // A malformed avatar is rejected.
+    const badErr = waitForMessage(p1, 'ERROR');
+    p1.send(makeMessage('UPDATE_AVATAR', { avatar: { skin: 42 } }));
+    expect((await badErr).payload.code).toBe('BAD_REQUEST');
+
+    // Once the game is running, UPDATE_AVATAR is refused.
+    host.send(makeMessage('START_GAME', { gameId: 'uno' }));
+    await waitForMessage(host, 'GAME_STARTED');
+    const err = waitForMessage(p1, 'ERROR');
+    p1.send(makeMessage('UPDATE_AVATAR', { avatar: a1 }));
+    expect((await err).payload.code).toBe('GAME_IN_PROGRESS');
+
+    host.close();
+    p1.close();
+    p2.close();
+  });
+
   it('rejects a JOIN_ROOM whose avatar has the wrong shape', async () => {
     server = new PartyServer(0);
     await server.start();

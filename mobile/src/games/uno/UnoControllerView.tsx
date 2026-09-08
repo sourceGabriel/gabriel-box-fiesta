@@ -19,6 +19,8 @@ export function UnoControllerView({ publicState, privateState, playerId, connect
 
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [chosenColor, setChosenColor] = useState<'red' | 'yellow' | 'green' | 'blue'>('red');
+  /** Card id of a wild waiting for its colour, picked BEFORE it is played (cancelable). */
+  const [wildPendingId, setWildPendingId] = useState<string | null>(null);
 
   const myTurn = pub.currentPlayerId === playerId;
   const selectedCard = useMemo(
@@ -49,12 +51,27 @@ export function UnoControllerView({ publicState, privateState, playerId, connect
 
   const act = (action: Record<string, unknown>): void => send('GAME_ACTION', { action });
 
+  const isWild = (card: UnoCard | null): boolean =>
+    card?.type === 'wild' || card?.type === 'wild_draw_four';
+
   const playCard = (): void => {
     if (!selectedCard) {
       return;
     }
-    // Wild cards are played first; the server then asks for a colour (see the colour modal).
+    // For a wild, pick the colour first (in a cancelable popup) and send it with the play.
+    if (isWild(selectedCard)) {
+      setWildPendingId(selectedCard.id);
+      return;
+    }
     act({ type: 'play_card', cardId: selectedCard.id });
+    setSelectedCardId(null);
+  };
+  const playWildWithColor = (color: 'red' | 'yellow' | 'green' | 'blue'): void => {
+    if (!wildPendingId) {
+      return;
+    }
+    act({ type: 'play_card', cardId: wildPendingId, chosenColor: color });
+    setWildPendingId(null);
     setSelectedCardId(null);
   };
   const confirmColor = (): void => act({ type: 'choose_color', color: chosenColor });
@@ -204,6 +221,35 @@ export function UnoControllerView({ publicState, privateState, playerId, connect
             </div>
           </section>
         </>
+      ) : null}
+
+      {wildPendingId && myTurn && canAct ? (
+        <div className="color-modal" role="dialog" aria-modal="true" aria-label="Escolha a cor">
+          <div className="color-modal-card">
+            <button
+              type="button"
+              className="color-modal-close"
+              aria-label="Cancelar e escolher outra carta"
+              onClick={() => setWildPendingId(null)}
+            >
+              ✕
+            </button>
+            <h2>Escolha a cor</h2>
+            <div className="color-choice" role="group">
+              {(['red', 'yellow', 'green', 'blue'] as const).map((color) => (
+                <button
+                  key={color}
+                  type="button"
+                  className={`color-swatch swatch-${color}`}
+                  onClick={() => playWildWithColor(color)}
+                >
+                  {COLOR_PT[color]}
+                </button>
+              ))}
+            </div>
+            <p className="hint">Toque no ✕ para cancelar e escolher outra carta.</p>
+          </div>
+        </div>
       ) : null}
 
       {mustPickColor ? (

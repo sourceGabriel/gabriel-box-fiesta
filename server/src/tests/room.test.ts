@@ -68,4 +68,17 @@ describe('Room', () => {
     expect(withAvatar.avatar).toEqual(AVATAR);
     expect(without.avatar).toMatchObject({ skin: expect.any(String), hair: expect.any(String), hat: expect.any(String) });
   });
+
+  it('setAvatar updates a player in the lobby but is rejected once the game started', () => {
+    const room = new Room('ABCD');
+    const owner = room.joinPlayer('Alice', undefined, Date.now()).player;
+    room.joinPlayer('Bob', undefined, Date.now());
+
+    room.setAvatar(owner.id, AVATAR);
+    expect(room.getPlayers().find((p) => p.id === owner.id)?.avatar).toEqual(AVATAR);
+    expect(() => room.setAvatar('nope', AVATAR)).toThrow(/PLAYER_NOT_FOUND/);
+
+    room.startGame(owner.id, 'uno');
+    expect(() => room.setAvatar(owner.id, AVATAR)).toThrow(/GAME_IN_PROGRESS/);
+  });
 });

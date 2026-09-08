@@ -196,6 +196,30 @@ h2 {
   color: var(--accent);
 }
 
+.waiting-edit-avatar {
+  align-self: center;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 0.4rem 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.waiting-avatar-editor {
+  gap: 0.9rem;
+}
+
+.waiting-editor-actions {
+  display: flex;
+  gap: 0.6rem;
+}
+.waiting-editor-actions button {
+  flex: 1;
+}
+
 .dots span {
   animation: dot-bounce 1.2s infinite;
   display: inline-block;

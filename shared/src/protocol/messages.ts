@@ -13,6 +13,7 @@ export type ClientMessageType =
   | 'RESUME_GAME'
   | 'KICK_PLAYER'
   | 'SEND_REACTION'
+  | 'UPDATE_AVATAR'
   | 'PING';
 
 export type ServerMessageType =
@@ -56,6 +57,8 @@ export type ClientMessage =
   | Envelope<'KICK_PLAYER', { targetPlayerId: string }>
   /** Generic emoji reaction — the server rebroadcasts it to the room as REACTION. */
   | Envelope<'SEND_REACTION', { reaction: string }>
+  /** Change your avatar. Accepted only while the room is still `accepting_players` (no game running). */
+  | Envelope<'UPDATE_AVATAR', { avatar: AvatarSpec }>
   | Envelope<'PING', {}>;
 
 export type ServerMessage =
