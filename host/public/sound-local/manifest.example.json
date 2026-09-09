@@ -1,0 +1,16 @@
+{
+  "_comment": "Copy this file to manifest.json (same folder) and drop your audio clips (.mp3/.ogg/.wav) next to it. Values are filenames relative to /sound-local/, or absolute paths. Only the cues you fill override the bundled pack; the rest keep their CC0 fallback. This folder is gitignored — nothing here is committed.",
+
+  "meme.roundStart": "",
+  "meme.reveal": "",
+  "meme.correct": "",
+  "meme.loser": "",
+  "meme.win": "",
+  "meme.gameover": "",
+  "meme.timeout": "",
+  "meme.afk": "",
+  "meme.betrayal": "",
+  "meme.elimination": "",
+  "meme.fooled": "",
+  "meme.deadLobby": ""
+}

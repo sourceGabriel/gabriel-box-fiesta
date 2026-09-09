@@ -8,7 +8,7 @@ import type { SoundSpec } from '@party/ui';
 export function soundForEvent(event: EvoceGameEvent): SoundSpec | null {
   switch (event.type) {
     case 'round_started':
-      return 'turn';
+      return { cue: 'meme.roundStart', fallback: 'turn' };
     case 'joker_played':
       return { sample: 'stinger-zap' };
     case 'all_answers_in':
@@ -16,11 +16,11 @@ export function soundForEvent(event: EvoceGameEvent): SoundSpec | null {
     case 'voting_started':
       return { sample: 'card-fan' };
     case 'results_started':
-      return { sample: 'stinger-reveal' };
+      return { cue: 'meme.reveal', fallback: { sample: 'stinger-reveal' } };
     case 'round_finished':
       return { sample: 'stinger-round' };
     case 'game_finished':
-      return { sample: 'stinger-fanfare' };
+      return { cue: 'meme.gameover', fallback: { sample: 'stinger-fanfare' } };
     default:
       return null;
   }

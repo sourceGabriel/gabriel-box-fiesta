@@ -25,7 +25,7 @@ export function soundForEvent(event: UnoGameEvent): SoundSpec | null {
     case 'round_finished':
       return { sample: 'stinger-round' };
     case 'game_finished':
-      return { sample: 'stinger-fanfare' };
+      return { cue: 'meme.win', fallback: { sample: 'stinger-fanfare' } };
     default:
       return null;
   }

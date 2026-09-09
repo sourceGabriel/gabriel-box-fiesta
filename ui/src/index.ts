@@ -32,6 +32,7 @@ export {
 export {
   createSounds,
   getSounds,
+  registerCues,
   type Sounds,
   type SoundName,
   type SoundSpec,

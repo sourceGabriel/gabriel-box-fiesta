@@ -38,8 +38,19 @@ export type SoundName =
   | 'error'
   | 'select';
 
-/** How to play one sound: a synth name, or a sampled clip id with optional tuning. */
-export type SoundSpec = SoundName | { sample: SampleId; gain?: number; rate?: number };
+/**
+ * How to play one sound:
+ *  - a synth name (`'turn'`),
+ *  - a bundled CC0 clip (`{ sample: 'card-play' }`),
+ *  - a **local cue** (`{ cue: 'meme.loser', fallback: { sample: 'stinger-lose' } }`):
+ *    a named slot the owner can fill with their own clip via the host's
+ *    `sound-local/` drop-folder. If nothing is registered for the cue, `fallback`
+ *    plays (so the committed pack still works with an empty drop-folder).
+ */
+export type SoundSpec =
+  | SoundName
+  | { sample: SampleId; gain?: number; rate?: number }
+  | { cue: string; fallback?: SoundSpec; gain?: number; rate?: number };
 
 export interface Sounds {
   cardPlay(): void;
@@ -64,6 +75,24 @@ export interface Sounds {
 
 const STORAGE_KEY = 'party:sound';
 type Wave = OscillatorType;
+
+/**
+ * Local-cue registry: `cue name -> clip URL`. Filled at runtime by the host from
+ * its `sound-local/` drop-folder (see `registerCues`). Empty by default, so an
+ * untouched checkout just falls back to the bundled pack.
+ */
+const cueUrls = new Map<string, string>();
+
+/**
+ * Register owner-supplied local clips for named cues (`{ 'meme.loser': '/sound-local/aura.mp3' }`).
+ * Merges into whatever is already registered; a falsy URL clears that cue.
+ */
+export function registerCues(map: Record<string, string | undefined>): void {
+  for (const [cue, url] of Object.entries(map)) {
+    if (url) cueUrls.set(cue, url);
+    else cueUrls.delete(cue);
+  }
+}
 
 interface Blip {
   type?: Wave;
@@ -188,32 +217,37 @@ export function createSounds(injectedCtx?: AudioContext): Sounds {
   // --- sampled clips (bundled CC0 ogg, decoded once, cached) ---
   const bufferCache = new Map<string, Promise<AudioBuffer | null>>();
 
-  const loadSample = (id: SampleId): Promise<AudioBuffer | null> => {
-    let p = bufferCache.get(id);
+  const loadUrl = (cacheKey: string, url: () => Promise<string | undefined>): Promise<AudioBuffer | null> => {
+    let p = bufferCache.get(cacheKey);
     if (!p) {
       const c = ensure();
       p = !c
         ? Promise.resolve(null)
-        : sampleUrls()
-            .then((urls) => {
-              const url = urls[id];
-              if (!url) return null;
-              return fetch(url)
+        : url()
+            .then((u) => {
+              if (!u) return null;
+              return fetch(u)
                 .then((r) => r.arrayBuffer())
                 .then((buf) => c.decodeAudioData(buf));
             })
             .catch(() => null);
-      bufferCache.set(id, p);
+      bufferCache.set(cacheKey, p);
     }
     return p;
   };
 
-  const sample = (id: SampleId, opts?: { gain?: number; rate?: number }): void => {
+  const loadSample = (id: SampleId): Promise<AudioBuffer | null> =>
+    loadUrl(id, () => sampleUrls().then((urls) => urls[id]));
+
+  const playBuffer = (
+    load: Promise<AudioBuffer | null>,
+    opts?: { gain?: number; rate?: number },
+  ): void => {
     if (!enabled) return;
     const c = ensure();
     if (!c) return;
     if (c.state === 'suspended') void c.resume();
-    void loadSample(id).then((buf) => {
+    void load.then((buf) => {
       if (!buf || !enabled) return;
       const src = c.createBufferSource();
       src.buffer = buf;
@@ -224,6 +258,10 @@ export function createSounds(injectedCtx?: AudioContext): Sounds {
       g.connect(master ?? c.destination);
       src.start();
     });
+  };
+
+  const sample = (id: SampleId, opts?: { gain?: number; rate?: number }): void => {
+    playBuffer(loadSample(id), opts);
   };
 
   const sounds: Sounds = {
@@ -249,8 +287,20 @@ export function createSounds(injectedCtx?: AudioContext): Sounds {
     select: () => render([{ type: 'sine', freq: 1200, dur: 0.03, gain: 0.25 }]),
     sample,
     play: (spec) => {
-      if (typeof spec === 'string') sounds[spec]();
-      else sample(spec.sample, spec);
+      if (typeof spec === 'string') {
+        sounds[spec]();
+        return;
+      }
+      if ('cue' in spec) {
+        const url = cueUrls.get(spec.cue);
+        if (url) {
+          playBuffer(loadUrl(`cue:${spec.cue}:${url}`, () => Promise.resolve(url)), spec);
+        } else if (spec.fallback) {
+          sounds.play(spec.fallback);
+        }
+        return;
+      }
+      sample(spec.sample, spec);
     },
     unlock,
     isEnabled: () => enabled,

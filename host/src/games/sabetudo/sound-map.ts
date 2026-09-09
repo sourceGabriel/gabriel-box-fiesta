@@ -8,15 +8,15 @@ import type { SoundSpec } from '@party/ui';
 export function soundForEvent(event: SabeTudoGameEvent): SoundSpec | null {
   switch (event.type) {
     case 'question_started':
-      return 'turn';
+      return { cue: 'meme.roundStart', fallback: 'turn' };
     case 'all_answers_in':
       return { sample: 'ui-confirm' };
     case 'reveal_started':
-      return { sample: 'ui-question' };
+      return { cue: 'meme.reveal', fallback: { sample: 'ui-question' } };
     case 'round_finished':
       return { sample: 'stinger-round' };
     case 'game_finished':
-      return { sample: 'stinger-fanfare' };
+      return { cue: 'meme.gameover', fallback: { sample: 'stinger-fanfare' } };
     default:
       return null;
   }

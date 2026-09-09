@@ -20,3 +20,10 @@ server/data/
 # sound pack: only the curated/renamed output in ui/src/sound-assets/ is vendored
 # (re-populate from the Kenney packs with: python tools/build-sound-pack.py --import <dir>)
 /tools/sound-source/
+
+# owner's local meme-sound drop folder — private, never committed
+# (keep only the scaffolding: README, example manifest, .gitkeep)
+/host/public/sound-local/*
+!/host/public/sound-local/.gitkeep
+!/host/public/sound-local/README.md
+!/host/public/sound-local/manifest.example.json

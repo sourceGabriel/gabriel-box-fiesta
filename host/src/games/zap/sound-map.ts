@@ -9,17 +9,19 @@ import type { SoundSpec } from '@party/ui';
 export function soundForEvent(event: ZapGameEvent): SoundSpec | null {
   switch (event.type) {
     case 'round_started':
-      return 'turn';
+      return { cue: 'meme.roundStart', fallback: 'turn' };
     case 'all_answers_in':
       return { sample: 'ui-confirm' };
     case 'duel_started':
       return { sample: 'card-play' };
     case 'duel_revealed':
-      return event.zap ? { sample: 'stinger-zap' } : { sample: 'ui-open' };
+      return event.zap
+        ? { cue: 'meme.win', fallback: { sample: 'stinger-zap' } }
+        : { cue: 'meme.reveal', fallback: { sample: 'ui-open' } };
     case 'round_finished':
       return { sample: 'stinger-round' };
     case 'game_finished':
-      return { sample: 'stinger-fanfare' };
+      return { cue: 'meme.gameover', fallback: { sample: 'stinger-fanfare' } };
     default:
       return null;
   }

@@ -749,3 +749,49 @@ The lobby (the screen players stare at while waiting) now wears the selected gam
 ### Validation for the whole `feature/rodadas-e-cenas` branch
 - 144 server tests · 12 `@party/ui` tests · `tsc` + `oxlint` clean · 5-workspace build green.
 - Live: the match-length picker (8/12/16/20 for Sabe-Tudo) round-trips through `SET_MATCH_LENGTH` → `GAME_CATALOG`; the engine reads the chosen count; the lobby backdrop + accent render per game.
+
+## 2026-09-09 — local meme-sound layer + new attract screen (branch `feature/som-e-tela-inicial`)
+
+### Sound — the owner's local override layer
+- `@party/ui`: `SoundSpec` gains a `{ cue, fallback? }` variant and a `registerCues(map)`
+  function that fills a runtime `cue name → clip URL` registry. `play({ cue })` plays the
+  registered clip if there is one, otherwise the `fallback` — so a fresh checkout sounds
+  exactly as before. `sound.ts` internals refactored so sampled clips and cue clips share
+  one decode/cache/gain path. `sound.test.ts` +1 (13 `@party/ui` tests).
+- Host: `shell/localSounds.ts` fetches `/sound-local/manifest.json` once at startup and
+  registers it. `host/public/sound-local/` is a **gitignored drop folder** — the owner drops
+  their own clips there and maps them to cues in `manifest.json`. Only the scaffolding
+  (`README.md`, `manifest.example.json`, `.gitkeep`) is committed.
+- The 7 per-game `sound-map.ts` files now emit `{ cue: 'meme.*', fallback: <previous sound> }`
+  at the high-value moments: round / question start, answer & vote reveals, match win
+  (incl. a Zap! sweep), the game-over screen, a Coup challenge, a Coup elimination. Cues
+  `meme.loser / correct / timeout / afk / fooled / deadLobby` are listed in the example
+  manifest but not triggered yet.
+- Why: the §47 asset rule is fully lifted, but rather than commit third-party rips this keeps
+  the repo clean and lets the owner attach whatever clips they want per machine.
+
+### Attract screen — owner illustration + live CRT overlay
+- `tools/build-attract-bg.py` (Pillow, dev-only) bakes the committed
+  `host/src/shell/attract-bg.webp` (~260 KB) + a `CREDITS.md` from the owner's render in
+  `gabriel-source/` (gitignored). The current art is a portrait (3:4) game-night room.
+- `AttractScreen.tsx` is rebuilt around the art: it fills the viewport with `background-size:
+  cover` — a tall screen shows nearly all of it, a wide screen zooms toward the centre, and
+  no edge is ever exposed. The room code, connected-phone count, QR + join URL and the yellow
+  "pressione qualquer tecla" banner are drawn over the blank CRT; the overlay recomputes that
+  rect from the cover fit on every resize, so it always sits on the TV. Moving the mouse
+  drifts the whole scene (a bounded translate on a 6%-bleed layer) for a parallax feel.
+  CRT glass treatment (vignette, scanlines, flicker) + a pulsing CTA, all disabled under
+  `prefers-reduced-motion` (which also kills the parallax). Wordmark + tagline are part of
+  the art, so `BrandMark` is no longer used here. Room code + QR now appear on the attract
+  screen (were lobby-only), so phones can join before the host picks a game.
+- No protocol / core / engine / shell-flow changes. 144 server tests, 13 `@party/ui` tests,
+  `tsc` + `oxlint` clean, 5-workspace build green. Verified live on the host at portrait,
+  16:9 and ultrawide.
+
+### Follow-ups (same branch)
+- `tools/fetch-local-sounds.mjs` — dev convenience for the owner: pulls a curated set of
+  Myinstants clips into the gitignored `host/public/sound-local/` and writes `manifest.json`
+  (6 wired cues + extras). Downloads are never committed.
+- Attract screen switched from an aspect-locked letterboxed stage to `cover`-fill + a
+  cover-fit-computed CRT overlay + mouse parallax (owner supplied a new portrait illustration);
+  compacted the on-screen block; removed a broken phone glyph.

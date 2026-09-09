@@ -44,13 +44,19 @@ npm run -w host lint      # oxlint
     events, reactions, connected, send, … }`. `publicState`/`events` são opacos
     aqui; `reactions` é a fila de emoji (auto-expira em 4s). `players` inclui
     `avatar` (do `ROOM_STATE`).
-  - `AttractScreen.tsx` — marca "Box Fiesta" + código da sala; avança só manual
-    (tecla/clique). Sem QR.
+  - `AttractScreen.tsx` — ilustração `attract-bg.webp` (do dono, via
+    `tools/build-attract-bg.py`) preenche a viewport com `cover` (retrato → quase
+    inteira, wide → zoom no centro, sem borda exposta); código da sala + contador
+    + QR + faixa "pressione qualquer tecla" são overlay React sobre a TV apagada,
+    com o retângulo recalculado da conta do `cover` (`GLASS`) a cada resize.
+    Parallax no `mousemove`, FX de CRT, guarda `prefers-reduced-motion`. Avança só
+    manual (tecla/clique).
   - `CatalogScreen.tsx` — grade do `GAME_CATALOG` + arte de capa por jogo
     (`covers` vem do app, não do fio); navegação setas/Enter/Esc + clique. Sem QR.
   - `LobbyScreen.tsx` — QR grande + código + jogadores (roster `@party/ui` com
-    mini-avatar por jogador) + "Iniciar {jogo}" + "Trocar de jogo". É a única
-    tela com QR.
+    mini-avatar por jogador) + "Iniciar {jogo}" + "Trocar de jogo".
+  - `localSounds.ts` — lê `public/sound-local/manifest.json` (pasta gitignored)
+    no boot e registra os clipes-meme do dono via `registerCues` do `@party/ui`.
   - `messages.ts`, `shell.css`.
 - `src/games/{types,registry}.ts` — `HostGameViewProps` (inclui `reactions`),
   `HostGameEntry` e `HOST_GAMES = { uno: {…}, coup: {…} }` (`{ View, Cover }`).

@@ -16,23 +16,23 @@ export function soundForEvent(event: CoupGameEvent): SoundSpec | null {
     case 'coins_transferred':
       return { sample: 'chip-lay' };
     case 'challenge_made':
-      return { sample: 'chip-clash' };
+      return { cue: 'meme.betrayal', fallback: { sample: 'chip-clash' } };
     case 'block_declared':
       return { sample: 'ui-toggle' };
     case 'challenge_resolved':
     case 'block_succeeded':
       return { sample: 'ui-open' };
     case 'influence_revealed':
-      return { sample: 'stinger-reveal' };
+      return { cue: 'meme.reveal', fallback: { sample: 'stinger-reveal' } };
     case 'card_replaced':
     case 'exchange_started':
       return { sample: 'card-fan' };
     case 'action_cancelled':
       return { sample: 'ui-back' };
     case 'player_eliminated':
-      return { sample: 'stinger-lose' };
+      return { cue: 'meme.elimination', fallback: { sample: 'stinger-lose' } };
     case 'game_finished':
-      return { sample: 'stinger-fanfare' };
+      return { cue: 'meme.win', fallback: { sample: 'stinger-fanfare' } };
     default:
       return null;
   }

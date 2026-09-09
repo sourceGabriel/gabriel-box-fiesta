@@ -66,6 +66,8 @@ function App() {
         roomCode={conn.roomCode}
         connected={conn.connected}
         onlineCount={onlineCount}
+        joinUrl={conn.joinUrl}
+        joinQrDataUrl={conn.joinQrDataUrl}
         onStart={() => setFlow('catalog')}
       />
     );

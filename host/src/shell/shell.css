@@ -191,61 +191,168 @@ ul, ol {
 }
 
 /* ---------- Attract ---------- */
-.attract-screen {
-  align-items: center;
-  justify-content: center;
+/* An owner-painted room (attract-bg.webp, portrait) fills the viewport with
+   `cover`: a tall screen shows nearly all of it, a wide screen zooms toward the
+   centre, never an exposed edge. The live room code / phone count / QR / CTA sit
+   over the blank CRT — AttractScreen.tsx recomputes that rect from the cover fit
+   on every resize. The mouse drifts the whole scene (`--px/--py` on .attract-bleed). */
+.attract {
+  position: relative;
+  width: 100vw;
+  height: 100dvh;
+  overflow: hidden;
   cursor: pointer;
+  background: #0a0710;
+  color: #fff;
+}
+
+.attract-bleed {
+  position: absolute;
+  left: calc(-1 * var(--bleed));
+  top: calc(-1 * var(--bleed));
+  width: calc(100% + 2 * var(--bleed));
+  height: calc(100% + 2 * var(--bleed));
+  transform: translate3d(var(--px, 0px), var(--py, 0px), 0);
+  transition: transform 220ms ease-out;
+  will-change: transform;
+}
+
+.attract-bg {
+  position: absolute;
+  inset: 0;
+  background-image: var(--attract-bg);
+  background-size: cover;
+  background-position: center;
+}
+
+.attract-crt {
+  position: absolute;
+  display: grid;
+  place-items: center;
+}
+
+.attract-crt-glass {
+  position: absolute;
+  inset: 0;
+  border-radius: 9% / 15%;
+  background:
+    radial-gradient(120% 120% at 50% 0%, rgba(150, 210, 195, 0.12), transparent 62%),
+    rgba(4, 10, 12, 0.5);
+  box-shadow: inset 0 0 6vmin rgba(0, 0, 0, 0.78);
+  mix-blend-mode: multiply;
+}
+
+.attract-crt-glass::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.18) 0 1px, transparent 1px 3px);
+  animation: attract-flicker 5s steps(1) infinite;
+}
+
+@keyframes attract-flicker {
+  0%, 94%, 100% { opacity: 0.5; }
+  95% { opacity: 0.32; }
+  97% { opacity: 0.72; }
+}
+
+.attract-crt-content {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  justify-items: center;
+  gap: 0.28em;
+  padding: 2% 4%;
   text-align: center;
+  font-size: clamp(8px, 1.75vmin, 23px);
+  text-shadow: 0 0 1.2vmin rgba(120, 240, 210, 0.3), 0 2px 4px rgba(0, 0, 0, 0.6);
 }
 
-.attract-body {
-  display: grid;
-  justify-items: center;
-  gap: clamp(0.75rem, 2.5vmin, 1.75rem);
-}
-
-.attract-tag {
-  color: var(--muted);
-  font-size: clamp(1rem, 2.2vmin, 1.6rem);
-  letter-spacing: 0.02em;
-}
-
-.attract-room {
-  display: grid;
-  justify-items: center;
-  gap: 0.2rem;
-  margin-top: clamp(0.5rem, 2vmin, 1.5rem);
-}
-
-.attract-room-label {
+.attract-sala {
   text-transform: uppercase;
-  letter-spacing: 0.2em;
-  font-size: 0.8rem;
-  color: var(--muted);
+  letter-spacing: 0.42em;
+  text-indent: 0.42em;
+  font-size: 0.72em;
+  color: #d7e9e4;
 }
 
-.attract-room-code {
-  font-size: clamp(2.4rem, 7vmin, 5rem);
+.attract-code {
+  font-size: 2.8em;
   font-weight: 900;
-  letter-spacing: 0.28em;
-  text-indent: 0.28em;
+  letter-spacing: 0.12em;
+  text-indent: 0.12em;
+  line-height: 1;
+  padding: 0.1em 0.28em;
+  border-radius: 0.14em;
+  background: rgba(244, 247, 245, 0.95);
+  color: #10141a;
+  text-shadow: none;
 }
 
 .attract-online {
-  color: #cbd5e1;
-  font-size: clamp(0.9rem, 1.8vmin, 1.25rem);
+  font-size: 0.82em;
+  color: #e6f2ee;
 }
 
-.attract-hint {
-  margin-top: clamp(0.5rem, 3vmin, 2rem);
-  color: var(--muted);
-  font-size: clamp(0.85rem, 1.6vmin, 1.1rem);
-  animation: attract-pulse 2s ease-in-out infinite;
+.attract-join {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3em;
+  margin-top: 0.15em;
 }
 
-@keyframes attract-pulse {
-  0%, 100% { opacity: 0.55; }
-  50% { opacity: 1; }
+.attract-join img,
+.attract-qr-skeleton {
+  width: 2.6em;
+  height: 2.6em;
+  border-radius: 0.14em;
+  background: #fff;
+  padding: 0.1em;
+}
+
+.attract-qr-skeleton { opacity: 0.3; }
+
+.attract-join-url {
+  max-width: 100%;
+  font-size: 0.62em;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  color: #ff2f86;
+  background: rgba(255, 255, 255, 0.94);
+  padding: 0.16em 0.5em;
+  border-radius: 0.18em;
+  text-shadow: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attract-cta {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 6%);
+  transform: translateX(-50%) rotate(-0.8deg);
+  display: grid;
+  justify-items: center;
+  gap: 0.05em;
+  padding: 0.5em 1.4em;
+  background: #f9c81f;
+  color: #1a1205;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: clamp(11px, 1.7vmin, 20px);
+  border-radius: 0.28em;
+  box-shadow: 0 0.6vmin 2.4vmin rgba(0, 0, 0, 0.55);
+  animation: attract-cta-pulse 2s ease-in-out infinite;
+  white-space: nowrap;
+}
+
+@keyframes attract-cta-pulse {
+  0%, 100% { transform: translateX(-50%) rotate(-0.8deg) scale(1); }
+  50% { transform: translateX(-50%) rotate(-0.8deg) scale(1.035); }
 }
 
 /* ---------- Catalog (coverflow) ---------- */
@@ -531,7 +638,9 @@ ul, ol {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .attract-hint { animation: none; }
+  .attract-bleed { transition: none; }
+  .attract-crt-glass::after,
+  .attract-cta { animation: none; }
   .cf-card { transition: opacity 0.2s ease; }
   .cf-card.is-center .cf-frame { animation: none; }
   .cf-hero { animation: none; }

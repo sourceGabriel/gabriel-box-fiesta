@@ -318,3 +318,25 @@ User report: É Você! drawing → clicking undo/submit a big drawing → `Range
 - `LobbyScreen` renders the selected game's `Cover` SVG blown-up + blurred + faded behind a now-semi-transparent (`backdrop-filter`) lobby card, with a radial wash in the game's personality accent (`--game-accent`). `App` passes `covers` + `personalities`. Reduced-motion drops the scale. No new assets.
 - In-game backdrops deferred (per-host-view layout care needed).
 - Branch `feature/rodadas-e-cenas` = 3 commits: configurable match length, between-rounds scoreboard scene, per-game lobby backdrop. 144 server / 12 ui tests, tsc+oxlint+build green. Ready to merge.
+
+## 2026-09-09 — local meme-sound layer + new attract screen (branch `feature/som-e-tela-inicial`, off main @ d576602)
+
+### Sound: owner's local override layer
+- `@party/ui` `SoundSpec` gains `{ cue: string; fallback?: SoundSpec }`; `registerCues(map)` fills a runtime `cue -> URL` registry. `play({cue})` uses the registered clip, else `fallback` (so an empty checkout is unchanged). `sound.ts` refactor: `loadUrl(key, resolver)` + `playBuffer()` shared by `sample()` and cues. `sound.test.ts` +1 (13 ui tests).
+- Host `shell/localSounds.ts` fetches `/sound-local/manifest.json` once at boot (`main.tsx`) and registers it. `host/public/sound-local/` = gitignored drop folder (`.gitkeep` + `README.md` + `manifest.example.json` committed; clips + `manifest.json` ignored). `.gitignore` updated.
+- 7 `host/src/games/<id>/sound-map.ts` now return `{ cue: 'meme.*', fallback: <old spec> }` at: round/question start (`meme.roundStart`), reveal (`meme.reveal`), match win (`meme.win` — UNO/Coup + Zap! sweep), game over (`meme.gameover`), Coup challenge (`meme.betrayal`), Coup elimination (`meme.elimination`). Reserved (listed, not wired): loser/correct/timeout/afk/fooled/deadLobby.
+
+### Attract screen: owner AI art + live CRT overlay + parallax
+- `tools/build-attract-bg.py` (Pillow, dev-only) bakes `host/src/shell/attract-bg.webp` (2000px cap, q82, ~260KB) + `attract-bg.CREDITS.md` from a PNG in `gabriel-source/` (gitignored). Current art: `home.png`, a portrait (1086×1448) game-night room.
+- `AttractScreen.tsx` rewritten: `background-size: cover` fills the viewport (portrait → nearly whole image, wide → zoom to centre, never an exposed edge). Room code / phone count / QR + join URL / yellow "pressione qualquer tecla" banner overlay the blank CRT — `AttractScreen` recomputes that rect from the object-fit-cover math (`GLASS` normalized rect × art size) on every resize so it tracks the TV. `onMouseMove` drifts a 6%-bleed layer (`--px/--py`, bounded < bleed, 220ms ease-out) for parallax. CRT glass FX (vignette/scanlines/flicker) + CTA pulse, `prefers-reduced-motion` kills FX + parallax. `BrandMark`/tagline dropped (in the art). `App` passes `joinUrl`/`joinQrDataUrl` (was lobby-only).
+- No wire/protocol/core/engine changes. 144 server / 13 ui tests, tsc+oxlint, 5-ws build green. Live-verified: portrait / 16:9 / ultrawide, overlay stays on the TV, parallax bounded.
+
+### follow-ups (same branch)
+- Attract overlay was misaligned on wide/fullscreen — reworked to `cover`-fill +
+  cover-fit-computed CRT rect + mouse parallax after the owner supplied a portrait
+  illustration (`home.png`); compacted the block; dropped the broken 📱 glyph.
+- `tools/fetch-local-sounds.mjs` (Node, no deps) — owner convenience: scrapes the
+  curated Myinstants pages for their real `/media/sounds/*.mp3`, downloads into the
+  gitignored `host/public/sound-local/` and writes `manifest.json` (6 wired cues +
+  15 unmapped extras). Run + verified: 21 clips, host serves `/sound-local/*`,
+  `play({cue})` fetches the owner clip. Nothing downloaded is committed.

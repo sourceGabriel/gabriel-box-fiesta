@@ -17,7 +17,7 @@ Criado na Fase C para acabar com o CSS/áudio duplicado entre os dois apps.
 | `src/avatar-assets/` | **gerado** por `tools/build-avatars.py` (não editar): 69 PNGs (~35 KB) — camadas pixel LPC recortadas em retrato + sprites de cabelo na rampa base + `palettes.ts` (rampas de cabelo pro recolor em runtime) + `index.ts` (mapas url tipados) + `CREDITS.md`. |
 | `src/components/Avatar.tsx` | paperdoll pixel num `<canvas>` 46×46: fundo → cabelo-trás → corpo+cabeça → olhos → camisa → cabelo-frente → chapéu. Cabelo recolorido em runtime (palette-swap) a partir da rampa base LPC; caches module-wide de imagem + canvas recolorido; `image-rendering: pixelated`. |
 | `src/components/AvatarEditor.tsx` | editor controlado: preview + "🎲 Surpresa" + uma linha de picker por atributo. |
-| `src/sound.ts` | Web Audio sintetizado, sem arquivos: `getSounds()` (singleton) + `createSounds(ctx?)` (injetável em teste). Sons `cardPlay`/`draw`/`turn`/`special`/`uno`/`win`/`error`/`select`. Gesture-unlock; mute em `localStorage['party:sound']`; fallback silencioso. |
+| `src/sound.ts` | Synth Web Audio + pack de samples CC0 (`./sound-assets/`, lazy). `getSounds()` (singleton) / `createSounds(ctx?)`. `.play(spec)` onde `spec` = nome synth · `{ sample }` · `{ cue, fallback? }`. `registerCues(map)` preenche o registro runtime `cue→URL` (o host o carrega do drop-folder local). Gesture-unlock; mute em `localStorage['party:sound']`. |
 | `src/uno-cards.ts` | mapa `carta → PNG` do UNO (`@party/ui/uno-cards`). Os crops ficam em `uno_card_sheet_crops/` na raiz do repo. |
 | `src/assets.d.ts` | declaração ambiente para `import '*.png'` (o tsconfig do `ui` não tem `vite/client`). |
 
