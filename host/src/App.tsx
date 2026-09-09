@@ -100,6 +100,8 @@ function App() {
       selectedGameId={conn.selectedGameId}
       contentTier={conn.contentTier}
       matchLengths={conn.matchLengths}
+      covers={covers}
+      personalities={personalities}
       onStart={() => conn.send('START_GAME', {})}
       onChangeGame={() => setFlow('catalog')}
       onSetContentTier={(tier) => conn.send('SET_CONTENT_TIER', { tier })}

@@ -738,3 +738,14 @@ The host can now dial how many rounds / questions a game runs, in the lobby.
 - `@party/ui` `<RoundScoreboard>` — a big animated leaderboard for the host TV: ranked rows (medals for the top 3), score bars that scale to the leader, a "+N this round" chip that pops in, streak flames, and the `roundTaunt` line underneath. Staggered row entrance, `prefers-reduced-motion` aware. `.ui-scoreboard*` styles in `components.css`.
 - Wired into the results/reveal phase of Sabe-Tudo, Zap!, FDP, Lorota!, É Você! (replaces the plain taunt line added earlier). Title reads "Rodada X de Y" (or "Última Chance" / "Final FDP" / "Lorota Final" on the last round).
 - `tsc` + `oxlint` + build green; 144 server / 12 ui tests.
+
+## 2026-09-09 — per-game lobby backdrop (branch `feature/rodadas-e-cenas`)
+The lobby (the screen players stare at while waiting) now wears the selected game's art:
+- The game's cover SVG is blown up, blurred and faded behind the lobby card; a radial wash in the game's personality accent sits over it; the card goes semi-transparent with a `backdrop-filter` blur so the art reads through the edges.
+- `LobbyScreen` gets `covers` + `personalities` from `App`; `--game-accent` drives the tint. `prefers-reduced-motion` drops the scale.
+- No new assets — reuses the coverflow `Cover` components, tying the lobby to the catalog look.
+- **In-game backdrops are a follow-up** (each host view would need per-layout care); this ships the lobby, which is the highest-dwell screen.
+
+### Validation for the whole `feature/rodadas-e-cenas` branch
+- 144 server tests · 12 `@party/ui` tests · `tsc` + `oxlint` clean · 5-workspace build green.
+- Live: the match-length picker (8/12/16/20 for Sabe-Tudo) round-trips through `SET_MATCH_LENGTH` → `GAME_CATALOG`; the engine reads the chosen count; the lobby backdrop + accent render per game.

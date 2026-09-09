@@ -313,3 +313,8 @@ User report: É Você! drawing → clicking undo/submit a big drawing → `Range
 - `@party/ui` `<RoundScoreboard>` (+ `ScoreRow` type): big animated host leaderboard — ranked rows w/ medals, score bars scaled to leader, "+N" delta pop, streak flames, `roundTaunt` underneath, staggered entrance, reduced-motion guard. `.ui-scoreboard*` CSS.
 - Wired into results/reveal of Sabe-Tudo, Zap!, FDP, Lorota!, É Você! (replaced the standalone taunt `<p>`). Title = "Rodada X de Y" / "Última Chance" / "Final FDP" / "Lorota Final".
 - tsc+oxlint+build green. Needs a live smoke through a full round (component is JSX+CSS, unit path covered by roundTaunt tests).
+
+## 2026-09-09 — per-game lobby backdrop (branch `feature/rodadas-e-cenas`)
+- `LobbyScreen` renders the selected game's `Cover` SVG blown-up + blurred + faded behind a now-semi-transparent (`backdrop-filter`) lobby card, with a radial wash in the game's personality accent (`--game-accent`). `App` passes `covers` + `personalities`. Reduced-motion drops the scale. No new assets.
+- In-game backdrops deferred (per-host-view layout care needed).
+- Branch `feature/rodadas-e-cenas` = 3 commits: configurable match length, between-rounds scoreboard scene, per-game lobby backdrop. 144 server / 12 ui tests, tsc+oxlint+build green. Ready to merge.

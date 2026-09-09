@@ -1,5 +1,7 @@
+import type { CSSProperties, FC } from 'react';
 import type { ContentTier, GameMeta } from '@party/shared';
 import { BrandMark, Button, PlayerRoster, QrPanel } from '@party/ui';
+import type { GamePersonality } from '../games/types';
 import type { ShellPlayer } from './useRoomConnection';
 
 /** Games whose prompt/question bank has a `leve`/`pesado` split. */
@@ -17,6 +19,9 @@ interface LobbyScreenProps {
   contentTier: ContentTier;
   /** gameId → chosen match length (rounds/questions), from GAME_CATALOG. */
   matchLengths: Record<string, number>;
+  /** id → cover art component + personality, for the lobby backdrop + accent tint. */
+  covers: Record<string, FC>;
+  personalities: Record<string, GamePersonality>;
   onStart: () => void;
   /** Back to the game catalog. */
   onChangeGame: () => void;
@@ -35,6 +40,8 @@ export function LobbyScreen({
   selectedGameId,
   contentTier,
   matchLengths,
+  covers,
+  personalities,
   onStart,
   onChangeGame,
   onSetContentTier,
@@ -49,9 +56,16 @@ export function LobbyScreen({
   const lengthOpts = selected?.lengthOptions;
   const currentLength =
     (selected && matchLengths[selected.id]) ?? lengthOpts?.default ?? 0;
+  const Cover = selected ? covers[selected.id] : undefined;
+  const accent = (selected && personalities[selected.id]?.accent) || 'var(--accent)';
 
   return (
-    <main className="host-shell host-lobby">
+    <main className="host-shell host-lobby" style={{ '--game-accent': accent } as unknown as CSSProperties}>
+      {Cover ? (
+        <div className="lobby-backdrop" aria-hidden="true">
+          <Cover />
+        </div>
+      ) : null}
       <div className="lobby-card">
         <div className="lobby-title">
           <BrandMark text={selected?.name ?? 'Jogo'} size="xl" />
