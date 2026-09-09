@@ -75,6 +75,21 @@
   font-size: clamp(1.6rem, 4vmin, 2.6rem);
   opacity: 0.85;
 }
+.dil-trolley { display: inline-block; }
+.dil-fork.is-crash-left .dil-trolley { animation: dil-crash-left 0.9s ease-in forwards; }
+.dil-fork.is-crash-right .dil-trolley { animation: dil-crash-right 0.9s ease-in forwards; }
+@keyframes dil-crash-left {
+  0% { transform: none; }
+  65% { transform: translateX(-4.5vw) rotate(-10deg) scale(1.1); }
+  78% { transform: translateX(-4vw) rotate(6deg); }
+  100% { transform: translateX(-4.2vw) rotate(-3deg); }
+}
+@keyframes dil-crash-right {
+  0% { transform: none; }
+  65% { transform: translateX(4.5vw) rotate(10deg) scale(1.1); }
+  78% { transform: translateX(4vw) rotate(-6deg); }
+  100% { transform: translateX(4.2vw) rotate(3deg); }
+}
 
 .dil-track {
   border: 2px solid var(--line);
@@ -270,6 +285,6 @@
 .dil-reaction-who { font-size: 0.75rem; color: var(--muted); }
 
 @media (prefers-reduced-motion: reduce) {
-  .dil-card, .dil-reaction-bubble { animation: none; }
+  .dil-card, .dil-reaction-bubble, .dil-fork .dil-trolley { animation: none; }
   .dil-track { transition: none; }
 }

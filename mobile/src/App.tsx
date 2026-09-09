@@ -11,9 +11,16 @@ import './shell/shell.css';
 const AVATAR_STORAGE_KEY = 'party:avatar';
 const LEGENDS_STORAGE_KEY = 'party:legends';
 
+/**
+ * The hidden "Lendas" row unlock is scoped to the browser SESSION, not kept
+ * forever: an easter egg that stays visible to whoever next picks up the phone
+ * is surprising. It survives reloads / reconnects within one game night and
+ * resets when the tab is closed. Any stale permanent unlock is cleared on load.
+ */
 const loadLegendsUnlocked = (): boolean => {
   try {
-    return localStorage.getItem(LEGENDS_STORAGE_KEY) === '1';
+    localStorage.removeItem(LEGENDS_STORAGE_KEY);
+    return sessionStorage.getItem(LEGENDS_STORAGE_KEY) === '1';
   } catch {
     return false;
   }
@@ -52,7 +59,7 @@ function App() {
     if (legendsUnlocked || !isGabsintoName(playerName)) return;
     setLegendsUnlocked(true);
     try {
-      localStorage.setItem(LEGENDS_STORAGE_KEY, '1');
+      sessionStorage.setItem(LEGENDS_STORAGE_KEY, '1');
     } catch {
       // ignore storage errors
     }

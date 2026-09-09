@@ -876,3 +876,23 @@ The lobby (the screen players stare at while waiting) now wears the selected gam
 ### Why
 - Next game on the roadmap after É Você!. Same §52 mould as the 7 prior games; the one
   new idea (teams) lives entirely inside the game module.
+
+## 2026-09-09 — polish + repo presentation (branch `feature/dilema-melhorias`, off `feature/dilema`)
+### Added
+- **`README.md` rewritten** for GitHub — badge row, centred header, the 8-game catalogue
+  table, quick start, an ASCII component diagram, the "add a game = a folder per layer +
+  one registry line" story, a stack table, quality commands. A top-of-file comment points
+  at the knobs to personalise (badges, accent colour, per-game emoji). No third-party
+  product names.
+- **`LICENSE`** — the ISC text `package.json` already declared.
+- **`CONTRIBUTING.md`** — environment, the pre-PR check list, the project principles, the
+  "add a game" pointer.
+### Changed
+- **Dilema nos Trilhos**: the trolley slides into the doomed track on `roundResults`
+  (`dil-crash-left` / `dil-crash-right`, `prefers-reduced-motion`-guarded).
+- **Hidden "Lendas" avatar row** — the unlock now lives in `sessionStorage`, not
+  `localStorage`, and any old permanent unlock is cleared on load. The easter-egg row no
+  longer stays visible to whoever next picks up that phone; it still survives reloads and
+  reconnects within one session. (`mobile/src/App.tsx`.)
+### Unchanged
+- 164 server tests, `tsc` + `oxlint` clean, 5-workspace build green.
