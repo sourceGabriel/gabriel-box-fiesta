@@ -13,10 +13,11 @@
 }
 
 /* ---------- shared panel ---------- */
-.join-panel,
+/* Frosted so the owner background illustration reads softly behind them. */
 .waiting-panel,
 .players-panel {
-  background: var(--panel);
+  background: color-mix(in srgb, var(--panel) 86%, transparent);
+  backdrop-filter: blur(16px) saturate(1.15);
   border: 1px solid var(--line);
   border-radius: 16px;
   padding: 1rem;
@@ -86,20 +87,57 @@ h2 {
 }
 
 /* ---------- join screen ---------- */
-.join-panel {
-  padding: 1.25rem 1.1rem;
-}
-
-.join-hero {
+/* Deliberately not a card — the owner background illustration breathes through;
+   only the fields + the avatar stage carry a surface. Order: name, avatar, then
+   the room code + "Entrar" together in the sticky footer. */
+.join {
   display: grid;
-  gap: 0.3rem;
-  justify-items: center;
-  margin-bottom: 0.2rem;
+  gap: 1.15rem;
+  padding: 0.8rem 0.15rem 1.5rem;
 }
 
-.join-hero p {
-  color: var(--muted);
-  font-size: 0.92rem;
+/* labels that sit over the illustration get a chip so they read
+   (the avatar section has its own frosted stage) */
+.join > .field:not(.join-avatar) > .field-label,
+.join-cta-bar .field-label {
+  justify-self: start;
+  background: rgba(9, 12, 18, 0.66);
+  backdrop-filter: blur(6px);
+  padding: 0.28em 0.7em;
+  border-radius: 7px;
+  color: #cfd8e2;
+}
+
+/* the avatar section gets a frosted stage so the big preview reads as the star */
+.join-avatar {
+  background: color-mix(in srgb, var(--panel) 82%, transparent);
+  backdrop-filter: blur(14px) saturate(1.1);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 1rem 0.9rem;
+}
+
+/* sticky footer: room code + the primary CTA, thumb-friendly + always reachable */
+.join-cta-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 15;
+  display: grid;
+  gap: 0.7rem;
+  /* sit at the bottom when the page is short, stick while scrolling when it's tall */
+  margin: auto -0.85rem calc(-0.85rem - env(safe-area-inset-bottom));
+  padding: 0.85rem 0.85rem calc(0.85rem + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, rgba(11, 15, 23, 0) 0%, #0b0f17 26%);
+  backdrop-filter: blur(10px);
+}
+.join-code {
+  gap: 0.3rem;
+}
+.join-cta {
+  width: 100%;
+  font-size: 1.05rem;
+  padding-block: 0.95rem;
+  border-radius: 14px;
 }
 
 .field {
@@ -139,8 +177,7 @@ h2 {
   text-indent: 0.35em;
 }
 
-/* The join CTA and the colour-modal confirm are full-width @party/ui buttons. */
-.join-submit,
+/* The colour-modal confirm is a full-width @party/ui button. */
 .color-confirm {
   width: 100%;
   padding-block: 0.95rem;
@@ -171,13 +208,6 @@ h2 {
 .waiting-avatar {
   border-radius: 18px;
   box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.14), 0 10px 26px rgba(0, 0, 0, 0.3);
-}
-
-.avatar-credit {
-  font-size: 0.62rem;
-  color: var(--muted);
-  text-align: center;
-  opacity: 0.75;
 }
 
 .waiting-panel .you-are {

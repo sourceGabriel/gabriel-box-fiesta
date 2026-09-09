@@ -42,6 +42,7 @@ SRC_DIR = ROOT / "gabriel-source"
 QUALITY = 82
 MAX_W = 2000  # full-bleed backdrops
 COVER_MAX_W = 1000  # coverflow thumbnails render small
+MOBILE_MAX_W = 720  # phone background — every controller downloads it
 
 # game id -> (backgrounds/ source for lobby art, thumbs/ source for the cover)
 GAMES: dict[str, tuple[str, str]] = {
@@ -58,6 +59,7 @@ GAMES: dict[str, tuple[str, str]] = {
 # key -> (source path relative to gabriel-source/, output .webp relative to ROOT)
 TARGETS: dict[str, tuple[str, str]] = {
     "catalog": ("bg-catalog-room.png", "host/src/shell/catalog-bg.webp"),
+    "mobile-bg": ("mobile-bg.png", "mobile/src/shell/mobile-bg.webp"),
     **{
         f"lobby-{gid}": (f"backgrounds/{lobby}", f"host/src/games/{gid}/lobby-bg.webp")
         for gid, (lobby, _cover) in GAMES.items()
@@ -71,7 +73,7 @@ TARGETS: dict[str, tuple[str, str]] = {
 CREDIT = (
     "# {title}\n\n"
     "`{webp}` — AI-generated illustration supplied by the repository owner for "
-    "the host {where} of this local-only party-game app.\n\n"
+    "the {where} of this local-only party-game app.\n\n"
     "- Not distributed. The platform runs on a LAN with no accounts and no "
     "internet; the file never leaves the host machine.\n"
     "- Source render `gabriel-source/{src}` (gitignored). Rebuild with "
@@ -100,6 +102,15 @@ def where_for(key: str) -> tuple[str, str, str]:
             "- The wordmark, heading, coverflow reel and start button are drawn "
             "live over this room; nothing is measured against it (`cover` fit).\n",
         )
+    if key == "mobile-bg":
+        return (
+            "Mobile background",
+            "phone controller screens",
+            "- Portrait 1:2. The top third is illustrated (hand + phone + TV + "
+            "\"Box Fiesta\" wordmark); it fades to near-solid dark so the join / "
+            "waiting panels read over it (`cover`, `background-position: top`). "
+            "Prompt: `tools/mobile-art-prompts.md`.\n",
+        )
     if key.startswith("cover-"):
         gid = key.removeprefix("cover-")
         return (f"Catalog cover — {gid}", f"catalog cover for {gid}", _COVER_NOTE)
@@ -113,7 +124,12 @@ def build(key: str) -> None:
     if not src.is_file():
         sys.exit(f"missing source: {src}")
 
-    max_w = COVER_MAX_W if key.startswith("cover-") else MAX_W
+    if key.startswith("cover-"):
+        max_w = COVER_MAX_W
+    elif key == "mobile-bg":
+        max_w = MOBILE_MAX_W
+    else:
+        max_w = MAX_W
     im = Image.open(src).convert("RGB")
     if im.width > max_w:
         h = round(im.height * max_w / im.width)
