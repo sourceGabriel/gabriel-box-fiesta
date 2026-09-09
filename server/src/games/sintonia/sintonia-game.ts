@@ -127,8 +127,14 @@ export class SintoniaGame implements PausableGame, TurnTimedGame {
   setPlayerConnected(playerId: string, connected: boolean): void {
     if (!this.connected.has(playerId)) return;
     this.connected.set(playerId, connected);
-    if (!connected && this.phase === 'guessing' && this.allLocked()) {
+    if (connected) return;
+    if (this.phase === 'guessing' && this.allLocked()) {
       this.closeGuessing();
+    } else if (this.phase === 'cluing' && playerId === this.mediumId && this.clue === null) {
+      // The médium's phone dropped — don't make the room wait out the backstop.
+      this.roundSkipped = true;
+      this.emit({ type: 'clue_skipped', round: this.round });
+      this.enterReveal();
     }
   }
 

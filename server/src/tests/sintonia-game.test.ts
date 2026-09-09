@@ -138,6 +138,15 @@ describe('SintoniaGame — clue rules', () => {
     expect(s.results).toHaveLength(0);
     expect(s.players.every((p) => p.score === 0)).toBe(true);
   });
+
+  it('skips the round immediately if the médium disconnects before cluing', () => {
+    const game = mkGame();
+    game.start();
+    game.setPlayerConnected(pub(game).mediumId!, false);
+    const s = pub(game);
+    expect(s.phase).toBe('reveal');
+    expect(s.roundSkipped).toBe(true);
+  });
 });
 
 describe('SintoniaGame — guessing + proximity scoring', () => {
