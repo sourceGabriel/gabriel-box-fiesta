@@ -114,6 +114,28 @@
 @keyframes sint-needle-in { from { opacity: 0; } to { opacity: 1; } }
 .sint-guess-label { fill: var(--text); font-size: 15px; font-weight: 700; font-family: inherit; }
 
+.sint-lock-chips {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+}
+.sint-lock-chips li {
+  font-size: clamp(0.7rem, 1.4vmin, 0.95rem);
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+}
+.sint-lock-chips li.is-locked {
+  color: var(--sint-teal);
+  border-color: rgba(45, 212, 191, 0.4);
+  background: rgba(45, 212, 191, 0.1);
+}
+
 /* ── side panel ── */
 .sint-side {
   border: 1px solid var(--line);

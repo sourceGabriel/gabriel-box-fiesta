@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type {
   DilemaCandidate,
   DilemaPrivateState,
@@ -57,11 +57,18 @@ export function DilemaControllerView({
   const myStanding = pub.standings.find((s) => s.playerId === playerId);
   const myRank = myStanding ? pub.standings.findIndex((s) => s.playerId === playerId) + 1 : null;
   const spared = pub.sparedTrack && myTrack === pub.sparedTrack;
+  const myPick = !isConductor && myTrack ? pub.tracks[myTrack].pick : null;
+  const teamLocked = myPick?.locked ?? false;
 
   const propose = (cand: DilemaCandidate, targetCardId?: string) => {
     act({ type: 'propose', cardId: cand.id, targetCardId });
     setPendingModifier(null);
   };
+
+  // Drop a half-open modifier-target picker when the step / phase moves on.
+  useEffect(() => {
+    if (pub.phase !== 'pickModifier') setPendingModifier(null);
+  }, [pub.phase]);
 
   let banner = '';
   if (pub.phase === 'assigning')
@@ -71,9 +78,11 @@ export function DilemaControllerView({
   else if (inPicks)
     banner = isConductor
       ? 'Os times estão decidindo as cartas…'
-      : priv.pendingDecision === 'wait'
-        ? 'Aguardando o time / o outro lado…'
-        : `Passo ${step ? STEP_NUM[step] : '?'}/3`;
+      : priv.pendingDecision === 'propose'
+        ? '🗳️ Proponha uma carta pro time'
+        : priv.pendingDecision === 'confirm'
+          ? '🤝 Concorde com a proposta (ou proponha outra)'
+          : 'Aguardando o time / o outro lado…';
   else if (pub.phase === 'verdict') banner = isConductor ? '⚖️ Puxe a alavanca' : 'O Maquinista está decidindo…';
   else if (pub.phase === 'roundResults')
     banner = spared ? '🚋 Seu trilho foi poupado!' : isConductor ? 'Veredito dado' : '💥 Seu trilho foi atropelado';
@@ -182,20 +191,20 @@ export function DilemaControllerView({
                 Trilho: {myTrack === 'left' ? 'Esquerdo' : 'Direito'} · time {priv.teamConfirmedCount}/{priv.teamMemberCount} concordam
               </p>
 
-              {priv.pendingDecision === 'wait' && priv.teamProposalCardId && priv.iConfirmed ? (
+              {teamLocked ? (
                 <div className="dil-consensus-box">
-                  <p>✅ Você concordou. Aguardando o resto do time / o outro lado.</p>
+                  <p>✅ Escolha do time travada. Aguardando o outro trilho.</p>
+                </div>
+              ) : priv.iConfirmed && priv.teamProposalCardId ? (
+                <div className="dil-consensus-box">
+                  <p>✅ Você concordou. Aguardando o resto do time.</p>
                   <button type="button" className="dil-pass-btn" onClick={() => act({ type: 'unconfirm' })}>
                     ↩︎ Reabrir a discussão
                   </button>
                 </div>
               ) : null}
 
-              {priv.pendingDecision === 'wait' && !priv.teamProposalCardId ? (
-                <p className="hint">Escolha travada — aguardando.</p>
-              ) : null}
-
-              {(priv.pendingDecision === 'propose' || priv.pendingDecision === 'confirm') ? (
+              {!teamLocked && !priv.iConfirmed ? (
                 <>
                   <div className="dil-hand">
                     {priv.candidates.map((cand) => {
@@ -206,6 +215,11 @@ export function DilemaControllerView({
                             {TYPE_ICON[cand.type]} {cand.text}
                             {isProposed ? <span className="dil-proposed-tag"> · proposta do time</span> : null}
                           </p>
+                          {isProposed && cand.type === 'modifier' && priv.teamProposalTargetId ? (
+                            <p className="dil-proposed-target">
+                              → grudar em: {priv.modifierTargets.find((t) => t.id === priv.teamProposalTargetId)?.text ?? '—'}
+                            </p>
+                          ) : null}
                           {cand.type === 'modifier' && pendingModifier?.id === cand.id ? (
                             modifierTargetPicker(cand)
                           ) : (
@@ -225,13 +239,8 @@ export function DilemaControllerView({
                   </div>
 
                   {priv.teamProposalCardId ? (
-                    <button
-                      type="button"
-                      className={`dil-confirm-btn ${priv.iConfirmed ? 'is-done' : ''}`}
-                      disabled={priv.iConfirmed}
-                      onClick={() => act({ type: 'confirm' })}
-                    >
-                      {priv.iConfirmed ? '✅ Você já concordou' : '✅ Concordo com a proposta'}
+                    <button type="button" className="dil-confirm-btn" onClick={() => act({ type: 'confirm' })}>
+                      ✅ Concordo com a proposta
                     </button>
                   ) : (
                     <p className="hint">Proponha uma carta. O time inteiro precisa concordar antes de travar.</p>

@@ -377,12 +377,15 @@ export class DilemaGame implements PausableGame, TurnTimedGame {
 
   private maybeLockTeam(side: DilemaTrack): void {
     const ts = this.teamStep[side];
-    if (ts.locked || ts.proposalCardId == null) return;
+    if (ts.locked) return;
     const members = this.connectedMembers(side);
+    // A team that just lost its last connected member can't decide — auto-lock it
+    // (with the standing proposal, or a random candidate) so the round moves on.
     if (members.length === 0) {
       this.autoLockTeam(side);
       return;
     }
+    if (ts.proposalCardId == null) return;
     if (members.every((id) => ts.confirmedBy.has(id))) {
       this.lockTeam(side);
     }

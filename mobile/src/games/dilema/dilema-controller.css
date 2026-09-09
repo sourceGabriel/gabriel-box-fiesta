@@ -42,6 +42,7 @@
 .dil-hand-card.is-modifier { border-left-color: #fbbf24; }
 .dil-hand-card.is-proposed { border-color: var(--dil-orange, #f97316); box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.25); }
 .dil-proposed-tag { color: var(--dil-orange, #f97316); font-weight: 700; font-size: 0.8rem; }
+.dil-proposed-target { margin: 0.2rem 0 0; font-size: 0.82rem; color: #fbbf24; }
 
 .dil-confirm-btn {
   appearance: none;

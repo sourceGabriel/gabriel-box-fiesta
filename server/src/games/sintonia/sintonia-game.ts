@@ -235,9 +235,10 @@ export class SintoniaGame implements PausableGame, TurnTimedGame {
   }
 
   private setGuess(playerId: string, value: number): void {
-    assertCondition(this.phase === 'guessing', 'REJECTED', 'O dial está travado agora');
     assertCondition(this.isGuesser(playerId), 'REJECTED', 'O médium não tem dial');
-    assertCondition(!this.locked.has(playerId), 'REJECTED', 'Destrave antes de mexer');
+    // The controller drips the slider ~8×/s; a tick can land just after the phase
+    // flips or the player locks. Those are benign races — ignore, don't toast.
+    if (this.phase !== 'guessing' || this.locked.has(playerId)) return;
     this.guesses.set(playerId, clamp(Math.round(value), 0, 100));
   }
 
@@ -302,7 +303,14 @@ export class SintoniaGame implements PausableGame, TurnTimedGame {
       this.results = [];
       this.mediumPoints = 0;
     } else {
-      const guessers = this.players.filter((p) => p.id !== this.mediumId);
+      // Score a guesser who locked, or is still connected (left the dial where it
+      // sat). A guesser who disconnected without ever locking is left out — no
+      // phantom 50 dragging the médium's average.
+      const guessers = this.players.filter(
+        (p) =>
+          p.id !== this.mediumId &&
+          (this.locked.has(p.id) || (this.connected.get(p.id) ?? true)),
+      );
       this.results = guessers
         .map((p) => {
           const value = this.guesses.get(p.id) ?? DIAL_START;
@@ -449,7 +457,9 @@ export class SintoniaGame implements PausableGame, TurnTimedGame {
 
   getPublicState(): SintoniaPublicState {
     const inReveal = this.phase === 'reveal' || this.phase === 'gameover';
-    const guesserIds = this.guesserIds();
+    // Progress is measured against the players the round is actually waiting on
+    // (connected guessers) — matches the auto-advance condition.
+    const pendingIds = this.connectedGuesserIds();
     return {
       phase: this.projectPhase(),
       roomCode: this.roomCode,
@@ -460,8 +470,8 @@ export class SintoniaGame implements PausableGame, TurnTimedGame {
       spectrum: [this.spectrum[0], this.spectrum[1]],
       clue: this.phase === 'guessing' || inReveal ? this.clue : null,
       guesses: this.projectGuesses(inReveal),
-      guessersLockedCount: guesserIds.filter((id) => this.locked.has(id)).length,
-      guessersTotalCount: guesserIds.length,
+      guessersLockedCount: pendingIds.filter((id) => this.locked.has(id)).length,
+      guessersTotalCount: pendingIds.length,
       target: inReveal ? this.target : null,
       results: inReveal ? this.results : [],
       mediumPoints: inReveal ? this.mediumPoints : null,

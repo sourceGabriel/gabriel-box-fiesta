@@ -48,6 +48,13 @@ export function SintoniaControllerView({
     setLocalDial(v);
   };
 
+  // New round: the server clears every guess — snap the local dial back to centre
+  // so last round's value can't leak into this one (or get auto-locked).
+  useEffect(() => {
+    setDial(priv.myGuess ?? DIAL_START);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pub.round]);
+
   useEffect(() => {
     // While locked / not our turn, follow the authoritative value.
     if (role !== 'guesser' || priv.myLocked) {

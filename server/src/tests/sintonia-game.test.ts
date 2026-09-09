@@ -155,6 +155,34 @@ describe('SintoniaGame — guessing + proximity scoring', () => {
     expect(pub(game).guessersLockedCount).toBe(1);
   });
 
+  it('a setGuess after locking is a silent no-op (drip race), not an error', () => {
+    const game = mkGame();
+    game.start();
+    toGuessing(game);
+    const guesser = P5.find((p) => p.id !== pub(game).mediumId)!;
+    game.handleAction(guesser.id, { type: 'setGuess', value: 30 });
+    game.handleAction(guesser.id, { type: 'lockGuess' });
+    expect(() => game.handleAction(guesser.id, { type: 'setGuess', value: 90 })).not.toThrow();
+    expect(game.getPrivateState(guesser.id).myGuess).toBe(30); // unchanged
+  });
+
+  it('does not score a guesser who disconnected without ever locking', () => {
+    const game = mkGame(P5, { random: () => 0 }); // target 4
+    game.start();
+    toGuessing(game);
+    const others = P5.filter((p) => p.id !== pub(game).mediumId);
+    const absent = others[0];
+    game.setPlayerConnected(absent.id, false);
+    for (const p of others.slice(1)) {
+      game.handleAction(p.id, { type: 'setGuess', value: 5 });
+      game.handleAction(p.id, { type: 'lockGuess' });
+    }
+    const s = pub(game);
+    expect(s.phase).toBe('reveal'); // all *connected* guessers locked
+    expect(s.results.map((r) => r.playerId).sort()).toEqual(others.slice(1).map((p) => p.id).sort());
+    expect(s.players.find((p) => p.id === absent.id)!.score).toBe(0);
+  });
+
   it('reveals once every guesser locks and scores each by distance', () => {
     // random()===0 → target = TARGET_MIN (4).
     const game = mkGame(P5, { random: () => 0 });

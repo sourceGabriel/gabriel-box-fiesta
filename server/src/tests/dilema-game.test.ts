@@ -347,6 +347,32 @@ describe('DilemaGame — rounds, endgame, pause', () => {
     expect(pub(game).tracks[side].pick!.locked).toBe(true);
   });
 
+  it('auto-locks a team whose only member disconnects, keeping the round moving', () => {
+    const game = mkGame(P3); // teams are 1 + 1
+    game.start();
+    toPicks(game);
+    const s = pub(game);
+    const lone = s.tracks.left.memberIds[0] ?? s.tracks.right.memberIds[0];
+    const side = s.tracks.left.memberIds.includes(lone) ? 'left' : 'right';
+    game.setPlayerConnected(lone, false);
+    expect(pub(game).tracks[side].pick!.locked).toBe(true);
+    expect(pub(game).tracks[side].cards.some((c) => c.type === 'innocent' && c.authorTrack === side)).toBe(true);
+  });
+
+  it('a locked team can no longer unconfirm or re-propose', () => {
+    const game = mkGame(P3);
+    game.start();
+    toPicks(game);
+    const s = pub(game);
+    const member = s.tracks.left.memberIds[0] ?? s.tracks.right.memberIds[0];
+    const cands = game.getPrivateState(member).candidates;
+    game.handleAction(member, { type: 'propose', cardId: cands[0].id }); // solo team → locks
+    expect(pub(game).tracks[game.getPrivateState(member).myTrack!].pick!.locked).toBe(true);
+    game.handleAction(member, { type: 'unconfirm' }); // no-op, no throw
+    expect(pub(game).tracks[game.getPrivateState(member).myTrack!].pick!.locked).toBe(true);
+    expect(() => game.handleAction(member, { type: 'propose', cardId: cands[1].id })).toThrow(/REJECTED/);
+  });
+
   it('rejects a non-player and the Maquinista confirming', () => {
     const game = mkGame();
     game.start();

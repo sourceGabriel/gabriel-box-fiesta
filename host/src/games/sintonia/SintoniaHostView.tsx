@@ -156,9 +156,18 @@ export function SintoniaHostView({ publicState, events, players, connected, reac
           </div>
 
           {pub.phase === 'guessing' ? (
-            <p className="sint-eyebrow">
-              Cada um puxa o próprio ponteiro — {pub.guessersLockedCount}/{pub.guessersTotalCount} travaram
-            </p>
+            <>
+              <p className="sint-eyebrow">
+                Cada um puxa o próprio ponteiro — {pub.guessersLockedCount}/{pub.guessersTotalCount} travaram
+              </p>
+              <ul className="sint-lock-chips" aria-label="Quem travou">
+                {pub.guesses.map((g) => (
+                  <li key={g.playerId} className={g.locked ? 'is-locked' : ''}>
+                    {g.locked ? '🔒' : '⋯'} {g.name}
+                  </li>
+                ))}
+              </ul>
+            </>
           ) : null}
 
           {inReveal && !over ? (
