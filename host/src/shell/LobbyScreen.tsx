@@ -202,7 +202,11 @@ export function LobbyScreen({
     );
   }
 
-  // ---------- Plain card lobby (games without dedicated art) ----------
+  // ---------- Plain card lobby ----------
+  // The documented fallback for any game with no `lobbyBg` (owner room art).
+  // All 9 games ship art today, so this only renders with an empty catalog
+  // (`selected` undefined). Kept intentionally — a new game works before its
+  // art lands.
   return (
     <main className="host-shell host-lobby" style={{ '--game-accent': accent } as unknown as CSSProperties}>
       {Cover ? (

@@ -40,6 +40,7 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parent.parent
 SRC_DIR = ROOT / "gabriel-source"
 QUALITY = 82
+COVER_QUALITY = 70  # coverflow thumbnails are small + blurred behind the reel — q70 is plenty
 MAX_W = 2000  # full-bleed backdrops
 COVER_MAX_W = 1000  # coverflow thumbnails render small
 MOBILE_MAX_W = 720  # phone background — every controller downloads it
@@ -124,8 +125,10 @@ def build(key: str) -> None:
     if not src.is_file():
         sys.exit(f"missing source: {src}")
 
+    quality = QUALITY
     if key.startswith("cover-"):
         max_w = COVER_MAX_W
+        quality = COVER_QUALITY
     elif key == "mobile-bg":
         max_w = MOBILE_MAX_W
     else:
@@ -137,7 +140,7 @@ def build(key: str) -> None:
 
     out = ROOT / out_rel
     out.parent.mkdir(parents=True, exist_ok=True)
-    im.save(out, "WEBP", quality=QUALITY, method=6)
+    im.save(out, "WEBP", quality=quality, method=6)
     kb = out.stat().st_size / 1024
     print(f"{src_rel}  ->  {out_rel}  {im.width}x{im.height}  {kb:.0f} KB")
 

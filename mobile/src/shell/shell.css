@@ -94,6 +94,9 @@ h2 {
   display: grid;
   gap: 1.15rem;
   padding: 0.8rem 0.15rem 1.5rem;
+  /* Centre the name+avatar block in the space left between the header and the
+     sticky footer (the accordion is closed by default, so the block is short). */
+  margin-block: auto;
 }
 
 /* labels that sit over the illustration get a chip so they read
@@ -124,8 +127,8 @@ h2 {
   z-index: 15;
   display: grid;
   gap: 0.7rem;
-  /* sit at the bottom when the page is short, stick while scrolling when it's tall */
-  margin: auto -0.85rem calc(-0.85rem - env(safe-area-inset-bottom));
+  /* stick to the viewport bottom; `.join` above takes the slack via margin-block:auto */
+  margin: 0 -0.85rem calc(-0.85rem - env(safe-area-inset-bottom));
   padding: 0.85rem 0.85rem calc(0.85rem + env(safe-area-inset-bottom));
   background: linear-gradient(180deg, rgba(11, 15, 23, 0) 0%, #0b0f17 26%);
   backdrop-filter: blur(10px);
