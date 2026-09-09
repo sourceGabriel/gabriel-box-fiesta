@@ -283,11 +283,12 @@ export class DilemaGame implements PausableGame, TurnTimedGame {
       target = targetCardId;
     }
 
+    const changed = ts.proposalCardId !== cardId || ts.proposalTargetId !== target;
     ts.proposalCardId = cardId;
     ts.proposalTargetId = target;
     ts.confirmedBy.clear();
     ts.confirmedBy.add(playerId); // proposing implies you back your own proposal
-    this.emit({ type: 'team_proposed', round: this.round, side, step });
+    if (changed) this.emit({ type: 'team_proposed', round: this.round, side, step });
     this.maybeLockTeam(side);
   }
 

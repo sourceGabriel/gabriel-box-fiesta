@@ -15,7 +15,7 @@ export const describeEvent = (event: DilemaGameEvent, nameOf: (id: string) => st
     case 'pick_step_started':
       return `🃏 Escolham o ${STEP_PT[event.step]} — em consenso`;
     case 'team_proposed':
-      return `${TRACK_PT[event.side]}: proposta na mesa`;
+      return null; // the live pick-status panel already shows the proposal — no feed spam on every re-propose
     case 'team_locked':
       return `✅ ${TRACK_PT[event.side]} travou o ${STEP_PT[event.step]}`;
     case 'both_locked':
