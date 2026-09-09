@@ -1,5 +1,63 @@
 # Changelog
 
+## 2026-09-09 — Dilema + Sintonia reworked to the owner's spec (branch `feature/dilema-sintonia-rework`)
+
+Owner brief (given mid-session, left before it landed): make Dilema faithful to
+*Trial by Trolley*'s card flow with **team consensus** and **no debate timers**,
+and turn Sintonia into an **individual proximity** game where **everyone guesses
+their own dial**. Researched the official Trial by Trolley rules first.
+
+### Dilema nos Trilhos
+- **Card flow** — `playing` (play cards freely) replaced by three ordered
+  consensus steps: `pickInnocent` → `pickGuilty` → `pickModifier`. Each team is
+  dealt 3 candidates per type and agrees on ONE: a member `propose`s, every
+  connected team member `confirm`s (a new proposal clears confirmations), the step
+  locks; both teams locked → next step. Faithful to the tabletop order (innocents,
+  then guilty, then modifiers). Modifiers still staple onto any base card on
+  either track (cross-track allowed).
+- **No timers on decisions** — the three pick steps and the `verdict` carry no
+  server deadline (`getTimer()` returns `null`). Couch play: the table argues out
+  loud and locks / pulls the lever when ready. Only `assigning` (4s) and
+  `roundResults` (8.5s) still auto-advance. The verdict no longer coin-flips on a
+  timer — the Maquinista must choose; the only safety is a disconnected Maquinista
+  (auto coin-flip, `verdictWasAuto`).
+- Wire: `DilemaPhase` swaps `playing` → `pickInnocent`/`pickGuilty`/`pickModifier`;
+  `DilemaAction` swaps `playCard`/`pass` → `propose`/`confirm`/`unconfirm`;
+  public `tracks[side].pick` (`DilemaPickState`) + `step`; private `candidates` /
+  `modifierTargets` / `teamProposalCardId` / `iConfirmed` / `team*Count`;
+  `DilemaTrackCard.authorId/authorName` → `authorTrack`. Events: `playing_started`
+  /`card_played`/`player_passed`/`all_cards_in` → `pick_step_started`/
+  `team_proposed`/`team_locked`/`both_locked`.
+- `dilema-game.test.ts` rewritten (20). `cards.ts`, `pairing.ts`, `plugin.ts`
+  untouched. Dilema integration test untouched (still asserts `assigning`).
+
+### Sintonia
+- **No teams, no side-bets.** A rotating **médium** gives the clue; **every other
+  player** drags **their own** 0–100 dial (hidden from other phones) and locks it.
+  All locked (or the 45s backstop) → reveal.
+- **Proximity scoring** — `|guess − target|` on a banded curve (`≤2→10, ≤6→7,
+  ≤12→5, ≤20→3, ≤30→2, ≤42→1, else 0`). The médium scores the **rounded-down
+  average** of the guessers' points (rewards a good clue; fixes the "médium sat
+  out" unfairness when rounds < players). Score is **individual + cumulative**;
+  highest total wins, exact tie → no winner.
+- Wire: `SintoniaPublicState` loses `teams`/`activeTeamId`/`sideBet`/`winnerTeamId`,
+  gains `players` / `guesses` / `results` / `guessers*Count` / `mediumPoints` /
+  `winnerId`. `SintoniaRole` → `medium`/`guesser`/`idle`. `SintoniaAction`:
+  `moveDial`/`betSide` → `setGuess`/`lockGuess`/`unlockGuess`. `SintoniaDial` now
+  renders every guesser's needle + a 6-tier proximity band. `pairing.ts` reduced
+  to médium rotation.
+- `sintonia-game.test.ts` rewritten (20). `multiplayer.integration.test.ts`
+  Sintonia block updated (no more `teams`). `spectrums.ts` untouched.
+
+### Validation
+Server 187 tests green, `tsc --noEmit` clean, host/mobile oxlint clean, 5-workspace
+build green. Live smoke (host + 3 phones): Dilema full round — 3 consensus steps
+(incl. a cross-track modifier), Maquinista verdict with no clock, scoring, round 2
+with re-split + rotation. Sintonia round — médium clue (target 93), two guessers
+lock 84/96 → +5/+7, médium +6, multi-needle reveal, cumulative scoreboard, round 2
+médium rotation. 0 console errors. §52 held — no edits to `core/`, `ws-server.ts`,
+`shared/protocol`, or either shell flow.
+
 ## 2026-09-04
 ### Added
 - Creation of repo-level Copilot guidance at `.github/copilot-instructions.md`.

@@ -1,6 +1,7 @@
-import type { DilemaGameEvent } from '@party/shared';
+import type { DilemaGameEvent, DilemaStep } from '@party/shared';
 
 const TRACK_PT: Record<'left' | 'right', string> = { left: 'Trilho Esquerdo', right: 'Trilho Direito' };
+const STEP_PT: Record<DilemaStep, string> = { innocent: 'inocente', guilty: 'culpado', modifier: 'modificador' };
 
 /** A human line for the host event feed, or null for events not worth showing. */
 export const describeEvent = (event: DilemaGameEvent, nameOf: (id: string) => string): string | null => {
@@ -11,21 +12,19 @@ export const describeEvent = (event: DilemaGameEvent, nameOf: (id: string) => st
       return `Rodada ${event.round} de ${event.totalRounds}`;
     case 'assignments_made':
       return `🎩 ${nameOf(event.conductorId)} é o Maquinista`;
-    case 'playing_started':
-      return '🃏 Montem os trilhos no celular';
-    case 'card_played':
-      return `${nameOf(event.playerId)} jogou ${
-        event.cardType === 'innocent' ? 'um inocente' : event.cardType === 'guilty' ? 'um culpado' : 'um modificador'
-      } no ${TRACK_PT[event.track].toLowerCase()}`;
-    case 'player_passed':
-      return `${nameOf(event.playerId)} está pronto`;
-    case 'all_cards_in':
-      return '✅ Trilhos fechados';
+    case 'pick_step_started':
+      return `🃏 Escolham o ${STEP_PT[event.step]} — em consenso`;
+    case 'team_proposed':
+      return `${TRACK_PT[event.side]}: proposta na mesa`;
+    case 'team_locked':
+      return `✅ ${TRACK_PT[event.side]} travou o ${STEP_PT[event.step]}`;
+    case 'both_locked':
+      return null;
     case 'verdict_started':
-      return `⚖️ ${nameOf(event.conductorId)} está decidindo…`;
+      return `⚖️ ${nameOf(event.conductorId)} decide…`;
     case 'verdict_cast':
       return event.auto
-        ? `🪙 Tempo esgotado — a sorte atropelou o ${TRACK_PT[event.killedTrack].toLowerCase()}`
+        ? `🪙 Maquinista fora — a sorte atropelou o ${TRACK_PT[event.killedTrack].toLowerCase()}`
         : `🔧 Maquinista mandou o trólebus no ${TRACK_PT[event.killedTrack].toLowerCase()}`;
     case 'round_finished':
       return `🚋 ${TRACK_PT[event.sparedTrack]} sobreviveu`;

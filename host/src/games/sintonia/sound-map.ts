@@ -16,10 +16,10 @@ export function soundForEvent(event: SintoniaGameEvent): SoundSpec | null {
       return { sample: 'ui-error' };
     case 'guessing_started':
       return { sample: 'card-deal' };
-    case 'dial_locked':
-      return { sample: 'ui-drop', gain: 0.7 };
+    case 'guess_locked':
+      return { sample: 'ui-drop', gain: 0.55 };
     case 'round_revealed':
-      return event.bandPoints >= 3
+      return event.bestPoints >= 7
         ? { cue: 'meme.win', fallback: { sample: 'stinger-round' } }
         : { cue: 'meme.reveal', fallback: { sample: 'ui-open' } };
     case 'game_finished':

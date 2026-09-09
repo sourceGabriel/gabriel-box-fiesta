@@ -1,40 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { AvatarSpec, SintoniaGameEvent, SintoniaPublicState, SintoniaTeamId } from '@party/shared';
+import type { SintoniaGameEvent, SintoniaPublicState } from '@party/shared';
 import { Avatar, BrandMark, Button, getSounds, Overlay, RoundScoreboard, roundTaunt, Timer, VictorySplash } from '@party/ui';
 import type { HostGameViewProps } from '../types';
 import { describeEvent } from './describeEvent';
 import { soundForEvent } from './sound-map';
 import { SintoniaDial } from './SintoniaDial';
 import './sintonia-host.css';
-
-function TeamPanel({
-  team,
-  avatarOf,
-  mediumId,
-}: {
-  team: SintoniaPublicState['teams'][number];
-  avatarOf: (id: string) => AvatarSpec | undefined;
-  mediumId: string | null;
-}) {
-  return (
-    <section className={`sint-team is-${team.id} ${team.isActive ? 'is-active' : ''}`}>
-      <header className="sint-team-head">
-        <h3>{team.name}</h3>
-        <span className="sint-team-score">{team.score}</span>
-      </header>
-      <ul className="sint-team-members">
-        {team.memberIds.map((id, i) => (
-          <li key={id} className={id === mediumId ? 'is-medium' : ''}>
-            {avatarOf(id) ? <Avatar spec={avatarOf(id)!} size={22} /> : null}
-            <span>{team.memberNames[i]}</span>
-            {id === mediumId ? <span className="sint-medium-tag">🔮</span> : null}
-          </li>
-        ))}
-      </ul>
-      {team.isActive ? <p className="sint-team-role">sintonizando</p> : <p className="sint-team-role">apostando o lado</p>}
-    </section>
-  );
-}
 
 export function SintoniaHostView({ publicState, events, players, connected, reactions, send }: HostGameViewProps) {
   const pub = publicState as SintoniaPublicState;
@@ -45,10 +16,10 @@ export function SintoniaHostView({ publicState, events, players, connected, reac
 
   const nameOf = useMemo(() => {
     const map = new Map<string, string>();
-    for (const t of pub.teams) t.memberIds.forEach((id, i) => map.set(id, t.memberNames[i]));
+    for (const p of pub.players) map.set(p.id, p.name);
     for (const p of players) if (!map.has(p.id)) map.set(p.id, p.name);
     return (id: string) => map.get(id) ?? '—';
-  }, [pub.teams, players]);
+  }, [pub.players, players]);
 
   const avatarOf = useMemo(() => {
     const map = new Map(players.map((p) => [p.id, p.avatar] as const));
@@ -80,18 +51,18 @@ export function SintoniaHostView({ publicState, events, players, connected, reac
   const inReveal = pub.phase === 'reveal' || over;
   const timerSeconds = pub.timer ? Math.max(0, Math.ceil(pub.timer.remainingMs / 1000)) : null;
 
-  const activeTeam = pub.teams[pub.activeTeamId];
-  const opponent = pub.teams[pub.activeTeamId === 0 ? 1 : 0];
-
   const scoreRows = useMemo(
     () =>
-      pub.teams
-        .map((t) => ({ playerId: `team-${t.id}`, name: t.name, score: t.score, roundPoints: 0 }))
-        .sort((a, b) => b.score - a.score),
-    [pub.teams],
+      pub.standings.map((s) => ({
+        playerId: s.playerId,
+        name: s.name,
+        score: s.score,
+        roundPoints: s.roundDelta,
+      })),
+    [pub.standings],
   );
 
-  const teamPt = (id: SintoniaTeamId) => pub.teams[id].name;
+  const bestResult = pub.results[0] ?? null;
 
   return (
     <main className="host-shell sintonia-host">
@@ -118,29 +89,22 @@ export function SintoniaHostView({ publicState, events, players, connected, reac
       {over ? (
         <Overlay label="Fim da partida">
           <p className="eyebrow">Fim de Sintonia</p>
-          {pub.winnerTeamId === null ? (
+          {pub.winnerId === null ? (
             <h2>🤝 Empate!</h2>
           ) : (
             <VictorySplash
-              winner={{
-                name: pub.winnerName ?? teamPt(pub.winnerTeamId),
-                avatar: avatarOf(pub.teams[pub.winnerTeamId].memberIds[0]),
-              }}
-              subtitle={`capitão do ${teamPt(pub.winnerTeamId)}`}
+              winner={{ name: pub.winnerName ?? nameOf(pub.winnerId), avatar: avatarOf(pub.winnerId) }}
+              subtitle="mais em sintonia"
               accent="#2dd4bf"
             />
           )}
           <ol className="sint-final-standings">
-            {pub.teams
-              .slice()
-              .sort((a, b) => b.score - a.score)
-              .map((t) => (
-                <li key={t.id}>
-                  <span className="sint-final-name">{t.name}</span>
-                  <span className="sint-final-score">{t.score} pts</span>
-                  <span className="sint-final-members">{t.memberNames.join(', ')}</span>
-                </li>
-              ))}
+            {scoreRows.map((s, i) => (
+              <li key={s.playerId}>
+                <span className="sint-final-name">{i + 1}º {s.name}</span>
+                <span className="sint-final-score">{s.score} pts</span>
+              </li>
+            ))}
           </ol>
           <div className="sint-result-actions">
             <Button variant="primary" onClick={() => send('START_GAME', {})}>Nova partida</Button>
@@ -171,26 +135,20 @@ export function SintoniaHostView({ publicState, events, players, connected, reac
             </p>
           ) : null}
 
-          {pub.phase === 'guessing' && pub.clue ? (
-            <p className="sint-clue">“{pub.clue}”</p>
-          ) : null}
+          {pub.phase === 'guessing' && pub.clue ? <p className="sint-clue">“{pub.clue}”</p> : null}
 
           {inReveal ? (
             <p className="sint-eyebrow sint-result-line">
               {pub.roundSkipped
                 ? '⌛ Sem dica nesta rodada'
-                : `🎯 ${activeTeam.name} +${pub.bandPoints ?? 0}${pub.sideCorrect ? ` · ${opponent.name} acertou o lado +1` : ''}`}
+                : bestResult && bestResult.points > 0
+                  ? `🎯 ${bestResult.name} chegou mais perto — +${bestResult.points} · médium +${pub.mediumPoints ?? 0}`
+                  : '🎯 Ninguém chegou perto'}
             </p>
           ) : null}
 
           <div className="sint-dial-wrap">
-            <SintoniaDial
-              value={pub.dialValue}
-              target={pub.target}
-              revealed={inReveal}
-              showNeedle={pub.phase === 'guessing' || inReveal}
-              sideBet={pub.sideBet}
-            />
+            <SintoniaDial results={pub.results} target={pub.target} revealed={inReveal} />
             <div className="sint-poles">
               <span>◀ {pub.spectrum[0]}</span>
               <span>{pub.spectrum[1]} ▶</span>
@@ -199,7 +157,7 @@ export function SintoniaHostView({ publicState, events, players, connected, reac
 
           {pub.phase === 'guessing' ? (
             <p className="sint-eyebrow">
-              {activeTeam.name}: girem o dial · {opponent.name}: apostem ◀ / ▶
+              Cada um puxa o próprio ponteiro — {pub.guessersLockedCount}/{pub.guessersTotalCount} travaram
             </p>
           ) : null}
 
@@ -208,17 +166,30 @@ export function SintoniaHostView({ publicState, events, players, connected, reac
               title={`Rodada ${pub.round} de ${pub.totalRounds}`}
               standings={scoreRows}
               taunt={roundTaunt(scoreRows.map((s) => ({ name: s.name, score: s.score })), pub.round)}
+              avatarFor={avatarOf}
             />
           ) : null}
         </section>
 
         <aside className="sint-side">
           <div className="sint-side-head">
-            <h2>Times</h2>
+            <h2>Placar</h2>
             <span className="status-chip">{connected ? 'ao vivo' : 'offline'}</span>
           </div>
-          <TeamPanel team={pub.teams[0]} avatarOf={avatarOf} mediumId={pub.mediumId} />
-          <TeamPanel team={pub.teams[1]} avatarOf={avatarOf} mediumId={pub.mediumId} />
+          <ol className="sint-roster">
+            {pub.standings.map((s, i) => (
+              <li key={s.playerId} className={s.playerId === pub.mediumId ? 'is-medium' : ''}>
+                <span className="sint-rank">{i + 1}º</span>
+                {avatarOf(s.playerId) ? <Avatar spec={avatarOf(s.playerId)!} size={22} /> : null}
+                <span className="sint-roster-name">
+                  {s.name}
+                  {s.playerId === pub.mediumId ? ' 🔮' : ''}
+                </span>
+                {inReveal && s.roundDelta > 0 ? <span className="sint-roster-delta">+{s.roundDelta}</span> : null}
+                <span className="sint-roster-score">{s.score}</span>
+              </li>
+            ))}
+          </ol>
           {feed.length > 0 ? (
             <ul className="sint-feed" aria-live="polite">
               {feed.map((line) => (

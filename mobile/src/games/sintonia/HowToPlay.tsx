@@ -5,11 +5,11 @@ export function HowToPlay({ onClose }: { onClose: () => void }) {
       <div className="sint-howto-card">
         <h2>Como jogar</h2>
         <ol className="sint-howto-list">
-          <li>A sala é dividida em <strong>dois times</strong> (re-sorteados a cada rodada). Um time está de vez.</li>
-          <li>Um <strong>médium</strong> do time da vez vê um <strong>alvo escondido</strong> num espectro (ex.: <em>Chato ↔ Divertido</em>) e escreve <strong>uma dica curta</strong> — sem números.</li>
-          <li>O time do médium <strong>gira o dial</strong> de 0 a 100 pra tentar parar em cima do alvo. Quanto mais perto, mais pontos (4 / 3 / 2).</li>
-          <li>O <strong>outro time</strong> aposta se o alvo está pra <strong>◀ esquerda</strong> ou <strong>▶ direita</strong> de onde o dial parou. Acertou o lado, +1.</li>
-          <li>Discutam <strong>em voz alta</strong> — o jogo não tem chat. Ganha o time com mais pontos ao fim das rodadas.</li>
+          <li>A cada rodada, uma pessoa é o <strong>médium</strong> (isso gira). Só ela vê um <strong>alvo escondido</strong> num espectro (ex.: <em>Chato ↔ Divertido</em>) e escreve <strong>uma dica curta</strong> — sem números.</li>
+          <li><strong>Todo mundo</strong> que não é o médium puxa <strong>o próprio ponteiro</strong> de 0 a 100 tentando parar em cima do alvo. Ninguém vê o palpite dos outros até o fim.</li>
+          <li>Quando todos travam (ou o tempo acaba), o alvo aparece. Quanto <strong>mais perto</strong> você chegou, <strong>mais pontos</strong> (10 / 7 / 5 / 3 / 2 / 1).</li>
+          <li>O médium ganha a <strong>média</strong> dos pontos do grupo — dica boa, todo mundo lucra.</li>
+          <li>Discutam <strong>em voz alta</strong> — o jogo não tem chat. Ganha quem tiver <strong>mais pontos no total</strong> ao fim das rodadas.</li>
         </ol>
         <button type="button" className="sint-howto-close" onClick={onClose}>
           Entendi

@@ -1,5 +1,5 @@
 import type { PlayerId } from '../../models/common';
-import type { DilemaCardType, DilemaStanding, DilemaTrack } from '../../models/dilema';
+import type { DilemaStanding, DilemaStep, DilemaTrack } from '../../models/dilema';
 
 /**
  * Domain events the Dilema nos Trilhos engine emits. They travel opaquely inside
@@ -21,11 +21,11 @@ export type DilemaGameEvent =
       leftIds: PlayerId[];
       rightIds: PlayerId[];
     }
-  | { type: 'playing_started'; round: number; durationMs: number }
-  | { type: 'card_played'; playerId: PlayerId; cardType: DilemaCardType; track: DilemaTrack }
-  | { type: 'player_passed'; playerId: PlayerId }
-  | { type: 'all_cards_in'; round: number }
-  | { type: 'verdict_started'; round: number; conductorId: PlayerId; durationMs: number }
+  | { type: 'pick_step_started'; round: number; step: DilemaStep }
+  | { type: 'team_proposed'; round: number; side: DilemaTrack; step: DilemaStep }
+  | { type: 'team_locked'; round: number; side: DilemaTrack; step: DilemaStep }
+  | { type: 'both_locked'; round: number; step: DilemaStep }
+  | { type: 'verdict_started'; round: number; conductorId: PlayerId }
   | {
       type: 'verdict_cast';
       round: number;

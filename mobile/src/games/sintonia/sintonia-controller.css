@@ -70,6 +70,7 @@
   height: 2.4rem;
   accent-color: #2dd4bf;
 }
+.sint-slider:disabled { opacity: 0.55; }
 
 /* side bet */
 .sint-bet-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-top: 0.6rem; }
@@ -95,21 +96,22 @@
 
 .sint-reveal-line { margin: 0.3rem 0 0; font-weight: 700; color: #2dd4bf; }
 
-/* teams / roster */
+/* placar */
 .sint-roster .sint-roster-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
 .sint-roster h2 { margin: 0; font-size: 1rem; }
-.sint-team-row {
-  border: 1px solid var(--line, #2a2f3a);
-  border-radius: 10px;
-  padding: 0.5rem;
-  margin-bottom: 0.5rem;
-  background: rgba(255, 255, 255, 0.02);
+.sint-score-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.3rem; }
+.sint-score-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.3rem 0.4rem;
+  border-radius: 8px;
+  font-size: 0.88rem;
 }
-.sint-team-row.is-mine { border-color: rgba(45, 212, 191, 0.5); }
-.sint-team-row.is-active { box-shadow: 0 0 0 2px rgba(45, 212, 191, 0.25); }
-.sint-team-row-head { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 0.35rem; }
-.sint-team-row ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.3rem; }
-.sint-team-row li { display: flex; align-items: center; gap: 0.4rem; font-size: 0.86rem; }
+.sint-score-list li.is-mine { background: rgba(45, 212, 191, 0.12); }
+.sint-score-rank { color: var(--muted, #8b93a1); min-width: 1.6em; font-variant-numeric: tabular-nums; }
+.sint-score-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sint-score-pts { font-weight: 800; color: #2dd4bf; font-variant-numeric: tabular-nums; }
 
 .sint-howto-open {
   appearance: none;

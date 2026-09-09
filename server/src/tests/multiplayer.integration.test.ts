@@ -1007,7 +1007,7 @@ describe('multiplayer integration', () => {
     for (const ws of phones) ws.close();
   });
 
-  it('runs Sintonia: SELECT_GAME + START_GAME, médium + two teams, clue advances to guessing', async () => {
+  it('runs Sintonia: SELECT_GAME + START_GAME, médium + guessers, clue advances to guessing', async () => {
     server = new PartyServer(0);
     await server.start();
     const roomCode = server.getRoomCode();
@@ -1041,11 +1041,13 @@ describe('multiplayer integration', () => {
     const pub = (await firstPublic).payload.state as {
       phase: string;
       mediumId: string;
-      teams: { memberIds: string[] }[];
+      guessersTotalCount: number;
+      players: { id: string }[];
     };
     expect(pub.phase).toBe('cluing');
     expect(pub.mediumId).toBeTruthy();
-    expect([...pub.teams[0].memberIds, ...pub.teams[1].memberIds]).toHaveLength(3);
+    expect(pub.players).toHaveLength(3);
+    expect(pub.guessersTotalCount).toBe(2); // 3 players − médium
 
     const privs = await Promise.all(phones.map((ws) => waitForMessage(ws, 'PLAYER_STATE_PRIVATE')));
     const mediumPriv = privs.find((p) => (p.payload.state as { role: string }).role === 'medium');

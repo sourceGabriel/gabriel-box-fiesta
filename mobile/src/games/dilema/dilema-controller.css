@@ -40,6 +40,28 @@
 .dil-hand-card.is-innocent { border-left-color: #34d399; }
 .dil-hand-card.is-guilty { border-left-color: #ef4444; }
 .dil-hand-card.is-modifier { border-left-color: #fbbf24; }
+.dil-hand-card.is-proposed { border-color: var(--dil-orange, #f97316); box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.25); }
+.dil-proposed-tag { color: var(--dil-orange, #f97316); font-weight: 700; font-size: 0.8rem; }
+
+.dil-confirm-btn {
+  appearance: none;
+  font: inherit;
+  cursor: pointer;
+  border-radius: 10px;
+  width: 100%;
+  margin-top: 0.7rem;
+  padding: 0.8rem;
+  border: 2px solid #34d399;
+  background: rgba(52, 211, 153, 0.16);
+  color: var(--text, #eef2f6);
+  font-weight: 800;
+}
+.dil-confirm-btn:active { background: rgba(52, 211, 153, 0.32); }
+.dil-confirm-btn.is-done, .dil-confirm-btn:disabled { opacity: 0.6; }
+
+.dil-consensus-box { display: flex; flex-direction: column; gap: 0.5rem; }
+.dil-consensus-box p { margin: 0; font-weight: 700; color: #34d399; }
+.dil-mini-proposal { opacity: 0.75; font-style: italic; }
 .dil-hand-card-top { display: flex; justify-content: space-between; align-items: center; }
 .dil-hand-type { font-size: 0.75rem; font-weight: 700; color: var(--muted, #8b93a1); text-transform: uppercase; letter-spacing: 0.04em; }
 .dil-hand-text { margin: 0.35rem 0 0.55rem; font-size: 0.98rem; line-height: 1.3; }

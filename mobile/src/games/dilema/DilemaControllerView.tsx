@@ -1,19 +1,25 @@
 import { useMemo, useState } from 'react';
 import type {
-  DilemaHandCard,
+  DilemaCandidate,
   DilemaPrivateState,
   DilemaPublicState,
+  DilemaStep,
   DilemaTrack,
 } from '@party/shared';
-import { Avatar, Timer } from '@party/ui';
+import { Avatar } from '@party/ui';
 import { MobileHeader } from '../../shell/MobileHeader';
 import type { ControllerGameViewProps } from '../types';
 import { HowToPlay } from './HowToPlay';
 import './dilema-controller.css';
 
 const REACTION_EMOJIS = ['😂', '🔥', '😱', '😈', '💀', '🙏'];
-const TYPE_LABEL: Record<string, string> = { innocent: 'Inocente', guilty: 'Culpado', modifier: 'Modificador' };
 const TYPE_ICON: Record<string, string> = { innocent: '😇', guilty: '😈', modifier: '✨' };
+const STEP_NUM: Record<DilemaStep, number> = { innocent: 1, guilty: 2, modifier: 3 };
+const STEP_TITLE: Record<DilemaStep, string> = {
+  innocent: 'Inocente pro seu trilho',
+  guilty: 'Culpado pro trilho inimigo',
+  modifier: 'Modificador — e onde grudar',
+};
 
 export function DilemaControllerView({
   publicState,
@@ -28,7 +34,7 @@ export function DilemaControllerView({
   const pub = publicState as DilemaPublicState;
   const priv = privateState as DilemaPrivateState;
   const [showHowTo, setShowHowTo] = useState(false);
-  const [pickModifier, setPickModifier] = useState<DilemaHandCard | null>(null);
+  const [pendingModifier, setPendingModifier] = useState<DilemaCandidate | null>(null);
 
   const avatarOf = useMemo(() => {
     const map = new Map(roomPlayers.map((p) => [p.id, p.avatar] as const));
@@ -41,68 +47,93 @@ export function DilemaControllerView({
 
   const act = (action: Record<string, unknown>) => send('GAME_ACTION', { action });
 
-  const timerSeconds = pub.timer ? Math.max(0, Math.ceil(pub.timer.remainingMs / 1000)) : null;
   const paused = pub.phase === 'paused';
   const over = pub.phase === 'gameover';
+  const inPicks = pub.phase === 'pickInnocent' || pub.phase === 'pickGuilty' || pub.phase === 'pickModifier';
   const myTrack = priv.myTrack;
   const isConductor = priv.isConductor;
+  const step = priv.step;
 
   const myStanding = pub.standings.find((s) => s.playerId === playerId);
   const myRank = myStanding ? pub.standings.findIndex((s) => s.playerId === playerId) + 1 : null;
   const spared = pub.sparedTrack && myTrack === pub.sparedTrack;
 
-  const playInnocentOrGuilty = (card: DilemaHandCard) => {
-    if (!myTrack) return;
-    const enemy: DilemaTrack = myTrack === 'left' ? 'right' : 'left';
-    act({ type: 'playCard', cardId: card.id, targetTrack: card.type === 'innocent' ? myTrack : enemy });
+  const propose = (cand: DilemaCandidate, targetCardId?: string) => {
+    act({ type: 'propose', cardId: cand.id, targetCardId });
+    setPendingModifier(null);
   };
-
-  const playModifier = (card: DilemaHandCard, track: DilemaTrack, targetCardId: string) => {
-    act({ type: 'playCard', cardId: card.id, targetTrack: track, targetCardId });
-    setPickModifier(null);
-  };
-
-  const baseTargets = useMemo(
-    () =>
-      (['left', 'right'] as DilemaTrack[]).flatMap((side) =>
-        pub.tracks[side].cards.map((c) => ({ side, id: c.id, text: c.text, type: c.type })),
-      ),
-    [pub.tracks],
-  );
 
   let banner = '';
-  if (pub.phase === 'assigning') banner = isConductor ? '🎩 Você é o Maquinista' : `Você está no ${myTrack === 'left' ? 'Trilho Esquerdo' : 'Trilho Direito'}`;
-  else if (pub.phase === 'playing') banner = isConductor ? 'Os times estão montando os trilhos…' : priv.passed ? 'Pronto! Aguardando os outros…' : 'Monte o seu trilho';
+  if (pub.phase === 'assigning')
+    banner = isConductor
+      ? '🎩 Você é o Maquinista'
+      : `Você está no ${myTrack === 'left' ? 'Trilho Esquerdo' : 'Trilho Direito'}`;
+  else if (inPicks)
+    banner = isConductor
+      ? 'Os times estão decidindo as cartas…'
+      : priv.pendingDecision === 'wait'
+        ? 'Aguardando o time / o outro lado…'
+        : `Passo ${step ? STEP_NUM[step] : '?'}/3`;
   else if (pub.phase === 'verdict') banner = isConductor ? '⚖️ Puxe a alavanca' : 'O Maquinista está decidindo…';
-  else if (pub.phase === 'roundResults') banner = spared ? '🚋 Seu trilho foi poupado!' : isConductor ? 'Veredito dado' : '💥 Seu trilho foi atropelado';
+  else if (pub.phase === 'roundResults')
+    banner = spared ? '🚋 Seu trilho foi poupado!' : isConductor ? 'Veredito dado' : '💥 Seu trilho foi atropelado';
 
   const renderMiniTracks = () => (
     <div className="dil-mini-tracks">
       {(['left', 'right'] as DilemaTrack[]).map((side) => (
-        <div key={side} className={`dil-mini-track ${myTrack === side ? 'is-mine' : ''} ${pub.killedTrack === side ? 'is-killed' : ''} ${pub.sparedTrack === side ? 'is-spared' : ''}`}>
-          <h4>{side === 'left' ? 'Esquerdo' : 'Direito'}{myTrack === side ? ' (você)' : ''}</h4>
+        <div
+          key={side}
+          className={`dil-mini-track ${myTrack === side ? 'is-mine' : ''} ${pub.killedTrack === side ? 'is-killed' : ''} ${pub.sparedTrack === side ? 'is-spared' : ''}`}
+        >
+          <h4>
+            {side === 'left' ? 'Esquerdo' : 'Direito'}
+            {myTrack === side ? ' (você)' : ''}
+          </h4>
           <ul>
             {pub.tracks[side].cards.map((c) => (
               <li key={c.id}>
-                <span>{TYPE_ICON[c.type]} {c.text}</span>
+                <span>
+                  {TYPE_ICON[c.type]} {c.text}
+                </span>
                 {c.modifiers.map((m) => (
                   <span key={m.id} className="dil-mini-mod">＋ {m.text}</span>
                 ))}
               </li>
             ))}
+            {pub.tracks[side].pick && !pub.tracks[side].pick!.locked && pub.tracks[side].pick!.proposalText ? (
+              <li className="dil-mini-proposal">
+                <span>⏳ {pub.tracks[side].pick!.proposalText}</span>
+              </li>
+            ) : null}
           </ul>
         </div>
       ))}
     </div>
   );
 
+  const modifierTargetPicker = (cand: DilemaCandidate) => (
+    <div className="dil-mod-targets">
+      <p className="hint">Grudar “{cand.text}” em qual carta?</p>
+      {priv.modifierTargets.map((t) => (
+        <button
+          key={t.id}
+          type="button"
+          className="dil-mod-target"
+          onClick={() => propose(cand, t.id)}
+        >
+          <span className="dil-mod-target-side">{t.side === 'left' ? 'ESQ' : 'DIR'}</span>
+          {TYPE_ICON[t.type]} {t.text}
+        </button>
+      ))}
+      <button type="button" className="dil-mod-cancel" onClick={() => setPendingModifier(null)}>
+        Cancelar
+      </button>
+    </div>
+  );
+
   return (
     <>
-      <MobileHeader roomCode={roomCode} connected={connected}>
-        {!paused && !over ? (
-          <Timer seconds={timerSeconds} active={priv.pendingDecision === 'play' || priv.pendingDecision === 'decide'} />
-        ) : null}
-      </MobileHeader>
+      <MobileHeader roomCode={roomCode} connected={connected} />
 
       {showHowTo ? <HowToPlay onClose={() => setShowHowTo(false)} /> : null}
 
@@ -121,7 +152,7 @@ export function DilemaControllerView({
         </section>
       ) : (
         <>
-          <section className={`dil-banner ${priv.pendingDecision === 'play' || priv.pendingDecision === 'decide' ? 'is-live' : ''}`}>
+          <section className={`dil-banner ${priv.pendingDecision === 'propose' || priv.pendingDecision === 'confirm' || priv.pendingDecision === 'decide' ? 'is-live' : ''}`}>
             {banner}
             <span className="dil-round-tag">Rodada {pub.round}/{pub.totalRounds}</span>
           </section>
@@ -129,7 +160,7 @@ export function DilemaControllerView({
           {/* ── verdict: the Maquinista's lever ── */}
           {pub.phase === 'verdict' && isConductor ? (
             <section className="dil-panel">
-              <p className="dil-lever-hint">Escolha qual trilho o trólebus atropela:</p>
+              <p className="dil-lever-hint">Sem relógio — decidam em voz alta, depois escolha:</p>
               {renderMiniTracks()}
               <div className="dil-lever-btns">
                 <button type="button" className="dil-lever-btn is-left" onClick={() => act({ type: 'castVerdict', killedTrack: 'left' })}>
@@ -142,75 +173,80 @@ export function DilemaControllerView({
             </section>
           ) : null}
 
-          {/* ── playing: your hand ── */}
-          {pub.phase === 'playing' && !isConductor && !priv.passed ? (
+          {/* ── pick step: candidates + consensus ── */}
+          {inPicks && !isConductor && step ? (
             <section className="dil-panel">
               <p className="dil-hand-hint">
-                Seu trilho: <strong>{myTrack === 'left' ? 'Esquerdo' : 'Direito'}</strong> · jogadas: {priv.cardsPlayed}
+                <strong>Passo {STEP_NUM[step]}/3 — {STEP_TITLE[step]}</strong>
+                <br />
+                Trilho: {myTrack === 'left' ? 'Esquerdo' : 'Direito'} · time {priv.teamConfirmedCount}/{priv.teamMemberCount} concordam
               </p>
-              <div className="dil-hand">
-                {priv.hand.map((card) => (
-                  <div key={card.id} className={`dil-hand-card is-${card.type}`}>
-                    <div className="dil-hand-card-top">
-                      <span className="dil-hand-type">{TYPE_ICON[card.type]} {TYPE_LABEL[card.type]}</span>
-                    </div>
-                    <p className="dil-hand-text">{card.text}</p>
-                    {card.type === 'modifier' ? (
-                      pickModifier?.id === card.id ? (
-                        <div className="dil-mod-targets">
-                          <p className="hint">Grudar em qual carta?</p>
-                          {baseTargets.map((t) => (
+
+              {priv.pendingDecision === 'wait' && priv.teamProposalCardId && priv.iConfirmed ? (
+                <div className="dil-consensus-box">
+                  <p>✅ Você concordou. Aguardando o resto do time / o outro lado.</p>
+                  <button type="button" className="dil-pass-btn" onClick={() => act({ type: 'unconfirm' })}>
+                    ↩︎ Reabrir a discussão
+                  </button>
+                </div>
+              ) : null}
+
+              {priv.pendingDecision === 'wait' && !priv.teamProposalCardId ? (
+                <p className="hint">Escolha travada — aguardando.</p>
+              ) : null}
+
+              {(priv.pendingDecision === 'propose' || priv.pendingDecision === 'confirm') ? (
+                <>
+                  <div className="dil-hand">
+                    {priv.candidates.map((cand) => {
+                      const isProposed = priv.teamProposalCardId === cand.id;
+                      return (
+                        <div key={cand.id} className={`dil-hand-card is-${cand.type} ${isProposed ? 'is-proposed' : ''}`}>
+                          <p className="dil-hand-text">
+                            {TYPE_ICON[cand.type]} {cand.text}
+                            {isProposed ? <span className="dil-proposed-tag"> · proposta do time</span> : null}
+                          </p>
+                          {cand.type === 'modifier' && pendingModifier?.id === cand.id ? (
+                            modifierTargetPicker(cand)
+                          ) : (
                             <button
-                              key={`${t.side}-${t.id}`}
                               type="button"
-                              className="dil-mod-target"
-                              onClick={() => playModifier(card, t.side, t.id)}
+                              className="dil-play-btn"
+                              onClick={() =>
+                                cand.type === 'modifier' ? setPendingModifier(cand) : propose(cand)
+                              }
                             >
-                              <span className="dil-mod-target-side">{t.side === 'left' ? 'ESQ' : 'DIR'}</span>
-                              {TYPE_ICON[t.type]} {t.text}
+                              {isProposed ? 'Propor de novo' : cand.type === 'modifier' ? '✨ Escolher alvo' : 'Propor essa'}
                             </button>
-                          ))}
-                          <button type="button" className="dil-mod-cancel" onClick={() => setPickModifier(null)}>Cancelar</button>
+                          )}
                         </div>
-                      ) : (
-                        <button type="button" className="dil-play-btn" onClick={() => setPickModifier(card)}>
-                          ✨ Escolher carta-alvo
-                        </button>
-                      )
-                    ) : (
-                      <button type="button" className="dil-play-btn" onClick={() => playInnocentOrGuilty(card)}>
-                        {card.type === 'innocent' ? '😇 Jogar no meu trilho' : '😈 Jogar no trilho inimigo'}
-                      </button>
-                    )}
+                      );
+                    })}
                   </div>
-                ))}
-                {priv.hand.length === 0 ? <p className="hint">Mão vazia — você está pronto.</p> : null}
-              </div>
-              <button type="button" className="dil-pass-btn" onClick={() => act({ type: 'pass' })}>
-                ✅ Pronto (não vou jogar mais)
-              </button>
+
+                  {priv.teamProposalCardId ? (
+                    <button
+                      type="button"
+                      className={`dil-confirm-btn ${priv.iConfirmed ? 'is-done' : ''}`}
+                      disabled={priv.iConfirmed}
+                      onClick={() => act({ type: 'confirm' })}
+                    >
+                      {priv.iConfirmed ? '✅ Você já concordou' : '✅ Concordo com a proposta'}
+                    </button>
+                  ) : (
+                    <p className="hint">Proponha uma carta. O time inteiro precisa concordar antes de travar.</p>
+                  )}
+                </>
+              ) : null}
             </section>
           ) : null}
 
-          {/* ── everyone else / spectate the tracks ── */}
+          {/* ── spectate ── */}
           {(pub.phase === 'assigning' ||
-            (pub.phase === 'playing' && (isConductor || priv.passed)) ||
+            (inPicks && isConductor) ||
             (pub.phase === 'verdict' && !isConductor) ||
             pub.phase === 'roundResults') ? (
-            <section className="dil-panel">
-              {pub.phase === 'assigning' && !isConductor ? (
-                <>
-                  <p className="hint">Sua mão desta rodada:</p>
-                  <ul className="dil-preview-hand">
-                    {priv.hand.map((c) => (
-                      <li key={c.id}>{TYPE_ICON[c.type]} {c.text}</li>
-                    ))}
-                  </ul>
-                </>
-              ) : (
-                renderMiniTracks()
-              )}
-            </section>
+            <section className="dil-panel">{renderMiniTracks()}</section>
           ) : null}
 
           {/* ── standings ── */}

@@ -2,14 +2,13 @@ import type {
   ContentTier,
   GameStatus as PlatformGameStatus,
   SintoniaGameEvent,
+  SintoniaGuess,
   SintoniaPhase,
   SintoniaPrivateState,
   SintoniaPublicState,
+  SintoniaResult,
   SintoniaRole,
-  SintoniaSide,
   SintoniaStanding,
-  SintoniaTeamId,
-  SintoniaTeamView,
   TurnTimer,
 } from '@party/shared';
 import type { GameContext, PausableGame, TurnTimedGame } from '../../core/game-plugin';
@@ -23,10 +22,8 @@ import {
   MAX_PLAYERS,
   MIN_PLAYERS,
   REVEAL_MS,
-  SIDE_POINTS,
   TARGET_MAX,
   TARGET_MIN,
-  TEAM_NAMES,
   TOTAL_ROUNDS,
 } from './constants';
 import { planRound } from './pairing';
@@ -42,14 +39,18 @@ type Player = { id: string; name: string };
 
 const clamp = (n: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, n));
 
+const pointsFor = (distance: number): number => BANDS.find(([d]) => distance <= d)?.[1] ?? 0;
+
 /**
  * Sintonia orchestrator — the platform `GameInstance` for a *Wavelength*-style
  * telepathy match. Self-advancing: every phase (`cluing` → `guessing` →
  * `reveal`) carries one stored deadline the platform server ticks;
  * `onTurnTimeout()` closes the phase with whatever is in.
  *
- * Score is by team. A player's `standings` score mirrors their team's score so
- * the shared `RoundScoreboard` renders; the game crowns the higher team.
+ * No teams: a rotating **médium** gives the clue, **every other player** places
+ * their own dial, and each guesser scores by how close they landed. The médium
+ * scores the rounded-down average of the guessers (a reward for a good clue).
+ * Score is individual + cumulative; the game crowns the highest total.
  */
 export class SintoniaGame implements PausableGame, TurnTimedGame {
   private readonly now: () => number;
@@ -59,6 +60,8 @@ export class SintoniaGame implements PausableGame, TurnTimedGame {
   private readonly players: Player[];
   private readonly nameById = new Map<string, string>();
   private readonly connected = new Map<string, boolean>();
+  private readonly scores = new Map<string, number>();
+  private readonly roundDelta = new Map<string, number>();
 
   private started = false;
   private phase: SintoniaPhase = 'cluing';
@@ -69,26 +72,20 @@ export class SintoniaGame implements PausableGame, TurnTimedGame {
   private spectrumDeck: Spectrum[] = [];
 
   // Per-round state.
-  private teams: [string[], string[]] = [[], []];
-  private readonly teamScores: [number, number] = [0, 0];
-  private readonly teamRoundDelta: [number, number] = [0, 0];
-  private activeTeamId: SintoniaTeamId = 0;
   private mediumId: string | null = null;
   private spectrum: Spectrum = ['', ''];
   private target = 0;
-  private dialValue = DIAL_START;
   private clue: string | null = null;
-  private readonly sideBets = new Map<string, SintoniaSide>();
+  private readonly guesses = new Map<string, number>();
+  private readonly locked = new Set<string>();
 
   // Round result, populated at `reveal`.
-  private bandPoints: number | null = null;
-  private resolvedSideBet: SintoniaSide | null = null;
-  private sideCorrect: boolean | null = null;
+  private results: SintoniaResult[] = [];
+  private mediumPoints: number | null = null;
   private roundSkipped = false;
 
-  private winnerTeamId: SintoniaTeamId | null = null;
+  private winnerId: string | null = null;
 
-  // Single wall-clock deadline, ticked by the server against `getTimer().expiresAt`.
   private timerStartedAt: number | null = null;
   private timerDurationMs: number | null = null;
   private timerExpiresAt: number | null = null;
@@ -107,6 +104,8 @@ export class SintoniaGame implements PausableGame, TurnTimedGame {
     for (const p of this.players) {
       this.nameById.set(p.id, p.name);
       this.connected.set(p.id, true);
+      this.scores.set(p.id, 0);
+      this.roundDelta.set(p.id, 0);
     }
   }
 
@@ -126,11 +125,10 @@ export class SintoniaGame implements PausableGame, TurnTimedGame {
   }
 
   setPlayerConnected(playerId: string, connected: boolean): void {
-    if (this.connected.has(playerId)) {
-      this.connected.set(playerId, connected);
-      if (!connected && this.phase === 'guessing' && this.allBetsIn()) {
-        this.closeGuessing();
-      }
+    if (!this.connected.has(playerId)) return;
+    this.connected.set(playerId, connected);
+    if (!connected && this.phase === 'guessing' && this.allLocked()) {
+      this.closeGuessing();
     }
   }
 
@@ -186,7 +184,6 @@ export class SintoniaGame implements PausableGame, TurnTimedGame {
     if (this.paused) return;
     switch (this.phase) {
       case 'cluing':
-        // The médium never sent a clue — skip the round, nobody scores.
         this.roundSkipped = true;
         this.emit({ type: 'clue_skipped', round: this.round });
         this.enterReveal();
@@ -215,10 +212,12 @@ export class SintoniaGame implements PausableGame, TurnTimedGame {
     const input = parseSintoniaAction(action);
     if (input.type === 'submitClue') {
       this.submitClue(playerId, input.clue);
-    } else if (input.type === 'moveDial') {
-      this.moveDial(playerId, input.value);
+    } else if (input.type === 'setGuess') {
+      this.setGuess(playerId, input.value);
+    } else if (input.type === 'lockGuess') {
+      this.lockGuess(playerId);
     } else {
-      this.betSide(playerId, input.side);
+      this.unlockGuess(playerId);
     }
   }
 
@@ -235,24 +234,26 @@ export class SintoniaGame implements PausableGame, TurnTimedGame {
     this.beginGuessing();
   }
 
-  private moveDial(playerId: string, value: number): void {
+  private setGuess(playerId: string, value: number): void {
     assertCondition(this.phase === 'guessing', 'REJECTED', 'O dial está travado agora');
-    assertCondition(this.dialMovers().includes(playerId), 'REJECTED', 'Você não controla o dial');
-    this.dialValue = clamp(Math.round(value), 0, 100);
+    assertCondition(this.isGuesser(playerId), 'REJECTED', 'O médium não tem dial');
+    assertCondition(!this.locked.has(playerId), 'REJECTED', 'Destrave antes de mexer');
+    this.guesses.set(playerId, clamp(Math.round(value), 0, 100));
   }
 
-  private betSide(playerId: string, side: SintoniaSide): void {
-    assertCondition(this.phase === 'guessing', 'REJECTED', 'Não é hora de apostar');
-    assertCondition(
-      this.teamOf(playerId) !== this.activeTeamId,
-      'REJECTED',
-      'O time do médium não aposta o lado',
-    );
-    assertCondition(!this.sideBets.has(playerId), 'REJECTED', 'Você já apostou');
-    this.sideBets.set(playerId, side);
-    if (this.allBetsIn()) {
-      this.closeGuessing();
-    }
+  private lockGuess(playerId: string): void {
+    assertCondition(this.phase === 'guessing', 'REJECTED', 'Não é hora de travar');
+    assertCondition(this.isGuesser(playerId), 'REJECTED', 'O médium não palpita');
+    if (this.locked.has(playerId)) return;
+    if (!this.guesses.has(playerId)) this.guesses.set(playerId, DIAL_START);
+    this.locked.add(playerId);
+    this.emit({ type: 'guess_locked', round: this.round, playerId });
+    if (this.allLocked()) this.closeGuessing();
+  }
+
+  private unlockGuess(playerId: string): void {
+    if (this.phase !== 'guessing') return;
+    this.locked.delete(playerId);
   }
 
   // ─── Round flow ───
@@ -261,27 +262,22 @@ export class SintoniaGame implements PausableGame, TurnTimedGame {
     this.round = round;
     this.phase = 'cluing';
     const plan = planRound(this.players, round - 1, this.random);
-    this.teams = plan.teams;
-    this.activeTeamId = plan.activeTeamId;
     this.mediumId = plan.mediumId;
     this.spectrum = this.drawSpectrum();
     this.target = TARGET_MIN + Math.floor(this.random() * (TARGET_MAX - TARGET_MIN + 1));
-    this.dialValue = DIAL_START;
     this.clue = null;
-    this.sideBets.clear();
-    this.bandPoints = null;
-    this.resolvedSideBet = null;
-    this.sideCorrect = null;
+    this.guesses.clear();
+    this.locked.clear();
+    this.results = [];
+    this.mediumPoints = null;
     this.roundSkipped = false;
-    this.teamRoundDelta[0] = 0;
-    this.teamRoundDelta[1] = 0;
+    for (const p of this.players) this.roundDelta.set(p.id, 0);
 
     this.setTimer(CLUING_MS);
     this.emit({
       type: 'round_started',
       round,
       totalRounds: this.totalRounds,
-      activeTeamId: this.activeTeamId,
       mediumId: this.mediumId,
     });
   }
@@ -291,53 +287,55 @@ export class SintoniaGame implements PausableGame, TurnTimedGame {
     this.phase = 'guessing';
     this.setTimer(GUESSING_MS);
     this.emit({ type: 'guessing_started', round: this.round, durationMs: GUESSING_MS });
-    if (this.allBetsIn()) {
-      this.closeGuessing();
-    }
+    if (this.allLocked()) this.closeGuessing();
   }
 
   private closeGuessing(): void {
     if (this.phase !== 'guessing') return;
-    this.emit({ type: 'dial_locked', round: this.round, value: this.dialValue });
     this.enterReveal();
   }
 
   private enterReveal(): void {
     this.phase = 'reveal';
-    const opponentId: SintoniaTeamId = this.activeTeamId === 0 ? 1 : 0;
 
     if (this.roundSkipped) {
-      this.bandPoints = 0;
-      this.resolvedSideBet = null;
-      this.sideCorrect = false;
+      this.results = [];
+      this.mediumPoints = 0;
     } else {
-      const distance = Math.abs(this.dialValue - this.target);
-      this.bandPoints = BANDS.find(([d]) => distance <= d)?.[1] ?? 0;
-      this.teamScores[this.activeTeamId] += this.bandPoints;
-      this.teamRoundDelta[this.activeTeamId] += this.bandPoints;
+      const guessers = this.players.filter((p) => p.id !== this.mediumId);
+      this.results = guessers
+        .map((p) => {
+          const value = this.guesses.get(p.id) ?? DIAL_START;
+          const distance = Math.abs(value - this.target);
+          const points = pointsFor(distance);
+          return { playerId: p.id, name: p.name, value, distance, points };
+        })
+        .sort((a, b) => b.points - a.points || a.distance - b.distance || a.name.localeCompare(b.name));
 
-      this.resolvedSideBet = this.tallySideBet(opponentId);
-      this.sideCorrect =
-        this.resolvedSideBet !== null &&
-        ((this.resolvedSideBet === 'right' && this.target > this.dialValue) ||
-          (this.resolvedSideBet === 'left' && this.target < this.dialValue));
-      if (this.sideCorrect) {
-        this.teamScores[opponentId] += SIDE_POINTS;
-        this.teamRoundDelta[opponentId] += SIDE_POINTS;
+      for (const r of this.results) {
+        this.scores.set(r.playerId, (this.scores.get(r.playerId) ?? 0) + r.points);
+        this.roundDelta.set(r.playerId, r.points);
+      }
+
+      const avg =
+        this.results.length > 0
+          ? Math.floor(this.results.reduce((n, r) => n + r.points, 0) / this.results.length)
+          : 0;
+      this.mediumPoints = avg;
+      if (this.mediumId) {
+        this.scores.set(this.mediumId, (this.scores.get(this.mediumId) ?? 0) + avg);
+        this.roundDelta.set(this.mediumId, avg);
       }
     }
 
+    const best = this.results[0] ?? null;
     this.setTimer(REVEAL_MS);
     this.emit({
       type: 'round_revealed',
       round: this.round,
       target: this.target,
-      dialValue: this.dialValue,
-      bandPoints: this.bandPoints,
-      activeTeamId: this.activeTeamId,
-      sideBet: this.resolvedSideBet,
-      sideCorrect: this.sideCorrect ?? false,
-      scores: [this.teamScores[0], this.teamScores[1]],
+      bestPlayerId: best && best.points > 0 ? best.playerId : null,
+      bestPoints: best?.points ?? 0,
     });
     this.emit({ type: 'round_finished', round: this.round, standings: this.computeStandings() });
   }
@@ -345,16 +343,14 @@ export class SintoniaGame implements PausableGame, TurnTimedGame {
   private enterGameover(): void {
     this.phase = 'gameover';
     this.clearTimer();
-    this.winnerTeamId =
-      this.teamScores[0] > this.teamScores[1]
-        ? 0
-        : this.teamScores[1] > this.teamScores[0]
-          ? 1
-          : null;
+    const standings = this.computeStandings();
+    const top = standings[0];
+    const tie = top && standings.filter((s) => s.score === top.score).length > 1;
+    this.winnerId = top && !tie ? top.playerId : null;
     this.emit({
       type: 'game_finished',
-      winnerTeamId: this.winnerTeamId,
-      standings: this.computeStandings(),
+      winnerId: this.winnerId,
+      standings,
     });
   }
 
@@ -380,68 +376,33 @@ export class SintoniaGame implements PausableGame, TurnTimedGame {
     return arr;
   }
 
-  private teamOf(playerId: string): SintoniaTeamId | null {
-    if (this.teams[0].includes(playerId)) return 0;
-    if (this.teams[1].includes(playerId)) return 1;
-    return null;
+  private isGuesser(playerId: string): boolean {
+    return this.nameById.has(playerId) && playerId !== this.mediumId;
   }
 
-  /** Active-team members who are not the médium — they drag the dial. Falls back to the médium if they are alone (tiny lobbies). */
-  private dialMovers(): string[] {
-    const active = this.teams[this.activeTeamId];
-    const others = active.filter((id) => id !== this.mediumId);
-    return others.length > 0 ? others : this.mediumId ? [this.mediumId] : [];
+  private guesserIds(): string[] {
+    return this.players.filter((p) => p.id !== this.mediumId).map((p) => p.id);
   }
 
-  private opponentConnectedIds(): string[] {
-    const opp: SintoniaTeamId = this.activeTeamId === 0 ? 1 : 0;
-    return this.teams[opp].filter((id) => this.connected.get(id) ?? true);
+  private connectedGuesserIds(): string[] {
+    return this.guesserIds().filter((id) => this.connected.get(id) ?? true);
   }
 
-  private allBetsIn(): boolean {
-    const expected = this.opponentConnectedIds();
+  private allLocked(): boolean {
+    const expected = this.connectedGuesserIds();
     if (expected.length === 0) return true;
-    return expected.every((id) => this.sideBets.has(id));
-  }
-
-  private tallySideBet(opponentId: SintoniaTeamId): SintoniaSide | null {
-    let left = 0;
-    let right = 0;
-    for (const id of this.teams[opponentId]) {
-      const bet = this.sideBets.get(id);
-      if (bet === 'left') left++;
-      else if (bet === 'right') right++;
-    }
-    if (left === 0 && right === 0) return null;
-    if (left === right) return null;
-    return left > right ? 'left' : 'right';
+    return expected.every((id) => this.locked.has(id));
   }
 
   private computeStandings(): SintoniaStanding[] {
     return this.players
-      .map((p) => {
-        const teamId = this.teamOf(p.id) ?? 0;
-        return {
-          playerId: p.id,
-          name: p.name,
-          teamId,
-          score: this.teamScores[teamId],
-          roundDelta: this.teamRoundDelta[teamId],
-        };
-      })
+      .map((p) => ({
+        playerId: p.id,
+        name: p.name,
+        score: this.scores.get(p.id) ?? 0,
+        roundDelta: this.roundDelta.get(p.id) ?? 0,
+      }))
       .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
-  }
-
-  private teamName(id: SintoniaTeamId): string {
-    return TEAM_NAMES[id];
-  }
-
-  private captainName(id: SintoniaTeamId): string | null {
-    // First member by stable join order — deterministic "captain" for the splash.
-    for (const p of this.players) {
-      if (this.teams[id].includes(p.id)) return p.name;
-    }
-    return null;
   }
 
   // ─── Events ───
@@ -475,75 +436,74 @@ export class SintoniaGame implements PausableGame, TurnTimedGame {
     return this.paused ? 'paused' : this.phase;
   }
 
-  private projectTeam(id: SintoniaTeamId): SintoniaTeamView {
-    const memberIds = this.teams[id];
-    return {
-      id,
-      name: this.teamName(id),
-      memberIds: [...memberIds],
-      memberNames: memberIds.map((mid) => this.nameById.get(mid) ?? '—'),
-      score: this.teamScores[id],
-      isActive: id === this.activeTeamId,
-    };
+  private projectGuesses(inReveal: boolean): SintoniaGuess[] {
+    return this.players
+      .filter((p) => p.id !== this.mediumId)
+      .map((p) => ({
+        playerId: p.id,
+        name: p.name,
+        value: inReveal ? (this.guesses.get(p.id) ?? DIAL_START) : null,
+        locked: this.locked.has(p.id),
+      }));
   }
 
   getPublicState(): SintoniaPublicState {
     const inReveal = this.phase === 'reveal' || this.phase === 'gameover';
+    const guesserIds = this.guesserIds();
     return {
       phase: this.projectPhase(),
       roomCode: this.roomCode,
       round: this.round,
       totalRounds: this.totalRounds,
-      activeTeamId: this.activeTeamId,
       mediumId: this.mediumId,
       mediumName: this.mediumId ? (this.nameById.get(this.mediumId) ?? '—') : null,
       spectrum: [this.spectrum[0], this.spectrum[1]],
       clue: this.phase === 'guessing' || inReveal ? this.clue : null,
-      dialValue: this.dialValue,
+      guesses: this.projectGuesses(inReveal),
+      guessersLockedCount: guesserIds.filter((id) => this.locked.has(id)).length,
+      guessersTotalCount: guesserIds.length,
       target: inReveal ? this.target : null,
-      bandPoints: inReveal ? this.bandPoints : null,
-      sideBet: inReveal ? this.resolvedSideBet : null,
-      sideCorrect: inReveal ? this.sideCorrect : null,
+      results: inReveal ? this.results : [],
+      mediumPoints: inReveal ? this.mediumPoints : null,
       roundSkipped: inReveal ? this.roundSkipped : false,
-      teams: [this.projectTeam(0), this.projectTeam(1)],
+      players: this.players.map((p) => ({
+        id: p.id,
+        name: p.name,
+        connected: this.connected.get(p.id) ?? true,
+        score: this.scores.get(p.id) ?? 0,
+      })),
       standings: this.computeStandings(),
       timer: this.getTimer(),
-      winnerTeamId: this.phase === 'gameover' ? this.winnerTeamId : null,
+      winnerId: this.phase === 'gameover' ? this.winnerId : null,
       winnerName:
-        this.phase === 'gameover' && this.winnerTeamId !== null
-          ? this.captainName(this.winnerTeamId)
-          : null,
+        this.phase === 'gameover' && this.winnerId ? (this.nameById.get(this.winnerId) ?? null) : null,
     };
   }
 
   getPrivateState(playerId: string): SintoniaPrivateState {
-    const teamId = this.teamOf(playerId);
     const isMedium = playerId === this.mediumId;
     let role: SintoniaRole = 'idle';
     if (!this.paused && this.phase !== 'reveal' && this.phase !== 'gameover') {
-      if (this.phase === 'cluing') {
-        role = isMedium ? 'medium' : 'idle';
-      } else if (this.phase === 'guessing') {
-        if (this.dialMovers().includes(playerId)) role = 'dial';
-        else if (teamId !== null && teamId !== this.activeTeamId) role = 'sideBet';
-        else role = 'idle';
-      }
+      if (isMedium) role = 'medium';
+      else if (this.phase === 'guessing') role = 'guesser';
     }
 
     const seesTarget = isMedium && (this.phase === 'cluing' || this.phase === 'guessing');
-    const myBet = this.sideBets.get(playerId) ?? null;
+    const myGuess = this.guesses.get(playerId) ?? null;
+    const myLocked = this.locked.has(playerId);
 
     let done = false;
     if (this.phase === 'cluing' && isMedium) done = this.clue !== null;
-    else if (this.phase === 'guessing' && role === 'sideBet') done = myBet !== null;
+    else if (this.phase === 'guessing' && !isMedium) done = myLocked;
 
     return {
       playerId,
-      teamId,
       role,
+      isMedium,
       target: seesTarget ? this.target : null,
       clue: this.phase === 'guessing' || this.phase === 'reveal' ? this.clue : null,
-      myBet,
+      myGuess,
+      myLocked,
       done,
     };
   }

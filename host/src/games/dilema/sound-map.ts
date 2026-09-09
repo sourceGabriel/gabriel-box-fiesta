@@ -11,12 +11,14 @@ export function soundForEvent(event: DilemaGameEvent): SoundSpec | null {
       return { cue: 'meme.roundStart', fallback: 'turn' };
     case 'assignments_made':
       return { sample: 'card-shuffle' };
-    case 'playing_started':
+    case 'pick_step_started':
       return { sample: 'card-deal' };
-    case 'card_played':
-      return { sample: 'ui-drop', gain: 0.6 };
-    case 'all_cards_in':
+    case 'team_proposed':
+      return { sample: 'ui-drop', gain: 0.5 };
+    case 'team_locked':
       return { sample: 'ui-confirm' };
+    case 'both_locked':
+      return { sample: 'ui-open', gain: 0.6 };
     case 'verdict_started':
       return { cue: 'meme.reveal', fallback: { sample: 'ui-question' } };
     case 'verdict_cast':

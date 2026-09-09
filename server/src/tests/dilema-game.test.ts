@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { TOTAL_ROUNDS } from '../games/dilema/constants';
+import type { DilemaPublicState, DilemaTrack } from '@party/shared';
+import { STEPS, TOTAL_ROUNDS } from '../games/dilema/constants';
 import { DilemaGame } from '../games/dilema/dilema-game';
 import { planRound } from '../games/dilema/pairing';
 
@@ -8,11 +9,7 @@ const P3 = [
   { id: 'p2', name: 'Bia' },
   { id: 'p3', name: 'Caio' },
 ];
-const P5 = [
-  ...P3,
-  { id: 'p4', name: 'Duda' },
-  { id: 'p5', name: 'Eli' },
-];
+const P5 = [...P3, { id: 'p4', name: 'Duda' }, { id: 'p5', name: 'Eli' }];
 
 const mkGame = (
   playerList: { id: string; name: string }[] = P3,
@@ -26,50 +23,63 @@ const mkGame = (
     matchLength: opts.matchLength,
   });
 
-/** assigning → playing */
-const toPlaying = (game: DilemaGame): void => {
-  game.onTurnTimeout();
-};
+const pub = (game: DilemaGame): DilemaPublicState => game.getPublicState();
 
-/** Everyone who is not the Maquinista passes, draining `playing` → `verdict`. */
-const passEveryone = (game: DilemaGame, players = P3): void => {
-  const conductor = game.getPublicState().conductorId;
-  for (const p of players) {
-    if (p.id === conductor) continue;
-    try {
-      game.handleAction(p.id, { type: 'pass' });
-    } catch {
-      /* already advanced */
+/** assigning → pickInnocent */
+const toPicks = (game: DilemaGame): void => game.onTurnTimeout();
+
+/** Run the current pick step for both teams (first member proposes candidate 0, the rest confirm). */
+const runStep = (game: DilemaGame): void => {
+  const s = pub(game);
+  const step = s.step!;
+  for (const side of ['left', 'right'] as DilemaTrack[]) {
+    const members = s.tracks[side].memberIds;
+    if (members.length === 0) continue;
+    const proposer = members[0];
+    const priv = game.getPrivateState(proposer);
+    const cand = priv.candidates[0];
+    const target = step === 'modifier' ? priv.modifierTargets[0]?.id : undefined;
+    game.handleAction(proposer, { type: 'propose', cardId: cand.id, targetCardId: target });
+    for (const id of members.slice(1)) {
+      try {
+        game.handleAction(id, { type: 'confirm' });
+      } catch {
+        /* step may have already advanced */
+      }
     }
   }
 };
 
-/** Run one whole round: assigning → playing → verdict → results (left dies). */
-const playRound = (game: DilemaGame, players = P3): void => {
-  toPlaying(game);
-  passEveryone(game, players);
-  const conductor = game.getPublicState().conductorId!;
-  game.handleAction(conductor, { type: 'castVerdict', killedTrack: 'left' });
+/** assigning → all three pick steps → verdict. */
+const toVerdict = (game: DilemaGame): void => {
+  toPicks(game);
+  for (let i = 0; i < STEPS.length; i++) runStep(game);
+};
+
+/** One whole round, left track dies. */
+const playRound = (game: DilemaGame): void => {
+  toVerdict(game);
+  game.handleAction(pub(game).conductorId!, { type: 'castVerdict', killedTrack: 'left' });
 };
 
 describe('DilemaGame — setup', () => {
-  it('starts round 1 in the assigning phase with a Maquinista and two tracks', () => {
+  it('starts round 1 in assigning with a Maquinista, two tracks and seed innocents', () => {
     const game = mkGame();
     game.start();
-    const pub = game.getPublicState();
-
-    expect(pub.phase).toBe('assigning');
-    expect(pub.round).toBe(1);
-    expect(pub.totalRounds).toBe(TOTAL_ROUNDS);
-    expect(pub.conductorId).toBeTruthy();
+    const s = pub(game);
+    expect(s.phase).toBe('assigning');
+    expect(s.round).toBe(1);
+    expect(s.step).toBeNull();
+    expect(s.totalRounds).toBe(TOTAL_ROUNDS);
+    expect(s.conductorId).toBeTruthy();
     expect(game.getStatus()).toBe('active');
 
-    const members = [...pub.tracks.left.memberIds, ...pub.tracks.right.memberIds];
-    expect(members).toHaveLength(2); // 3 players − 1 Maquinista
-    expect(members).not.toContain(pub.conductorId);
-    expect(pub.tracks.left.cards).toHaveLength(1); // one seed innocent
-    expect(pub.tracks.right.cards).toHaveLength(1);
-    expect(pub.tracks.left.cards[0].type).toBe('innocent');
+    const members = [...s.tracks.left.memberIds, ...s.tracks.right.memberIds];
+    expect(members).toHaveLength(2);
+    expect(members).not.toContain(s.conductorId);
+    expect(s.tracks.left.cards).toHaveLength(1);
+    expect(s.tracks.left.cards[0].type).toBe('innocent');
+    expect(s.tracks.left.cards[0].authorTrack).toBeNull();
   });
 
   it('reports setup before start and rejects a malformed payload', () => {
@@ -80,24 +90,25 @@ describe('DilemaGame — setup', () => {
   });
 
   it('rejects fewer than three players', () => {
-    const game = mkGame([P3[0], P3[1]]);
-    expect(() => game.start()).toThrow(/INVALID_PLAYER_COUNT/);
+    expect(() => mkGame([P3[0], P3[1]]).start()).toThrow(/INVALID_PLAYER_COUNT/);
   });
 
-  it('deals a hand to every player except the Maquinista', () => {
+  it('deals each non-Maquinista their team candidates for the current step only', () => {
     const game = mkGame(P5);
     game.start();
-    const { conductorId } = game.getPublicState();
+    toPicks(game);
+    const s = pub(game);
     for (const p of P5) {
       const priv = game.getPrivateState(p.id);
-      if (p.id === conductorId) {
+      if (p.id === s.conductorId) {
         expect(priv.isConductor).toBe(true);
-        expect(priv.hand).toHaveLength(0);
+        expect(priv.candidates).toHaveLength(0);
         expect(priv.myTrack).toBeNull();
       } else {
-        expect(priv.isConductor).toBe(false);
-        expect(priv.hand).toHaveLength(5);
         expect(priv.myTrack === 'left' || priv.myTrack === 'right').toBe(true);
+        expect(priv.step).toBe('innocent');
+        expect(priv.candidates.length).toBeGreaterThan(0);
+        expect(priv.candidates.every((c) => c.type === 'innocent')).toBe(true);
       }
     }
   });
@@ -105,7 +116,7 @@ describe('DilemaGame — setup', () => {
   it('honours a lobby-chosen match length', () => {
     const game = mkGame(P3, { matchLength: 3 });
     game.start();
-    expect(game.getPublicState().totalRounds).toBe(3);
+    expect(pub(game).totalRounds).toBe(3);
   });
 });
 
@@ -126,138 +137,147 @@ describe('planRound — pure planner', () => {
   });
 });
 
-describe('DilemaGame — playing phase', () => {
-  it('auto-advances assigning → playing on timeout', () => {
+describe('DilemaGame — pick steps + consensus', () => {
+  it('auto-advances assigning → pickInnocent on timeout, with no timer on the pick', () => {
     const game = mkGame();
     game.start();
-    toPlaying(game);
-    expect(game.getPublicState().phase).toBe('playing');
+    toPicks(game);
+    expect(pub(game).phase).toBe('pickInnocent');
+    expect(pub(game).step).toBe('innocent');
+    expect(game.getTimer()).toBeNull();
   });
 
-  it('puts an innocent on your own track and a guilty on the enemy track', () => {
+  it('a proposal needs every connected team member to confirm before it locks', () => {
     const game = mkGame(P5);
     game.start();
-    toPlaying(game);
-    const { conductorId } = game.getPublicState();
-    const me = P5.find((p) => p.id !== conductorId)!;
-    const priv = game.getPrivateState(me.id);
-    const myTrack = priv.myTrack!;
-    const enemy = myTrack === 'left' ? 'right' : 'left';
-
-    const innocent = priv.hand.find((c) => c.type === 'innocent')!;
-    const guilty = priv.hand.find((c) => c.type === 'guilty')!;
-
-    game.handleAction(me.id, { type: 'playCard', cardId: innocent.id, targetTrack: myTrack });
-    game.handleAction(me.id, { type: 'playCard', cardId: guilty.id, targetTrack: enemy });
-
-    const pub = game.getPublicState();
-    expect(pub.tracks[myTrack].cards.some((c) => c.text === innocent.text && c.authorId === me.id)).toBe(true);
-    expect(pub.tracks[enemy].cards.some((c) => c.text === guilty.text)).toBe(true);
+    toPicks(game);
+    const s = pub(game);
+    // pick a track with two members
+    const side = s.tracks.left.memberIds.length >= 2 ? 'left' : 'right';
+    const [a, b] = s.tracks[side].memberIds;
+    const candA = game.getPrivateState(a).candidates[0];
+    game.handleAction(a, { type: 'propose', cardId: candA.id });
+    // proposer auto-confirms; the second member has not
+    let pick = pub(game).tracks[side].pick!;
+    expect(pick.locked).toBe(false);
+    expect(pick.proposalCardId).toBe(candA.id);
+    expect(pick.confirmedCount).toBe(1);
+    game.handleAction(b, { type: 'confirm' });
+    pick = pub(game).tracks[side].pick!;
+    expect(pick.locked).toBe(true);
+    expect(pub(game).tracks[side].cards.some((c) => c.text === candA.text)).toBe(true);
   });
 
-  it('rejects an innocent on the enemy track, a guilty on your own, and the Maquinista playing', () => {
+  it('a new proposal clears the confirmations', () => {
     const game = mkGame(P5);
     game.start();
-    toPlaying(game);
-    const { conductorId } = game.getPublicState();
-    const me = P5.find((p) => p.id !== conductorId)!;
-    const priv = game.getPrivateState(me.id);
-    const myTrack = priv.myTrack!;
-    const enemy = myTrack === 'left' ? 'right' : 'left';
-    const innocent = priv.hand.find((c) => c.type === 'innocent')!;
-    const guilty = priv.hand.find((c) => c.type === 'guilty')!;
-
-    expect(() =>
-      game.handleAction(me.id, { type: 'playCard', cardId: innocent.id, targetTrack: enemy }),
-    ).toThrow(/REJECTED/);
-    expect(() =>
-      game.handleAction(me.id, { type: 'playCard', cardId: guilty.id, targetTrack: myTrack }),
-    ).toThrow(/REJECTED/);
-    expect(() =>
-      game.handleAction(conductorId!, { type: 'playCard', cardId: 'h0', targetTrack: 'left' }),
-    ).toThrow(/REJECTED/);
+    toPicks(game);
+    const s = pub(game);
+    const side = s.tracks.left.memberIds.length >= 2 ? 'left' : 'right';
+    const [a, b] = s.tracks[side].memberIds;
+    const cands = game.getPrivateState(a).candidates;
+    game.handleAction(a, { type: 'propose', cardId: cands[0].id });
+    game.handleAction(b, { type: 'propose', cardId: cands[1].id });
+    const pick = pub(game).tracks[side].pick!;
+    expect(pick.proposalCardId).toBe(cands[1].id);
+    expect(pick.confirmedCount).toBe(1); // only b, who re-proposed
   });
 
-  it('staples a modifier onto a specific base card (and rejects a loose one)', () => {
+  it('runs innocent → guilty → modifier and puts each card on the right track', () => {
     const game = mkGame(P5);
     game.start();
-    toPlaying(game);
-    const { conductorId } = game.getPublicState();
-    const me = P5.find((p) => p.id !== conductorId)!;
-    const priv = game.getPrivateState(me.id);
-    const myTrack = priv.myTrack!;
-    const modifier = priv.hand.find((c) => c.type === 'modifier')!;
-    const seedId = game.getPublicState().tracks[myTrack].cards[0].id;
+    toPicks(game);
 
-    expect(() =>
-      game.handleAction(me.id, { type: 'playCard', cardId: modifier.id, targetTrack: myTrack }),
-    ).toThrow(/REJECTED/);
-    expect(() =>
-      game.handleAction(me.id, { type: 'playCard', cardId: modifier.id, targetTrack: myTrack, targetCardId: 'nope' }),
-    ).toThrow(/REJECTED/);
+    runStep(game); // innocent
+    expect(pub(game).step).toBe('guilty');
+    runStep(game); // guilty
+    expect(pub(game).step).toBe('modifier');
+    runStep(game); // modifier
+    expect(pub(game).phase).toBe('verdict');
 
-    game.handleAction(me.id, {
-      type: 'playCard',
-      cardId: modifier.id,
-      targetTrack: myTrack,
-      targetCardId: seedId,
-    });
-    const base = game.getPublicState().tracks[myTrack].cards.find((c) => c.id === seedId)!;
-    expect(base.modifiers).toHaveLength(1);
-    expect(base.modifiers[0].text).toBe(modifier.text);
+    const s = pub(game);
+    for (const side of ['left', 'right'] as DilemaTrack[]) {
+      const other = side === 'left' ? 'right' : 'left';
+      // own innocent lands on own track
+      expect(s.tracks[side].cards.some((c) => c.type === 'innocent' && c.authorTrack === side)).toBe(true);
+      // this team's guilty lands on the enemy track
+      expect(s.tracks[other].cards.some((c) => c.type === 'guilty' && c.authorTrack === side)).toBe(true);
+      // a modifier got stapled somewhere
+    }
+    const modCount = [...s.tracks.left.cards, ...s.tracks.right.cards].reduce(
+      (n, c) => n + c.modifiers.length,
+      0,
+    );
+    expect(modCount).toBe(2);
   });
 
-  it('advances to verdict once every non-Maquinista has passed', () => {
-    const game = mkGame();
-    game.start();
-    toPlaying(game);
-    passEveryone(game);
-    expect(game.getPublicState().phase).toBe('verdict');
-  });
-
-  it('closes the playing window on timeout with whatever is on the tracks', () => {
+  it('rejects a proposal from the Maquinista, a wrong-type candidate and a modifier with no target', () => {
     const game = mkGame(P5);
     game.start();
-    toPlaying(game);
-    const me = P5.find((p) => p.id !== game.getPublicState().conductorId)!;
-    const priv = game.getPrivateState(me.id);
-    game.handleAction(me.id, {
-      type: 'playCard',
-      cardId: priv.hand.find((c) => c.type === 'innocent')!.id,
-      targetTrack: priv.myTrack!,
-    });
-    game.onTurnTimeout();
-    expect(game.getPublicState().phase).toBe('verdict');
+    toPicks(game);
+    const s = pub(game);
+    const conductor = s.conductorId!;
+    const member = s.tracks.left.memberIds[0] ?? s.tracks.right.memberIds[0];
+    const cand = game.getPrivateState(member).candidates[0];
+
+    expect(() => game.handleAction(conductor, { type: 'propose', cardId: cand.id })).toThrow(/REJECTED/);
+    expect(() => game.handleAction(member, { type: 'propose', cardId: 'bogus' })).toThrow(/REJECTED/);
+
+    // advance to the modifier step, then propose without a target
+    runStep(game); // innocent
+    runStep(game); // guilty
+    const modMember = pub(game).tracks.left.memberIds[0] ?? pub(game).tracks.right.memberIds[0];
+    const modCand = game.getPrivateState(modMember).candidates[0];
+    expect(() => game.handleAction(modMember, { type: 'propose', cardId: modCand.id })).toThrow(/REJECTED/);
+  });
+
+  it('unconfirm drops a confirmation and keeps the step open', () => {
+    const game = mkGame(P5);
+    game.start();
+    toPicks(game);
+    const s = pub(game);
+    const side = s.tracks.left.memberIds.length >= 2 ? 'left' : 'right';
+    const [a, b] = s.tracks[side].memberIds;
+    game.handleAction(a, { type: 'propose', cardId: game.getPrivateState(a).candidates[0].id });
+    game.handleAction(a, { type: 'unconfirm' });
+    expect(pub(game).tracks[side].pick!.confirmedCount).toBe(0);
+    game.handleAction(b, { type: 'confirm' });
+    game.handleAction(a, { type: 'confirm' });
+    expect(pub(game).tracks[side].pick!.locked).toBe(true);
   });
 });
 
 describe('DilemaGame — verdict + scoring', () => {
+  it('has no timer during the verdict and needs the Maquinista to choose', () => {
+    const game = mkGame(P5);
+    game.start();
+    toVerdict(game);
+    expect(pub(game).phase).toBe('verdict');
+    expect(game.getTimer()).toBeNull();
+    game.onTurnTimeout(); // no-op — the verdict does not time out
+    expect(pub(game).phase).toBe('verdict');
+  });
+
   it('spares the other track and scores every player on it', () => {
     const game = mkGame(P5);
     game.start();
-    toPlaying(game);
-    passEveryone(game, P5);
+    toVerdict(game);
+    const s0 = pub(game);
+    const conductor = s0.conductorId!;
+    const sparedIds = s0.tracks.right.memberIds;
 
-    const pub0 = game.getPublicState();
-    const conductor = pub0.conductorId!;
-    const sparedSide = 'right';
-    const killedSide = 'left';
-    const sparedIds = pub0.tracks[sparedSide].memberIds;
-
-    game.handleAction(conductor, { type: 'castVerdict', killedTrack: killedSide });
-
-    const pub = game.getPublicState();
-    expect(pub.phase).toBe('roundResults');
-    expect(pub.killedTrack).toBe(killedSide);
-    expect(pub.sparedTrack).toBe(sparedSide);
-    expect(pub.verdictWasAuto).toBe(false);
-
-    for (const s of pub.standings) {
-      if (sparedIds.includes(s.playerId)) {
-        expect(s.spared).toBe(1);
-        expect(s.roundDelta).toBe(1);
+    game.handleAction(conductor, { type: 'castVerdict', killedTrack: 'left' });
+    const s = pub(game);
+    expect(s.phase).toBe('roundResults');
+    expect(s.killedTrack).toBe('left');
+    expect(s.sparedTrack).toBe('right');
+    expect(s.verdictWasAuto).toBe(false);
+    for (const st of s.standings) {
+      if (sparedIds.includes(st.playerId)) {
+        expect(st.spared).toBe(1);
+        expect(st.roundDelta).toBe(1);
       } else {
-        expect(s.spared).toBe(0);
+        expect(st.spared).toBe(0);
       }
     }
   });
@@ -265,24 +285,22 @@ describe('DilemaGame — verdict + scoring', () => {
   it('rejects a verdict from anyone but the Maquinista', () => {
     const game = mkGame(P5);
     game.start();
-    toPlaying(game);
-    passEveryone(game, P5);
-    const nonConductor = P5.find((p) => p.id !== game.getPublicState().conductorId)!;
-    expect(() =>
-      game.handleAction(nonConductor.id, { type: 'castVerdict', killedTrack: 'left' }),
-    ).toThrow(/REJECTED/);
+    toVerdict(game);
+    const nonConductor = P5.find((p) => p.id !== pub(game).conductorId)!;
+    expect(() => game.handleAction(nonConductor.id, { type: 'castVerdict', killedTrack: 'left' })).toThrow(
+      /REJECTED/,
+    );
   });
 
-  it('coin-flips the verdict on timeout and flags it as auto', () => {
+  it('coin-flips the verdict if the Maquinista disconnects', () => {
     const game = mkGame(P5, { random: () => 0.9 });
     game.start();
-    toPlaying(game);
-    passEveryone(game, P5);
-    game.onTurnTimeout(); // verdict window elapses
-    const pub = game.getPublicState();
-    expect(pub.phase).toBe('roundResults');
-    expect(pub.verdictWasAuto).toBe(true);
-    expect(pub.killedTrack === 'left' || pub.killedTrack === 'right').toBe(true);
+    toVerdict(game);
+    game.setPlayerConnected(pub(game).conductorId!, false);
+    const s = pub(game);
+    expect(s.phase).toBe('roundResults');
+    expect(s.verdictWasAuto).toBe(true);
+    expect(s.killedTrack === 'left' || s.killedTrack === 'right').toBe(true);
   });
 });
 
@@ -290,74 +308,62 @@ describe('DilemaGame — rounds, endgame, pause', () => {
   it('re-divides teams and rotates the Maquinista each round', () => {
     const game = mkGame();
     game.start();
-    const r1Conductor = game.getPublicState().conductorId;
+    const r1 = pub(game).conductorId;
     playRound(game);
     game.onTurnTimeout(); // roundResults → round 2
-    const pub = game.getPublicState();
-    expect(pub.round).toBe(2);
-    expect(pub.phase).toBe('assigning');
-    expect(pub.conductorId).not.toBe(r1Conductor);
+    const s = pub(game);
+    expect(s.round).toBe(2);
+    expect(s.phase).toBe('assigning');
+    expect(s.conductorId).not.toBe(r1);
   });
 
   it('runs the whole match then ends with the most-spared player as winner', () => {
     const game = mkGame(P5);
     game.start();
     for (let r = 1; r <= TOTAL_ROUNDS; r++) {
-      playRound(game, P5);
-      game.onTurnTimeout(); // leave results
+      playRound(game);
+      game.onTurnTimeout();
     }
-    const pub = game.getPublicState();
-    expect(pub.phase).toBe('gameover');
+    const s = pub(game);
+    expect(s.phase).toBe('gameover');
     expect(game.getStatus()).toBe('complete');
-    expect(pub.winnerId).toBeTruthy();
+    expect(s.winnerId).toBeTruthy();
     expect(game.getTimer()).toBeNull();
-    // The winner has the highest `spared` count.
-    const top = pub.standings[0];
-    expect(pub.standings.every((s) => s.spared <= top.spared)).toBe(true);
-    expect(pub.winnerId).toBe(top.playerId);
+    const top = s.standings[0];
+    expect(s.standings.every((st) => st.spared <= top.spared)).toBe(true);
+    expect(s.winnerId).toBe(top.playerId);
   });
 
-  it('advances to verdict when the last connected non-Maquinista drops', () => {
+  it('a disconnected team member no longer blocks the lock', () => {
     const game = mkGame(P5);
     game.start();
-    toPlaying(game);
-    const conductor = game.getPublicState().conductorId!;
-    const others = P5.filter((p) => p.id !== conductor);
-    // All but the last pass; then the last one disconnects.
-    for (const p of others.slice(0, -1)) game.handleAction(p.id, { type: 'pass' });
-    expect(game.getPublicState().phase).toBe('playing');
-    game.setPlayerConnected(others[others.length - 1].id, false);
-    expect(game.getPublicState().phase).toBe('verdict');
+    toPicks(game);
+    const s = pub(game);
+    const side = s.tracks.left.memberIds.length >= 2 ? 'left' : 'right';
+    const [a, b] = s.tracks[side].memberIds;
+    game.handleAction(a, { type: 'propose', cardId: game.getPrivateState(a).candidates[0].id });
+    expect(pub(game).tracks[side].pick!.locked).toBe(false);
+    game.setPlayerConnected(b, false);
+    expect(pub(game).tracks[side].pick!.locked).toBe(true);
   });
 
-  it('treats a second pass as a no-op and rejects a non-player', () => {
+  it('rejects a non-player and the Maquinista confirming', () => {
     const game = mkGame();
     game.start();
-    toPlaying(game);
-    const nonConductor = P3.find((p) => p.id !== game.getPublicState().conductorId)!;
-    game.handleAction(nonConductor.id, { type: 'pass' });
-    expect(() => game.handleAction(nonConductor.id, { type: 'pass' })).not.toThrow();
-    expect(() => game.handleAction('ghost', { type: 'pass' })).toThrow(/REJECTED/);
-  });
-
-  it('rejects the Maquinista trying to pass', () => {
-    const game = mkGame();
-    game.start();
-    toPlaying(game);
-    const conductor = game.getPublicState().conductorId!;
-    expect(() => game.handleAction(conductor, { type: 'pass' })).toThrow(/REJECTED/);
+    toPicks(game);
+    const conductor = pub(game).conductorId!;
+    expect(() => game.handleAction('ghost', { type: 'confirm' })).toThrow(/REJECTED/);
+    expect(() => game.handleAction(conductor, { type: 'confirm' })).toThrow(/REJECTED/);
   });
 
   it('freezes the timer and rejects actions while paused', () => {
     const game = mkGame();
     game.start();
-    toPlaying(game);
     game.pause(1000);
-    expect(game.getPublicState().phase).toBe('paused');
+    expect(pub(game).phase).toBe('paused');
     expect(game.getTimer()).toBeNull();
-    expect(() => game.handleAction('p2', { type: 'pass' })).toThrow(/GAME_PAUSED/);
+    expect(() => game.handleAction('p2', { type: 'confirm' })).toThrow(/GAME_PAUSED/);
     game.resume(5000);
-    expect(game.getPublicState().phase).toBe('playing');
-    expect(game.getTimer()).not.toBeNull();
+    expect(pub(game).phase).toBe('assigning');
   });
 });

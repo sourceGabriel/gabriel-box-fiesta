@@ -1,11 +1,14 @@
 import type {
   ContentTier,
+  DilemaCandidate,
   DilemaGameEvent,
-  DilemaHandCard,
+  DilemaModifierTarget,
   DilemaPhase,
+  DilemaPickState,
   DilemaPrivateState,
   DilemaPublicState,
   DilemaStanding,
+  DilemaStep,
   DilemaTrack,
   DilemaTrackCard,
   DilemaTrackView,
@@ -17,17 +20,13 @@ import { parseDilemaAction } from './action-schema';
 import { dilemaCards, type DilemaCardDef } from './cards';
 import {
   ASSIGNING_MS,
-  HAND_GUILTY,
-  HAND_INNOCENTS,
-  HAND_MODIFIERS,
-  HAND_SIZE,
+  CANDIDATES_PER_STEP,
   MAX_PLAYERS,
   MIN_PLAYERS,
-  PLAYING_MS,
   RESULTS_MS,
+  STEPS,
   TOTAL_ROUNDS,
   TRACK_LABEL,
-  VERDICT_MS,
 } from './constants';
 import { planRound } from './pairing';
 
@@ -39,20 +38,45 @@ function assertCondition(condition: unknown, code: string, message: string): ass
 
 type Player = { id: string; name: string };
 
-/** A card resolved onto a track — engine-internal (author always known). */
+/** A card resolved onto a track — engine-internal. */
 type InternalCard = {
   id: string;
-  type: 'innocent' | 'guilty' | 'modifier';
+  type: DilemaStep;
   text: string;
-  authorId: string | null;
+  authorTrack: DilemaTrack | null;
   attachedTo: string | null;
 };
 
+/** One team's working state for the current pick step. */
+type TeamStep = {
+  proposalCardId: string | null;
+  proposalTargetId: string | null;
+  confirmedBy: Set<string>;
+  locked: boolean;
+};
+
+const STEP_PHASE: Record<DilemaStep, DilemaPhase> = {
+  innocent: 'pickInnocent',
+  guilty: 'pickGuilty',
+  modifier: 'pickModifier',
+};
+
+const emptyTeamStep = (): TeamStep => ({
+  proposalCardId: null,
+  proposalTargetId: null,
+  confirmedBy: new Set(),
+  locked: false,
+});
+
 /**
  * Dilema nos Trilhos orchestrator — the platform `GameInstance` for a
- * trolley-problem debate match. Self-advancing: every phase (`assigning` →
- * `playing` → `verdict` → `roundResults`) carries one stored deadline the
- * platform server ticks; `onTurnTimeout()` closes the phase with whatever is in.
+ * trolley-problem debate match.
+ *
+ * Faithful to the *Trial by Trolley* turn order: each round both teams agree on
+ * ONE innocent (own track), then ONE guilty (enemy track), then ONE modifier
+ * (stapled to a base card). The pick steps and the verdict have NO timer — couch
+ * play, the table argues out loud and locks / pulls the lever when it is ready.
+ * Only `assigning` and `roundResults` auto-advance off a server-ticked deadline.
  *
  * There is no points economy. A player's score is the number of rounds their
  * track was spared; the game crowns whoever was spared most.
@@ -73,7 +97,6 @@ export class DilemaGame implements PausableGame, TurnTimedGame {
   private readonly totalRounds: number;
   private round = 0;
 
-  // Card source + three working decks (texts only — the pile implies the type).
   private cardSource: { innocents: DilemaCardDef[]; guilty: DilemaCardDef[]; modifiers: DilemaCardDef[] } = {
     innocents: [],
     guilty: [],
@@ -88,9 +111,9 @@ export class DilemaGame implements PausableGame, TurnTimedGame {
   private leftIds: string[] = [];
   private rightIds: string[] = [];
   private trackCards: Record<DilemaTrack, InternalCard[]> = { left: [], right: [] };
-  private hands = new Map<string, DilemaHandCard[]>();
-  private cardsPlayed = new Map<string, number>();
-  private passed = new Set<string>();
+  private candidates: Record<DilemaTrack, DilemaCandidate[]> = { left: [], right: [] };
+  private stepIndex = 0;
+  private teamStep: Record<DilemaTrack, TeamStep> = { left: emptyTeamStep(), right: emptyTeamStep() };
   private cardSeq = 0;
 
   private killedTrack: DilemaTrack | null = null;
@@ -100,7 +123,7 @@ export class DilemaGame implements PausableGame, TurnTimedGame {
   private standings: DilemaStanding[] = [];
   private winnerId: string | null = null;
 
-  // Single wall-clock deadline, ticked by the server against `getTimer().expiresAt`.
+  // Single wall-clock deadline; only `assigning` + `roundResults` set it.
   private timerStartedAt: number | null = null;
   private timerDurationMs: number | null = null;
   private timerExpiresAt: number | null = null;
@@ -140,12 +163,16 @@ export class DilemaGame implements PausableGame, TurnTimedGame {
   }
 
   setPlayerConnected(playerId: string, connected: boolean): void {
-    if (this.connected.has(playerId)) {
-      this.connected.set(playerId, connected);
-      // A disconnect during `playing` might complete the round.
-      if (!connected && this.phase === 'playing' && this.allReady()) {
-        this.closePlaying();
-      }
+    if (!this.connected.has(playerId)) return;
+    this.connected.set(playerId, connected);
+    if (connected) return;
+
+    // A disconnect can complete a pick step (fewer members left to confirm) or
+    // force the verdict (the Maquinista left).
+    if (this.isPickPhase()) {
+      for (const side of ['left', 'right'] as DilemaTrack[]) this.maybeLockTeam(side);
+    } else if (this.phase === 'verdict' && playerId === this.conductorId) {
+      this.closeVerdict(true);
     }
   }
 
@@ -190,7 +217,7 @@ export class DilemaGame implements PausableGame, TurnTimedGame {
     return {
       startedAt: this.timerStartedAt ?? now,
       expiresAt: this.timerExpiresAt,
-      durationMs: this.timerDurationMs ?? PLAYING_MS,
+      durationMs: this.timerDurationMs ?? RESULTS_MS,
       serverNow: now,
       remainingMs: Math.max(0, this.timerExpiresAt - now),
     };
@@ -200,13 +227,7 @@ export class DilemaGame implements PausableGame, TurnTimedGame {
     if (this.paused) return;
     switch (this.phase) {
       case 'assigning':
-        this.beginPlaying();
-        break;
-      case 'playing':
-        this.closePlaying();
-        break;
-      case 'verdict':
-        this.closeVerdict(true);
+        this.beginStep(0);
         break;
       case 'roundResults':
         if (this.round < this.totalRounds) {
@@ -215,8 +236,8 @@ export class DilemaGame implements PausableGame, TurnTimedGame {
           this.enterGameover();
         }
         break;
-      case 'gameover':
-      case 'paused':
+      // Pick phases + verdict carry no timer — nothing to time out.
+      default:
         break;
     }
   }
@@ -227,76 +248,73 @@ export class DilemaGame implements PausableGame, TurnTimedGame {
     assertCondition(!this.paused, 'GAME_PAUSED', 'Game is paused');
     assertCondition(this.nameById.has(playerId), 'REJECTED', 'Not a player in this game');
     const input = parseDilemaAction(action);
-    if (input.type === 'playCard') {
-      this.playCard(playerId, input.cardId, input.targetTrack, input.targetCardId);
-    } else if (input.type === 'pass') {
-      this.passPlayer(playerId);
+    if (input.type === 'propose') {
+      this.propose(playerId, input.cardId, input.targetCardId);
+    } else if (input.type === 'confirm') {
+      this.confirmPick(playerId);
+    } else if (input.type === 'unconfirm') {
+      this.unconfirmPick(playerId);
     } else {
       this.castVerdict(playerId, input.killedTrack);
     }
   }
 
-  private playCard(playerId: string, cardId: string, targetTrack: DilemaTrack, targetCardId?: string): void {
-    assertCondition(this.phase === 'playing', 'REJECTED', 'Not accepting cards right now');
-    assertCondition(playerId !== this.conductorId, 'REJECTED', 'The Maquinista does not play cards');
-    assertCondition(!this.passed.has(playerId), 'REJECTED', 'You already passed this round');
+  private propose(playerId: string, cardId: string, targetCardId?: string): void {
+    assertCondition(this.isPickPhase(), 'REJECTED', 'Não é hora de escolher carta');
+    assertCondition(playerId !== this.conductorId, 'REJECTED', 'O Maquinista não escolhe cartas');
+    const side = this.trackOf(playerId);
+    assertCondition(side != null, 'REJECTED', 'Você não está num trilho');
+    const ts = this.teamStep[side];
+    assertCondition(!ts.locked, 'REJECTED', 'O time já travou essa escolha');
 
-    const hand = this.hands.get(playerId) ?? [];
-    const idx = hand.findIndex((c) => c.id === cardId);
-    assertCondition(idx >= 0, 'REJECTED', 'That card is not in your hand');
-    const card = hand[idx];
-    const myTrack = this.trackOf(playerId);
+    const step = this.currentStep();
+    const cand = this.candidates[side].find((c) => c.id === cardId && c.type === step);
+    assertCondition(cand != null, 'REJECTED', 'Essa carta não está entre as opções do time');
 
-    if (card.type === 'innocent') {
-      assertCondition(targetTrack === myTrack, 'REJECTED', 'Inocentes só entram no seu próprio trilho');
-    } else if (card.type === 'guilty') {
-      assertCondition(targetTrack !== myTrack, 'REJECTED', 'Culpados só entram no trilho inimigo');
-    } else {
+    let target: string | null = null;
+    if (step === 'modifier') {
       assertCondition(
         typeof targetCardId === 'string' && targetCardId.length > 0,
         'REJECTED',
-        'Um modificador precisa ser grudado numa carta',
+        'Um modificador precisa de uma carta-alvo',
       );
-      const base = this.trackCards[targetTrack].find((c) => c.id === targetCardId);
-      assertCondition(base != null && base.type !== 'modifier', 'REJECTED', 'Não há essa carta nesse trilho');
+      const base = this.allBaseCards().find((c) => c.id === targetCardId);
+      assertCondition(base != null, 'REJECTED', 'Não há essa carta nos trilhos');
+      target = targetCardId;
     }
 
-    hand.splice(idx, 1);
-    this.trackCards[targetTrack].push({
-      id: `c${this.cardSeq++}`,
-      type: card.type,
-      text: card.text,
-      authorId: playerId,
-      attachedTo: card.type === 'modifier' ? (targetCardId ?? null) : null,
-    });
-    this.cardsPlayed.set(playerId, (this.cardsPlayed.get(playerId) ?? 0) + 1);
-    this.emit({ type: 'card_played', playerId, cardType: card.type, track: targetTrack });
-
-    if (hand.length === 0) {
-      this.passed.add(playerId);
-      this.emit({ type: 'player_passed', playerId });
-    }
-
-    if (this.allReady()) {
-      this.closePlaying();
-    }
+    ts.proposalCardId = cardId;
+    ts.proposalTargetId = target;
+    ts.confirmedBy.clear();
+    ts.confirmedBy.add(playerId); // proposing implies you back your own proposal
+    this.emit({ type: 'team_proposed', round: this.round, side, step });
+    this.maybeLockTeam(side);
   }
 
-  private passPlayer(playerId: string): void {
-    assertCondition(this.phase === 'playing', 'REJECTED', 'Nothing to pass right now');
-    assertCondition(playerId !== this.conductorId, 'REJECTED', 'The Maquinista does not play cards');
-    if (!this.passed.has(playerId)) {
-      this.passed.add(playerId);
-      this.emit({ type: 'player_passed', playerId });
-    }
-    if (this.allReady()) {
-      this.closePlaying();
-    }
+  private confirmPick(playerId: string): void {
+    assertCondition(this.isPickPhase(), 'REJECTED', 'Nada para confirmar agora');
+    assertCondition(playerId !== this.conductorId, 'REJECTED', 'O Maquinista não confirma cartas');
+    const side = this.trackOf(playerId);
+    assertCondition(side != null, 'REJECTED', 'Você não está num trilho');
+    const ts = this.teamStep[side];
+    assertCondition(!ts.locked, 'REJECTED', 'O time já travou essa escolha');
+    assertCondition(ts.proposalCardId != null, 'REJECTED', 'Ninguém propôs uma carta ainda');
+    ts.confirmedBy.add(playerId);
+    this.maybeLockTeam(side);
+  }
+
+  private unconfirmPick(playerId: string): void {
+    if (!this.isPickPhase()) return;
+    const side = this.trackOf(playerId);
+    if (side == null) return;
+    const ts = this.teamStep[side];
+    if (ts.locked) return;
+    ts.confirmedBy.delete(playerId);
   }
 
   private castVerdict(playerId: string, killedTrack: DilemaTrack): void {
-    assertCondition(this.phase === 'verdict', 'REJECTED', 'Not the moment for a verdict');
-    assertCondition(playerId === this.conductorId, 'REJECTED', 'Only the Maquinista pulls the lever');
+    assertCondition(this.phase === 'verdict', 'REJECTED', 'Não é o momento do veredito');
+    assertCondition(playerId === this.conductorId, 'REJECTED', 'Só o Maquinista puxa a alavanca');
     this.killedTrack = killedTrack;
     this.closeVerdict(false);
   }
@@ -307,9 +325,9 @@ export class DilemaGame implements PausableGame, TurnTimedGame {
     this.round = round;
     this.phase = 'assigning';
     this.trackCards = { left: [], right: [] };
-    this.hands.clear();
-    this.cardsPlayed.clear();
-    this.passed.clear();
+    this.candidates = { left: [], right: [] };
+    this.teamStep = { left: emptyTeamStep(), right: emptyTeamStep() };
+    this.stepIndex = 0;
     this.cardSeq = 0;
     this.killedTrack = null;
     this.sparedTrack = null;
@@ -322,15 +340,13 @@ export class DilemaGame implements PausableGame, TurnTimedGame {
     this.leftIds = plan.left;
     this.rightIds = plan.right;
 
-    // Seed one innocent per track.
+    // Seed one innocent per track (face up).
     this.trackCards.left.push(this.seedCard(this.drawInnocent()));
     this.trackCards.right.push(this.seedCard(this.drawInnocent()));
 
-    // Deal a hand to every non-Maquinista.
-    for (const p of this.players) {
-      if (p.id === this.conductorId) continue;
-      this.hands.set(p.id, this.dealHand());
-      this.cardsPlayed.set(p.id, 0);
+    // Deal each team CANDIDATES_PER_STEP of every type.
+    for (const side of ['left', 'right'] as DilemaTrack[]) {
+      this.candidates[side] = this.dealCandidates();
     }
 
     this.setTimer(ASSIGNING_MS);
@@ -344,28 +360,97 @@ export class DilemaGame implements PausableGame, TurnTimedGame {
     });
   }
 
-  private beginPlaying(): void {
-    if (this.phase !== 'assigning') return;
-    this.phase = 'playing';
-    this.setTimer(PLAYING_MS);
-    this.emit({ type: 'playing_started', round: this.round, durationMs: PLAYING_MS });
-    // A degenerate round (nobody able to act) shouldn't hang.
-    if (this.allReady()) {
-      this.closePlaying();
+  private beginStep(index: number): void {
+    this.stepIndex = index;
+    const step = STEPS[index];
+    this.phase = STEP_PHASE[step];
+    this.teamStep = { left: emptyTeamStep(), right: emptyTeamStep() };
+    this.clearTimer();
+    this.emit({ type: 'pick_step_started', round: this.round, step });
+
+    // Degenerate safety: a team with no connected members auto-locks a random candidate.
+    for (const side of ['left', 'right'] as DilemaTrack[]) {
+      if (this.connectedMembers(side).length === 0) this.autoLockTeam(side);
+    }
+    this.checkStepComplete();
+  }
+
+  private maybeLockTeam(side: DilemaTrack): void {
+    const ts = this.teamStep[side];
+    if (ts.locked || ts.proposalCardId == null) return;
+    const members = this.connectedMembers(side);
+    if (members.length === 0) {
+      this.autoLockTeam(side);
+      return;
+    }
+    if (members.every((id) => ts.confirmedBy.has(id))) {
+      this.lockTeam(side);
     }
   }
 
-  private closePlaying(): void {
-    if (this.phase !== 'playing') return;
-    this.phase = 'verdict';
-    this.setTimer(VERDICT_MS);
-    this.emit({ type: 'all_cards_in', round: this.round });
-    this.emit({
-      type: 'verdict_started',
-      round: this.round,
-      conductorId: this.conductorId ?? '',
-      durationMs: VERDICT_MS,
+  private autoLockTeam(side: DilemaTrack): void {
+    const ts = this.teamStep[side];
+    if (ts.locked) return;
+    const step = this.currentStep();
+    if (ts.proposalCardId == null) {
+      const pool = this.candidates[side].filter((c) => c.type === step);
+      const pick = pool[Math.floor(this.random() * pool.length)] ?? pool[0];
+      ts.proposalCardId = pick?.id ?? null;
+      if (step === 'modifier') {
+        const bases = this.allBaseCards();
+        ts.proposalTargetId = bases[Math.floor(this.random() * bases.length)]?.id ?? bases[0]?.id ?? null;
+      }
+    }
+    this.lockTeam(side);
+  }
+
+  private lockTeam(side: DilemaTrack): void {
+    const ts = this.teamStep[side];
+    if (ts.locked || ts.proposalCardId == null) return;
+    const step = this.currentStep();
+    const cand = this.candidates[side].find((c) => c.id === ts.proposalCardId);
+    if (!cand) return;
+
+    let targetTrack: DilemaTrack;
+    if (step === 'innocent') {
+      targetTrack = side;
+    } else if (step === 'guilty') {
+      targetTrack = this.other(side);
+    } else {
+      // A modifier staples onto its target card, wherever that card lives.
+      targetTrack = this.trackCards.right.some((c) => c.id === ts.proposalTargetId) ? 'right' : 'left';
+    }
+    this.trackCards[targetTrack].push({
+      id: `c${this.cardSeq++}`,
+      type: step,
+      text: cand.text,
+      authorTrack: side,
+      attachedTo: step === 'modifier' ? ts.proposalTargetId : null,
     });
+    ts.locked = true;
+    this.emit({ type: 'team_locked', round: this.round, side, step });
+    this.checkStepComplete();
+  }
+
+  private checkStepComplete(): void {
+    if (!this.isPickPhase()) return;
+    if (!this.teamStep.left.locked || !this.teamStep.right.locked) return;
+    this.emit({ type: 'both_locked', round: this.round, step: this.currentStep() });
+    if (this.stepIndex < STEPS.length - 1) {
+      this.beginStep(this.stepIndex + 1);
+    } else {
+      this.beginVerdict();
+    }
+  }
+
+  private beginVerdict(): void {
+    this.phase = 'verdict';
+    this.clearTimer();
+    this.emit({ type: 'verdict_started', round: this.round, conductorId: this.conductorId ?? '' });
+    // A disconnected Maquinista can't pull the lever — coin-flip immediately.
+    if (this.conductorId && !(this.connected.get(this.conductorId) ?? true)) {
+      this.closeVerdict(true);
+    }
   }
 
   private closeVerdict(auto: boolean): void {
@@ -376,7 +461,7 @@ export class DilemaGame implements PausableGame, TurnTimedGame {
     } else {
       this.verdictWasAuto = false;
     }
-    this.sparedTrack = this.killedTrack === 'left' ? 'right' : 'left';
+    this.sparedTrack = this.other(this.killedTrack);
 
     const sparedMembers = this.sparedTrack === 'left' ? this.leftIds : this.rightIds;
     for (const id of sparedMembers) {
@@ -413,6 +498,24 @@ export class DilemaGame implements PausableGame, TurnTimedGame {
 
   // ─── Helpers ───
 
+  private isPickPhase(): boolean {
+    return (
+      this.phase === 'pickInnocent' || this.phase === 'pickGuilty' || this.phase === 'pickModifier'
+    );
+  }
+
+  private currentStep(): DilemaStep {
+    return STEPS[this.stepIndex];
+  }
+
+  private other(side: DilemaTrack): DilemaTrack {
+    return side === 'left' ? 'right' : 'left';
+  }
+
+  private allBaseCards(): InternalCard[] {
+    return [...this.trackCards.left, ...this.trackCards.right].filter((c) => c.type !== 'modifier');
+  }
+
   private reshuffleDecks(): void {
     this.innocentDeck = this.shuffled(this.cardSource.innocents.map((c) => c.text));
     this.guiltyDeck = this.shuffled(this.cardSource.guilty.map((c) => c.text));
@@ -426,7 +529,7 @@ export class DilemaGame implements PausableGame, TurnTimedGame {
     return this.innocentDeck.pop() ?? 'alguém que estava só de passagem';
   }
 
-  private drawFrom(type: 'innocent' | 'guilty' | 'modifier'): string {
+  private drawFrom(type: DilemaStep): string {
     if (type === 'innocent') return this.drawInnocent();
     if (type === 'guilty') {
       if (this.guiltyDeck.length === 0) {
@@ -441,38 +544,27 @@ export class DilemaGame implements PausableGame, TurnTimedGame {
   }
 
   private seedCard(text: string): InternalCard {
-    return { id: `c${this.cardSeq++}`, type: 'innocent', text, authorId: null, attachedTo: null };
+    return { id: `c${this.cardSeq++}`, type: 'innocent', text, authorTrack: null, attachedTo: null };
   }
 
-  private dealHand(): DilemaHandCard[] {
-    const plan: ('innocent' | 'guilty' | 'modifier')[] = [
-      ...Array<'innocent'>(HAND_INNOCENTS).fill('innocent'),
-      ...Array<'guilty'>(HAND_GUILTY).fill('guilty'),
-      ...Array<'modifier'>(HAND_MODIFIERS).fill('modifier'),
-    ];
-    while (plan.length < HAND_SIZE) {
-      const roll = this.random();
-      plan.push(roll < 0.45 ? 'innocent' : roll < 0.9 ? 'guilty' : 'modifier');
+  private dealCandidates(): DilemaCandidate[] {
+    const out: DilemaCandidate[] = [];
+    let seq = 0;
+    for (const type of STEPS) {
+      for (let i = 0; i < CANDIDATES_PER_STEP; i++) {
+        out.push({ id: `cand${seq++}`, type, text: this.drawFrom(type) });
+      }
     }
-    const hand: DilemaHandCard[] = plan
-      .slice(0, HAND_SIZE)
-      .map((type, i) => ({ id: `h${i}`, type, text: this.drawFrom(type) }));
-    this.shuffleInPlace(hand);
-    // Re-key after the shuffle so ids stay stable + unique for this hand.
-    return hand.map((c, i) => ({ ...c, id: `h${i}` }));
+    return out;
   }
 
   private shuffled<T>(source: readonly T[]): T[] {
     const arr = [...source];
-    this.shuffleInPlace(arr);
-    return arr;
-  }
-
-  private shuffleInPlace<T>(arr: T[]): void {
     for (let i = arr.length - 1; i > 0; i--) {
       const j = Math.floor(this.random() * (i + 1));
       [arr[i], arr[j]] = [arr[j], arr[i]];
     }
+    return arr;
   }
 
   private trackOf(playerId: string): DilemaTrack | null {
@@ -481,16 +573,12 @@ export class DilemaGame implements PausableGame, TurnTimedGame {
     return null;
   }
 
-  private nonConductorConnectedIds(): string[] {
-    return this.players
-      .filter((p) => p.id !== this.conductorId && (this.connected.get(p.id) ?? true))
-      .map((p) => p.id);
+  private teamIds(side: DilemaTrack): string[] {
+    return side === 'left' ? this.leftIds : this.rightIds;
   }
 
-  private allReady(): boolean {
-    const expected = this.nonConductorConnectedIds();
-    if (expected.length === 0) return true;
-    return expected.every((id) => this.passed.has(id) || (this.hands.get(id)?.length ?? 0) === 0);
+  private connectedMembers(side: DilemaTrack): string[] {
+    return this.teamIds(side).filter((id) => this.connected.get(id) ?? true);
   }
 
   private computeStandings(): DilemaStanding[] {
@@ -540,15 +628,32 @@ export class DilemaGame implements PausableGame, TurnTimedGame {
       id: card.id,
       type: card.type,
       text: card.text,
-      authorId: card.authorId,
-      authorName: card.authorId ? (this.nameById.get(card.authorId) ?? '—') : null,
+      authorTrack: card.authorTrack,
       attachedTo: card.attachedTo,
       modifiers: [],
     };
   }
 
+  private projectPick(side: DilemaTrack): DilemaPickState | null {
+    if (!this.isPickPhase()) return null;
+    const ts = this.teamStep[side];
+    const step = this.currentStep();
+    const cand = ts.proposalCardId
+      ? this.candidates[side].find((c) => c.id === ts.proposalCardId)
+      : undefined;
+    return {
+      step,
+      proposalCardId: ts.proposalCardId,
+      proposalText: cand?.text ?? null,
+      proposalTargetId: ts.proposalTargetId,
+      confirmedCount: this.connectedMembers(side).filter((id) => ts.confirmedBy.has(id)).length,
+      memberCount: this.connectedMembers(side).length,
+      locked: ts.locked,
+    };
+  }
+
   private projectTrack(side: DilemaTrack): DilemaTrackView {
-    const memberIds = side === 'left' ? this.leftIds : this.rightIds;
+    const memberIds = this.teamIds(side);
     const all = this.trackCards[side];
     const modsByBase = new Map<string, DilemaTrackCard[]>();
     for (const c of all) {
@@ -571,26 +676,21 @@ export class DilemaGame implements PausableGame, TurnTimedGame {
       memberIds: [...memberIds],
       memberNames: memberIds.map((id) => this.nameById.get(id) ?? '—'),
       cards,
+      pick: this.projectPick(side),
     };
   }
 
   getPublicState(): DilemaPublicState {
     const inResults = this.phase === 'roundResults' || this.phase === 'gameover';
-    const expected = this.phase === 'playing' ? this.nonConductorConnectedIds() : [];
-    const ready = expected.filter(
-      (id) => this.passed.has(id) || (this.hands.get(id)?.length ?? 0) === 0,
-    ).length;
-
     return {
       phase: this.projectPhase(),
       roomCode: this.roomCode,
       round: this.round,
       totalRounds: this.totalRounds,
+      step: this.isPickPhase() ? this.currentStep() : null,
       conductorId: this.conductorId,
       conductorName: this.conductorId ? (this.nameById.get(this.conductorId) ?? '—') : null,
       tracks: { left: this.projectTrack('left'), right: this.projectTrack('right') },
-      playersReadyCount: ready,
-      playersExpectedCount: expected.length,
       killedTrack: inResults ? this.killedTrack : null,
       sparedTrack: inResults ? this.sparedTrack : null,
       verdictWasAuto: inResults ? this.verdictWasAuto : false,
@@ -609,17 +709,33 @@ export class DilemaGame implements PausableGame, TurnTimedGame {
   getPrivateState(playerId: string): DilemaPrivateState {
     const inGame = this.nameById.has(playerId);
     const isConductor = playerId === this.conductorId;
-    const myTrack = isConductor ? null : this.trackOf(playerId);
-    const handVisible = !isConductor && (this.phase === 'assigning' || this.phase === 'playing');
-    const hand = handVisible ? (this.hands.get(playerId) ?? []) : [];
-    const passed = this.passed.has(playerId) || (this.hands.get(playerId)?.length ?? 0) === 0;
+    const side = isConductor ? null : this.trackOf(playerId);
+    const step = this.isPickPhase() ? this.currentStep() : null;
+    const ts = side ? this.teamStep[side] : null;
+
+    let candidates: DilemaCandidate[] = [];
+    let modifierTargets: DilemaModifierTarget[] = [];
+    if (side && step) {
+      candidates = this.candidates[side].filter((c) => c.type === step);
+      if (step === 'modifier') {
+        for (const s of ['left', 'right'] as DilemaTrack[]) {
+          for (const c of this.trackCards[s]) {
+            if (c.type !== 'modifier') {
+              modifierTargets.push({ id: c.id, text: c.text, type: c.type, side: s });
+            }
+          }
+        }
+      }
+    }
 
     let pendingDecision: DilemaPrivateState['pendingDecision'] = null;
     if (inGame && !this.paused) {
-      if (this.phase === 'playing' && !isConductor) {
-        pendingDecision = passed ? 'wait' : 'play';
-      } else if (this.phase === 'verdict') {
+      if (this.phase === 'verdict') {
         pendingDecision = isConductor ? 'decide' : 'wait';
+      } else if (this.isPickPhase() && side && ts) {
+        if (ts.locked || ts.confirmedBy.has(playerId)) pendingDecision = 'wait';
+        else if (ts.proposalCardId != null) pendingDecision = 'confirm';
+        else pendingDecision = 'propose';
       } else if (this.phase === 'assigning' || this.phase === 'roundResults') {
         pendingDecision = 'wait';
       }
@@ -628,11 +744,16 @@ export class DilemaGame implements PausableGame, TurnTimedGame {
     return {
       playerId,
       isConductor,
-      myTrack,
+      myTrack: side,
       pendingDecision,
-      hand: hand.map((c) => ({ id: c.id, type: c.type, text: c.text })),
-      cardsPlayed: this.cardsPlayed.get(playerId) ?? 0,
-      passed: !isConductor && this.phase === 'playing' ? passed : false,
+      step,
+      candidates,
+      modifierTargets,
+      teamProposalCardId: ts?.proposalCardId ?? null,
+      teamProposalTargetId: ts?.proposalTargetId ?? null,
+      iConfirmed: ts?.confirmedBy.has(playerId) ?? false,
+      teamConfirmedCount: side ? this.connectedMembers(side).filter((id) => ts?.confirmedBy.has(id)).length : 0,
+      teamMemberCount: side ? this.connectedMembers(side).length : 0,
     };
   }
 }

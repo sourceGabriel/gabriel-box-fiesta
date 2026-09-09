@@ -9,7 +9,7 @@ export const sintoniaPlugin: GamePlugin = {
     // "Sintonia" is this game's own name (*Wavelength*-inspired, clean-room).
     // Rename here + in BrandMark ("Sintonia").
     name: 'Sintonia',
-    tagline: 'Uma dica, um dial escondido — o quão em sintonia vocês estão?',
+    tagline: 'Uma dica vaga, um alvo escondido — cada um puxa o próprio ponteiro.',
     minPlayers: MIN_PLAYERS,
     maxPlayers: MAX_PLAYERS,
     lengthOptions: { label: 'Rodadas', values: [4, 6, 8], default: TOTAL_ROUNDS },

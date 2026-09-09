@@ -514,3 +514,40 @@ User report: É Você! drawing → clicking undo/submit a big drawing → `Range
   in that order (glory-cameo defines `<VictorySplash>` and lobby-acabamento defines
   `.game-cover`, both used by Sintonia). All local feature branches deleted.
   `main` unchanged at `29ed754` — owner promotes.
+
+## 2026-09-09 — Dilema + Sintonia reworked to owner spec (branch `feature/dilema-sintonia-rework`, off `develop` @ `63bc768`, NOT committed)
+- Owner brief given mid-session (owner left before it landed). Researched the
+  official *Trial by Trolley* rules first (turn order: innocents → guilty →
+  modifiers).
+- **Dilema** — `playing` (free card play) replaced by three ordered **team-consensus**
+  steps `pickInnocent` → `pickGuilty` → `pickModifier`: each team gets 3 candidates
+  per type, a member `propose`s, every connected team member `confirm`s (new
+  proposal clears confirmations), the step locks; both teams locked → next step.
+  Modifiers still cross-track. **No timers on decisions** — the pick steps and the
+  `verdict` return `null` from `getTimer()`; only `assigning`/`roundResults`
+  auto-advance. Verdict no longer coin-flips on a timer (Maquinista must choose;
+  disconnected-Maquinista safety flip only). `DilemaAction` `playCard`/`pass` →
+  `propose`/`confirm`/`unconfirm`; `DilemaTrackCard.authorId/authorName` →
+  `authorTrack`; events `playing_started`/`card_played`/… →
+  `pick_step_started`/`team_proposed`/`team_locked`/`both_locked`. `cards.ts`,
+  `pairing.ts`, `plugin.ts` untouched. `dilema-game.test.ts` rewritten (20).
+- **Sintonia** — teams + side-bets removed. Rotating médium gives the clue;
+  **every other player** drags **their own** hidden 0–100 dial and locks it; all
+  locked (or 45s backstop) → reveal. Proximity bands `≤2→10 / ≤6→7 / ≤12→5 /
+  ≤20→3 / ≤30→2 / ≤42→1 / else 0`; médium scores the **floor-average** of the
+  guessers. Individual cumulative score; exact tie → no winner. `SintoniaAction`
+  `moveDial`/`betSide` → `setGuess`/`lockGuess`/`unlockGuess`; public state loses
+  `teams`/`activeTeamId`/`sideBet`/`winnerTeamId`, gains `players`/`guesses`/
+  `results`/`guessers*Count`/`mediumPoints`/`winnerId`. `SintoniaDial` draws every
+  guesser's needle + a 6-tier band. `pairing.ts` reduced to médium rotation.
+  `sintonia-game.test.ts` rewritten (20); integration Sintonia block updated;
+  `spectrums.ts` untouched.
+- **187 server tests, tsc + oxlint clean, 5-workspace build green.** Live smoke
+  (host + 3 phones) of both games through a full round + round-2 rotation, 0
+  console errors. §52 held — no edits to `core/`, `ws-server.ts`,
+  `shared/protocol`, or either shell flow.
+- Decision notes (owner can veto): 3 candidates/step; locked picks show on the TV
+  as they lock; modifier step mandatory; médium's floor-average scoring; guesser
+  dials hidden until reveal. Full write-up in
+  `~/.claude/plans/dilema-sintonia-rework-2026-09.md`.
+- **Awaiting owner OK to commit.** Tracking docs updated in this batch.

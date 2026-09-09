@@ -1,12 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { AvatarSpec, DilemaGameEvent, DilemaPublicState, DilemaTrack, DilemaTrackView } from '@party/shared';
-import { Avatar, BrandMark, Button, getSounds, Overlay, RoundScoreboard, roundTaunt, Timer, VictorySplash } from '@party/ui';
+import type { AvatarSpec, DilemaGameEvent, DilemaPublicState, DilemaStep, DilemaTrack, DilemaTrackView } from '@party/shared';
+import { Avatar, BrandMark, Button, getSounds, Overlay, RoundScoreboard, roundTaunt, VictorySplash } from '@party/ui';
 import type { HostGameViewProps } from '../types';
 import { describeEvent } from './describeEvent';
 import { soundForEvent } from './sound-map';
 import './dilema-host.css';
 
 const CARD_ICON: Record<string, string> = { innocent: '😇', guilty: '😈', modifier: '✨' };
+const STEP_LABEL: Record<DilemaStep, string> = { innocent: 'Inocentes', guilty: 'Culpados', modifier: 'Modificadores' };
+const STEP_HINT: Record<DilemaStep, string> = {
+  innocent: 'Cada time escolhe um inocente pro próprio trilho — em consenso.',
+  guilty: 'Cada time escolhe um culpado pro trilho inimigo — em consenso.',
+  modifier: 'Cada time escolhe um modificador e a carta em que ele gruda.',
+};
+const STEP_NUM: Record<DilemaStep, number> = { innocent: 1, guilty: 2, modifier: 3 };
 
 function TrackColumn({
   track,
@@ -17,6 +24,7 @@ function TrackColumn({
   avatarOf: (id: string) => AvatarSpec | undefined;
   state: 'live' | 'killed' | 'spared' | 'idle';
 }) {
+  const pick = track.pick;
   return (
     <section className={`dil-track is-${track.side} is-${state}`}>
       <header className="dil-track-head">
@@ -31,13 +39,35 @@ function TrackColumn({
           {track.memberIds.length === 0 ? <li className="dil-empty">—</li> : null}
         </ul>
       </header>
+
+      {pick ? (
+        <div className={`dil-pick-status ${pick.locked ? 'is-locked' : ''}`}>
+          {pick.locked ? (
+            <span>✅ escolha travada</span>
+          ) : pick.proposalCardId ? (
+            <>
+              <span className="dil-pick-proposal">“{pick.proposalText}”</span>
+              <span className="dil-pick-count">
+                {pick.confirmedCount}/{pick.memberCount} concordam
+              </span>
+            </>
+          ) : (
+            <span className="dil-pick-count">discutindo no celular…</span>
+          )}
+        </div>
+      ) : null}
+
       <ol className="dil-track-cards">
         {track.cards.map((c) => (
           <li key={c.id} className={`dil-card is-${c.type}`}>
             <span className="dil-card-icon" aria-hidden="true">{CARD_ICON[c.type] ?? '•'}</span>
             <span className="dil-card-body">
               <span className="dil-card-text">{c.text}</span>
-              {c.authorName ? <span className="dil-card-author">— {c.authorName}</span> : <span className="dil-card-author">semente</span>}
+              {c.authorTrack ? (
+                <span className="dil-card-author">— {c.authorTrack === track.side ? 'este time' : 'time inimigo'}</span>
+              ) : (
+                <span className="dil-card-author">semente</span>
+              )}
               {c.modifiers.length > 0 ? (
                 <span className="dil-card-mods">
                   {c.modifiers.map((m) => (
@@ -97,20 +127,19 @@ export function DilemaHostView({ publicState, events, players, connected, reacti
   const paused = pub.phase === 'paused';
   const over = pub.phase === 'gameover';
   const inResults = pub.phase === 'roundResults' || over;
-  const timerSeconds = pub.timer ? Math.max(0, Math.ceil(pub.timer.remainingMs / 1000)) : null;
+  const inPicks = pub.phase === 'pickInnocent' || pub.phase === 'pickGuilty' || pub.phase === 'pickModifier';
 
   const scoreRows = useMemo(() => {
-    const base = pub.standings.length
+    return pub.standings.length
       ? pub.standings.map((s) => ({ playerId: s.playerId, name: s.name, score: s.spared, roundPoints: s.roundDelta }))
       : [...pub.players]
           .map((p) => ({ playerId: p.id, name: p.name, score: p.spared, roundPoints: 0 }))
           .sort((a, b) => b.score - a.score);
-    return base;
   }, [pub.standings, pub.players]);
 
   const trackState = (side: DilemaTrack): 'live' | 'killed' | 'spared' | 'idle' => {
     if (inResults && pub.killedTrack) return side === pub.killedTrack ? 'killed' : 'spared';
-    if (pub.phase === 'playing' || pub.phase === 'verdict') return 'live';
+    if (inPicks || pub.phase === 'verdict') return 'live';
     return 'idle';
   };
 
@@ -171,33 +200,36 @@ export function DilemaHostView({ publicState, events, players, connected, reacti
         <div className="dil-conductor">
           🎩 Maquinista: <strong>{pub.conductorName ?? '—'}</strong>
         </div>
-        <Timer seconds={timerSeconds} active={pub.phase === 'playing' || pub.phase === 'verdict'} />
+        {inPicks && pub.step ? (
+          <div className="dil-step-pill">
+            Passo {STEP_NUM[pub.step]}/3 · {STEP_LABEL[pub.step]}
+          </div>
+        ) : null}
       </header>
 
       <div className="dil-body">
         <section className="dil-stage">
           {pub.phase === 'assigning' ? (
             <p className="dil-eyebrow dil-assign">
-              🎩 <strong>{pub.conductorName}</strong> puxa a alavanca nesta rodada. Escolham os lados no celular…
+              🎩 <strong>{pub.conductorName}</strong> puxa a alavanca nesta rodada. Formando os times…
             </p>
           ) : null}
 
-          {pub.phase === 'playing' ? (
+          {inPicks && pub.step ? (
             <p className="dil-eyebrow">
-              Inocente no seu trilho · culpado no inimigo · modificador em cima de uma carta —{' '}
-              {pub.playersReadyCount}/{pub.playersExpectedCount} prontos
+              {CARD_ICON[pub.step]} <strong>{STEP_LABEL[pub.step]}</strong> — {STEP_HINT[pub.step]}
             </p>
           ) : null}
 
           {pub.phase === 'verdict' ? (
             <p className="dil-eyebrow dil-verdict">
-              ⚖️ <strong>{pub.conductorName}</strong> decide qual trilho o trólebus atropela…
+              ⚖️ <strong>{pub.conductorName}</strong> decide qual trilho o trólebus atropela. Sem relógio — discutam.
             </p>
           ) : null}
 
           {inResults ? (
             <p className="dil-eyebrow dil-result-line">
-              {pub.verdictWasAuto ? '🪙 Tempo esgotado — ' : `🔧 ${pub.conductorName} escolheu — `}
+              {pub.verdictWasAuto ? '🪙 Maquinista fora — ' : `🔧 ${pub.conductorName} escolheu — `}
               {pub.sparedTrack
                 ? `${pub.sparedTrack === 'left' ? pub.tracks.left.label : pub.tracks.right.label} sobreviveu`
                 : ''}

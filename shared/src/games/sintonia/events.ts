@@ -1,5 +1,5 @@
 import type { PlayerId } from '../../models/common';
-import type { SintoniaSide, SintoniaStanding, SintoniaTeamId } from '../../models/sintonia';
+import type { SintoniaStanding } from '../../models/sintonia';
 
 /**
  * Domain events the Sintonia engine emits. They travel opaquely inside
@@ -13,31 +13,17 @@ export type SintoniaGameEvent =
   | { type: 'game_started'; totalRounds: number }
   | { type: 'game_paused' }
   | { type: 'game_resumed' }
-  | {
-      type: 'round_started';
-      round: number;
-      totalRounds: number;
-      activeTeamId: SintoniaTeamId;
-      mediumId: PlayerId;
-    }
+  | { type: 'round_started'; round: number; totalRounds: number; mediumId: PlayerId }
   | { type: 'clue_given'; round: number; mediumId: PlayerId }
   | { type: 'clue_skipped'; round: number }
   | { type: 'guessing_started'; round: number; durationMs: number }
-  | { type: 'dial_locked'; round: number; value: number }
+  | { type: 'guess_locked'; round: number; playerId: PlayerId }
   | {
       type: 'round_revealed';
       round: number;
       target: number;
-      dialValue: number;
-      bandPoints: number;
-      activeTeamId: SintoniaTeamId;
-      sideBet: SintoniaSide | null;
-      sideCorrect: boolean;
-      scores: [number, number];
+      bestPlayerId: PlayerId | null;
+      bestPoints: number;
     }
   | { type: 'round_finished'; round: number; standings: SintoniaStanding[] }
-  | {
-      type: 'game_finished';
-      winnerTeamId: SintoniaTeamId | null;
-      standings: SintoniaStanding[];
-    };
+  | { type: 'game_finished'; winnerId: PlayerId | null; standings: SintoniaStanding[] };

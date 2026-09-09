@@ -6,19 +6,19 @@ import type { PlayerId, TurnTimer } from './common';
  * `GAME_STATE_PUBLIC` / `PLAYER_STATE_PRIVATE`; only the Sintonia engine and its
  * host/controller views know them.
  *
- * Loop of one round:
- *  1. `cluing` — the room is split into two teams (re-split every round). One team
- *     is active: a **médium** (rotates by join order) sees a hidden `target` on a
- *     spectrum and types ONE short clue.
- *  2. `guessing` — the clue shows on the TV. The active team (minus the médium)
- *     drags a 0–100 dial; the other team bets which side of the dial the target
- *     is on ("⬅️ / ➡️").
- *  3. `reveal` — the cover lifts: the active team scores 4/3/2/0 by how close the
- *     dial landed; the other team scores 1 for calling the side right.
- *  4. next round (alternating spectrum + médium) → after N rounds: `gameover`.
+ * Loop of one round (individual, no teams):
+ *  1. `cluing` — a **médium** (rotates by join order) sees a hidden `target` on a
+ *     spectrum and types ONE short clue. No number in it.
+ *  2. `guessing` — the clue shows on the TV. **Every other player** drags **their
+ *     own** 0–100 dial and locks it. When all lock (or the backstop timer ends) →
+ *     reveal.
+ *  3. `reveal` — the cover lifts: each guesser scores by how close their dial
+ *     landed (`|guess − target|`, banded — closer is worth more). The médium
+ *     scores the rounded-down average of the guessers' points (a reward for a
+ *     good clue).
+ *  4. next round (new médium) → after N rounds: `gameover`.
  *
- * Score is by TEAM. Individual `standings` inherit their team's score (so
- * `RoundScoreboard` works) plus a `roundDelta` for the pop-in.
+ * Score is **individual and cumulative**. Most points at the end wins.
  *
  * "Sintonia" is this game's own name — the rename point is
  * `sintoniaPlugin.meta.name` + the `BrandMark text` ("Sintonia"). `gameId` stays
@@ -27,34 +27,45 @@ import type { PlayerId, TurnTimer } from './common';
 
 export type SintoniaPhase =
   | 'cluing' // the médium is picking a clue
-  | 'guessing' // dial + side-bet are live
+  | 'guessing' // every non-médium is placing their own dial
   | 'reveal' // the cover is off; scores are in
   | 'gameover'
   | 'paused';
 
-export type SintoniaTeamId = 0 | 1;
-export type SintoniaSide = 'left' | 'right';
-export type SintoniaRole = 'medium' | 'dial' | 'sideBet' | 'idle';
+export type SintoniaRole = 'medium' | 'guesser' | 'idle';
 
-export type SintoniaTeamView = {
-  id: SintoniaTeamId;
+/** One player's guess — value hidden from others until `reveal`. */
+export type SintoniaGuess = {
+  playerId: PlayerId;
   name: string;
-  memberIds: PlayerId[];
-  memberNames: string[];
-  /** Running score across the match. */
-  score: number;
-  /** Holds the médium this round. */
-  isActive: boolean;
+  /** `null` until reveal (kept secret so guesses stay independent); the locked value at reveal. */
+  value: number | null;
+  locked: boolean;
+};
+
+/** One guesser's scored result at `reveal`. */
+export type SintoniaResult = {
+  playerId: PlayerId;
+  name: string;
+  value: number;
+  distance: number;
+  points: number;
 };
 
 export type SintoniaStanding = {
   playerId: PlayerId;
   name: string;
-  teamId: SintoniaTeamId;
-  /** Mirrors the player's team score — the ranking key. */
+  /** Cumulative score — the ranking key. */
   score: number;
-  /** Team points earned in the round that just finished. */
+  /** Points earned in the round that just finished. */
   roundDelta: number;
+};
+
+export type SintoniaPublicPlayer = {
+  id: PlayerId;
+  name: string;
+  connected: boolean;
+  score: number;
 };
 
 export type SintoniaPublicState = {
@@ -62,55 +73,56 @@ export type SintoniaPublicState = {
   roomCode: string;
   round: number;
   totalRounds: number;
-  activeTeamId: SintoniaTeamId;
   mediumId: PlayerId | null;
   mediumName: string | null;
   /** `[left label, right label]` of the spectrum, e.g. `["Chato", "Divertido"]`. */
   spectrum: [string, string];
   /** `null` during `cluing`; the médium's clue from `guessing` on. */
   clue: string | null;
-  /** Live 0–100 dial position (the active team drags it). */
-  dialValue: number;
+  /** `guessing`: who has locked (values stay `null`). `reveal`: everyone, with values. */
+  guesses: SintoniaGuess[];
+  guessersLockedCount: number;
+  guessersTotalCount: number;
   /** `reveal` only: the hidden target (0–100). */
   target: number | null;
-  /** `reveal` only: points the active team earned this round (4/3/2/0). */
-  bandPoints: number | null;
-  /** `reveal` only: the other team's resolved side call, or `null` if they were split / silent. */
-  sideBet: SintoniaSide | null;
-  /** `reveal` only: whether that side call was right. */
-  sideCorrect: boolean | null;
+  /** `reveal` only: each guesser's scored result, best first. */
+  results: SintoniaResult[];
+  /** `reveal` only: the médium's points this round (avg of the guessers). */
+  mediumPoints: number | null;
   /** `reveal` only: the médium never sent a clue — the round was skipped, nobody scored. */
   roundSkipped: boolean;
-  teams: [SintoniaTeamView, SintoniaTeamView];
+  players: SintoniaPublicPlayer[];
   /** Always present, sorted by score desc. */
   standings: SintoniaStanding[];
   timer: TurnTimer | null;
-  /** `gameover`: the winning team, or `null` on a tie. */
-  winnerTeamId: SintoniaTeamId | null;
-  /** `gameover`: the winning team's captain (first member by join order), for the victory splash. */
+  /** `gameover`: the winner, or `null` on a tie. */
+  winnerId: PlayerId | null;
   winnerName: string | null;
 };
 
 export type SintoniaPrivateState = {
   playerId: PlayerId;
-  teamId: SintoniaTeamId | null;
   role: SintoniaRole;
+  isMedium: boolean;
   /** The médium's hidden target (0–100) during `cluing` / `guessing`; `null` otherwise. */
   target: number | null;
-  /** The clue this player's side is working with (`null` until it is given). */
+  /** The clue (`null` until it is given). */
   clue: string | null;
-  /** Side-bet players: their current call, or `null`. */
-  myBet: SintoniaSide | null;
-  /** `true` once this player has done their part (clue sent / bet locked). */
+  /** This guesser's current dial value (persisted server-side once moved). */
+  myGuess: number | null;
+  /** `true` once this guesser has locked their dial. */
+  myLocked: boolean;
+  /** `true` once this player has done their part (clue sent / dial locked). */
   done: boolean;
 };
 
 /**
  * Controller → server payloads, carried inside `GAME_ACTION { gameId, action }`.
  * Zod validation lives in `server/src/games/sintonia/action-schema.ts`; the engine
- * enforces role + clue legality (length, no digits) and rejects with a toast.
+ * enforces role + clue legality (length, no digits).
  */
 export type SintoniaAction =
   | { type: 'submitClue'; clue: string }
-  | { type: 'moveDial'; value: number }
-  | { type: 'betSide'; side: SintoniaSide };
+  | { type: 'setGuess'; value: number }
+  | { type: 'lockGuess' }
+  | { type: 'unlockGuess' };

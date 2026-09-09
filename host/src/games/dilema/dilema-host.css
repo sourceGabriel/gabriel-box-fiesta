@@ -27,6 +27,16 @@
   white-space: nowrap;
 }
 .dil-conductor strong { color: var(--text); }
+.dil-step-pill {
+  font-size: clamp(0.75rem, 1.5vmin, 1rem);
+  font-weight: 700;
+  color: var(--dil-orange);
+  background: rgba(249, 115, 22, 0.14);
+  border: 1px solid rgba(249, 115, 22, 0.4);
+  border-radius: 999px;
+  padding: 0.2em 0.8em;
+  white-space: nowrap;
+}
 .dil-conn-pill {
   font-size: 0.7em; text-transform: uppercase; letter-spacing: 0.04em;
   padding: 0.2em 0.7em; border-radius: 999px;
@@ -130,6 +140,26 @@
   padding: 0.1rem 0.55rem 0.1rem 0.1rem;
 }
 .dil-track-team .dil-empty { color: var(--muted); padding: 0.1rem 0.55rem; }
+
+.dil-pick-status {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 10px;
+  background: rgba(249, 115, 22, 0.1);
+  border: 1px dashed rgba(249, 115, 22, 0.45);
+  font-size: clamp(0.75rem, 1.5vmin, 1rem);
+}
+.dil-pick-status.is-locked {
+  background: rgba(52, 211, 153, 0.12);
+  border-style: solid;
+  border-color: rgba(52, 211, 153, 0.45);
+  color: var(--dil-green);
+  font-weight: 700;
+}
+.dil-pick-proposal { color: var(--text); font-weight: 600; }
+.dil-pick-count { color: var(--muted); font-size: 0.85em; }
 
 .dil-track-cards {
   list-style: none;
