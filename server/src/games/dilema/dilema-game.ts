@@ -735,8 +735,8 @@ export class DilemaGame implements PausableGame, TurnTimedGame {
     if (inGame && !this.paused) {
       if (this.phase === 'verdict') {
         pendingDecision = isConductor ? 'decide' : 'wait';
-      } else if (this.isPickPhase() && side && ts) {
-        if (ts.locked || ts.confirmedBy.has(playerId)) pendingDecision = 'wait';
+      } else if (this.isPickPhase()) {
+        if (!side || !ts || ts.locked || ts.confirmedBy.has(playerId)) pendingDecision = 'wait';
         else if (ts.proposalCardId != null) pendingDecision = 'confirm';
         else pendingDecision = 'propose';
       } else if (this.phase === 'assigning' || this.phase === 'roundResults') {

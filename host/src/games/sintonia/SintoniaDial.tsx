@@ -62,7 +62,7 @@ export function SintoniaDial({
   return (
     <svg
       className="sint-dial"
-      viewBox="0 0 440 250"
+      viewBox="0 0 440 264"
       xmlns="http://www.w3.org/2000/svg"
       role="img"
       aria-label="Dial de sintonia"
@@ -100,28 +100,20 @@ export function SintoniaDial({
         <polygon points={wedge(2, 98)} className="sint-cover" fill="var(--sint-cover)" />
       )}
 
-      {/* guesser needles (reveal only) */}
+      {/* guesser needles (reveal only) — the initial rides the needle tip; points live in the scoreboard below */}
       {revealed
         ? results.map((r, i) => {
             const [nx, ny] = point(r.value, R - 10);
-            const [lx, ly] = point(r.value, R + 16);
+            const [lxRaw, ly] = point(r.value, R + 14);
+            const lx = Math.max(18, Math.min(422, lxRaw));
             const hot = r.points >= 5;
+            const color = hot ? 'var(--sint-needle-hot, #6fe0a8)' : 'var(--sint-needle, #cfd8e3)';
             return (
               <g key={r.playerId} className="sint-guess-needle" style={{ ['--gi' as string]: i }}>
-                <line
-                  x1={CX}
-                  y1={CY}
-                  x2={nx}
-                  y2={ny}
-                  stroke={hot ? 'var(--sint-needle-hot, #6fe0a8)' : 'var(--sint-needle, #cfd8e3)'}
-                  strokeWidth="4"
-                  strokeLinecap="round"
-                  opacity="0.9"
-                />
-                <circle cx={nx} cy={ny} r="7" fill={hot ? 'var(--sint-needle-hot, #6fe0a8)' : 'var(--sint-needle, #cfd8e3)'} />
+                <line x1={CX} y1={CY} x2={nx} y2={ny} stroke={color} strokeWidth="4" strokeLinecap="round" opacity="0.85" />
+                <circle cx={nx} cy={ny} r="7" fill={color} />
                 <text x={lx} y={ly} className="sint-guess-label" textAnchor="middle">
                   {initial(r.name)}
-                  {r.points > 0 ? ` +${r.points}` : ''}
                 </text>
               </g>
             );
@@ -131,7 +123,7 @@ export function SintoniaDial({
       <circle cx={CX} cy={CY} r="14" fill="var(--sint-track)" stroke="#04121a" strokeWidth="3" />
 
       {revealed && target !== null ? (
-        <text x={CX} y="26" className="sint-dial-val" textAnchor="middle">
+        <text x={CX} y="256" className="sint-dial-val" textAnchor="middle">
           alvo {target}
         </text>
       ) : null}
