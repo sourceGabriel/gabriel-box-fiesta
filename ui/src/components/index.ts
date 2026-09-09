@@ -6,6 +6,7 @@ export { Timer } from './Timer';
 export { QrPanel } from './QrPanel';
 export { PlayerRoster, type RosterPlayer } from './PlayerRoster';
 export { RoundScoreboard, type ScoreRow } from './RoundScoreboard';
+export { VictorySplash } from './VictorySplash';
 export { Avatar } from './Avatar';
 export { AvatarEditor } from './AvatarEditor';
 export { TextAnswerInput } from './TextAnswerInput';

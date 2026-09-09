@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { EvoceGameEvent, EvocePublicState, EvoceSubmission } from '@party/shared';
-import { Avatar, BrandMark, Button, DrawingView, getSounds, Overlay, RoundScoreboard, roundTaunt, Timer } from '@party/ui';
+import { Avatar, BrandMark, Button, DrawingView, getSounds, Overlay, RoundScoreboard, roundTaunt, Timer, VictorySplash } from '@party/ui';
 import type { HostGameViewProps } from '../types';
 import { describeEvent } from './describeEvent';
 import { soundForEvent } from './sound-map';
@@ -128,7 +128,11 @@ export function EvoceHostView({ publicState, events, players, connected, reactio
       {over ? (
         <Overlay label="Fim da partida">
           <p className="eyebrow">Fim do É Você!</p>
-          <h2>🏆 {pub.winnerId ? nameOf(pub.winnerId) : '—'} venceu!</h2>
+          <VictorySplash
+            winner={{ name: pub.winnerId ? nameOf(pub.winnerId) : '—', avatar: pub.winnerId ? avatarOf(pub.winnerId) : undefined }}
+            subtitle="a galera te conhece"
+            accent="#c4b5fd"
+          />
           <ol className="evoce-final-standings">
             {standings.map((s, i) => (
               <li key={s.playerId}>

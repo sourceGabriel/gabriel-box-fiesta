@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { LorotaGameEvent, LorotaOption, LorotaPublicState } from '@party/shared';
-import { Avatar, BrandMark, Button, getSounds, Overlay, RoundScoreboard, roundTaunt, Timer } from '@party/ui';
+import { Avatar, BrandMark, Button, getSounds, Overlay, RoundScoreboard, roundTaunt, Timer, VictorySplash } from '@party/ui';
 import type { HostGameViewProps } from '../types';
 import { describeEvent } from './describeEvent';
 import { soundForEvent } from './sound-map';
@@ -117,7 +117,11 @@ export function LorotaHostView({ publicState, events, players, connected, reacti
       {over ? (
         <Overlay label="Fim da partida">
           <p className="eyebrow">Fim da Lorota!</p>
-          <h2>🏆 {pub.winnerId ? nameOf(pub.winnerId) : '—'} venceu!</h2>
+          <VictorySplash
+            winner={{ name: pub.winnerId ? nameOf(pub.winnerId) : '—', avatar: pub.winnerId ? avatarOf(pub.winnerId) : undefined }}
+            subtitle="mentiu melhor que todo mundo"
+            accent="#2ee6a6"
+          />
           <ol className="lorota-final-standings">
             {standings.map((s, i) => (
               <li key={s.playerId}>

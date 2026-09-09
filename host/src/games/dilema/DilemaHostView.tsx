@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { AvatarSpec, DilemaGameEvent, DilemaPublicState, DilemaTrack, DilemaTrackView } from '@party/shared';
-import { Avatar, BrandMark, Button, getSounds, Overlay, RoundScoreboard, roundTaunt, Timer } from '@party/ui';
+import { Avatar, BrandMark, Button, getSounds, Overlay, RoundScoreboard, roundTaunt, Timer, VictorySplash } from '@party/ui';
 import type { HostGameViewProps } from '../types';
 import { describeEvent } from './describeEvent';
 import { soundForEvent } from './sound-map';
@@ -139,7 +139,11 @@ export function DilemaHostView({ publicState, events, players, connected, reacti
       {over ? (
         <Overlay label="Fim da partida">
           <p className="eyebrow">Fim de Dilema nos Trilhos</p>
-          <h2>🏆 {pub.winnerId ? nameOf(pub.winnerId) : '—'} — o mais poupado</h2>
+          <VictorySplash
+            winner={{ name: pub.winnerId ? nameOf(pub.winnerId) : '—', avatar: pub.winnerId ? avatarOf(pub.winnerId) : undefined }}
+            subtitle="o mais poupado"
+            accent="#f97316"
+          />
           <ol className="dil-final-standings">
             {scoreRows.map((s, i) => (
               <li key={s.playerId}>
