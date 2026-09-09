@@ -45,12 +45,12 @@ npm run -w host lint      # oxlint
     aqui; `reactions` é a fila de emoji (auto-expira em 4s). `players` inclui
     `avatar` (do `ROOM_STATE`).
   - `AttractScreen.tsx` — ilustração `attract-bg.webp` (do dono, via
-    `tools/build-attract-bg.py`) preenche a viewport com `cover` (retrato → quase
-    inteira, wide → zoom no centro, sem borda exposta); código da sala + contador
-    + QR + faixa "pressione qualquer tecla" são overlay React sobre a TV apagada,
-    com o retângulo recalculado da conta do `cover` (`GLASS`) a cada resize.
-    Parallax no `mousemove`, FX de CRT, guarda `prefers-reduced-motion`. Avança só
-    manual (tecla/clique).
+    `tools/build-attract-bg.py`) preenche a viewport com `cover` + parallax no
+    `mousemove`; código da sala + contador + QR + faixa "pressione qualquer tecla"
+    ficam num **painel CRT autocontido** (`.attract-panel` — vidro escuro, moldura,
+    scanlines) flutuando sobre a cena. Nada é medido contra a arte, então trocar a
+    imagem de fundo não quebra o layout. `prefers-reduced-motion` desliga FX +
+    parallax. Avança só manual (tecla/clique).
   - `CatalogScreen.tsx` — grade do `GAME_CATALOG` + arte de capa por jogo
     (`covers` vem do app, não do fio); navegação setas/Enter/Esc + clique. Sem QR.
   - `LobbyScreen.tsx` — QR grande + código + jogadores (roster `@party/ui` com

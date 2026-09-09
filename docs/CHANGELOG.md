@@ -770,28 +770,28 @@ The lobby (the screen players stare at while waiting) now wears the selected gam
 - Why: the §47 asset rule is fully lifted, but rather than commit third-party rips this keeps
   the repo clean and lets the owner attach whatever clips they want per machine.
 
-### Attract screen — owner illustration + live CRT overlay
+### Attract screen — owner illustration + self-contained CRT panel
 - `tools/build-attract-bg.py` (Pillow, dev-only) bakes the committed
-  `host/src/shell/attract-bg.webp` (~260 KB) + a `CREDITS.md` from the owner's render in
-  `gabriel-source/` (gitignored). The current art is a portrait (3:4) game-night room.
-- `AttractScreen.tsx` is rebuilt around the art: it fills the viewport with `background-size:
-  cover` — a tall screen shows nearly all of it, a wide screen zooms toward the centre, and
-  no edge is ever exposed. The room code, connected-phone count, QR + join URL and the yellow
-  "pressione qualquer tecla" banner are drawn over the blank CRT; the overlay recomputes that
-  rect from the cover fit on every resize, so it always sits on the TV. Moving the mouse
-  drifts the whole scene (a bounded translate on a 6%-bleed layer) for a parallax feel.
-  CRT glass treatment (vignette, scanlines, flicker) + a pulsing CTA, all disabled under
-  `prefers-reduced-motion` (which also kills the parallax). Wordmark + tagline are part of
+  `host/src/shell/attract-bg.webp` (~250 KB) + a `CREDITS.md` from the owner's render in
+  `gabriel-source/` (gitignored). Current art: a 16:9 game-night room.
+- `AttractScreen.tsx`: the art fills the viewport with `background-size: cover` and drifts
+  with the mouse (a bounded translate on a 6%-bleed layer). The live bits — room code,
+  connected-phone count, QR + join URL, and the yellow "pressione qualquer tecla" banner —
+  sit in a **self-contained CRT-styled panel** floated over the scene (dark glass, bezel,
+  scanlines + flicker, glow). Nothing is measured against the art, so swapping the background
+  image can't break the layout. A radial vignette pulls focus to the panel. CRT flicker +
+  CTA pulse + parallax all off under `prefers-reduced-motion`. Wordmark + tagline are part of
   the art, so `BrandMark` is no longer used here. Room code + QR now appear on the attract
   screen (were lobby-only), so phones can join before the host picks a game.
 - No protocol / core / engine / shell-flow changes. 144 server tests, 13 `@party/ui` tests,
-  `tsc` + `oxlint` clean, 5-workspace build green. Verified live on the host at portrait,
-  16:9 and ultrawide.
+  `tsc` + `oxlint` clean, 5-workspace build green. Verified live at portrait, 16:9 and wide.
 
 ### Follow-ups (same branch)
-- `tools/fetch-local-sounds.mjs` — dev convenience for the owner: pulls a curated set of
-  Myinstants clips into the gitignored `host/public/sound-local/` and writes `manifest.json`
-  (6 wired cues + extras). Downloads are never committed.
-- Attract screen switched from an aspect-locked letterboxed stage to `cover`-fill + a
-  cover-fit-computed CRT overlay + mouse parallax (owner supplied a new portrait illustration);
-  compacted the on-screen block; removed a broken phone glyph.
+- `tools/fetch-local-sounds.mjs` — dev convenience for the owner: copies `*.mp3/ogg/wav` +
+  `manifest.json` from `gabriel-source/sound-local/` (the owner's editable stash) into the
+  gitignored `host/public/sound-local/`, then tops up any gaps by scraping a curated set of
+  Myinstants pages. Nothing here is committed.
+- Attract screen iterated to its final form: `cover`-fill background + mouse parallax + a
+  self-contained CRT panel for the live bits (see above). Earlier attempts pinned the overlay
+  to the baked TV (aspect-locked stage, then cover-fit math) and broke whenever the art
+  changed — the panel approach doesn't.

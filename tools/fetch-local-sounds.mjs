@@ -1,28 +1,28 @@
 #!/usr/bin/env node
 /**
- * Fetch the owner's curated meme clips from Myinstants into the host's
- * **gitignored** local drop folder and write its manifest.
+ * Put the owner's local meme clips where the host serves them:
+ * `host/public/sound-local/` (gitignored — nothing here is committed; the game
+ * is a LAN-only party app, no accounts, no internet at runtime).
  *
  *   node tools/fetch-local-sounds.mjs
  *
- * Dev-only, run by the owner on their own machine. Downloads land in
- * `host/public/sound-local/` (gitignored — nothing here is committed or
- * distributed); the game is a LAN-only party app with no accounts and no
- * internet at runtime. Re-runs skip files already present.
- *
- * `CUES` maps a game cue → a Myinstants instant page; the script scrapes each
- * page for its real `/media/sounds/*.mp3` URL, downloads it, and writes
- * `manifest.json`. `EXTRAS` are downloaded too but left unmapped — edit
- * `manifest.json` afterwards to swap any of them in.
+ * Two passes, either is enough:
+ *   1. If `gabriel-source/sound-local/` exists (the owner's editable stash),
+ *      every `*.mp3/ogg/wav` + `manifest.json` there is copied into place.
+ *   2. Otherwise (or to top up), the curated Myinstants pages in `CUES`/`EXTRAS`
+ *      are scraped for their real `/media/sounds/*.mp3` and downloaded.
+ * Re-runs skip files already present. `manifest.json` is written only if missing.
  */
 
-import { mkdir, writeFile, readFile, access } from 'node:fs/promises';
-import { join, dirname } from 'node:path';
+import { mkdir, writeFile, readFile, readdir, copyFile, access } from 'node:fs/promises';
+import { join, dirname, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'host', 'public', 'sound-local');
+const SRC = join(ROOT, 'gabriel-source', 'sound-local');
 const BASE = 'https://www.myinstants.com';
+const AUDIO_EXT = new Set(['.mp3', '.ogg', '.wav', '.m4a']);
 
 /** cue → { page, file } — the clip wired into every game's sound-map. */
 const CUES = {
@@ -75,8 +75,27 @@ async function download(mp3Url, destName) {
   return 'ok';
 }
 
+async function copyFromStash() {
+  let names;
+  try { names = await readdir(SRC); } catch { return 0; }
+  let n = 0;
+  for (const name of names) {
+    if (name !== 'manifest.json' && !AUDIO_EXT.has(extname(name).toLowerCase())) continue;
+    const dest = join(OUT, name);
+    if (await exists(dest)) continue;
+    await copyFile(join(SRC, name), dest);
+    n++;
+    console.log(`  ⇐ ${name}`);
+  }
+  return n;
+}
+
 async function main() {
   await mkdir(OUT, { recursive: true });
+
+  const copied = await copyFromStash();
+  if (copied > 0) console.log(`  copied ${copied} file(s) from gabriel-source/sound-local/\n`);
+
   const manifest = {};
   let ok = 0, skip = 0, fail = 0;
 

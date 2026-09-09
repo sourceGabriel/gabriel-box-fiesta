@@ -13,9 +13,10 @@ bundled fallback.
 node tools/fetch-local-sounds.mjs
 ```
 
-Downloads a curated set of clips from Myinstants into this folder and writes
-`manifest.json` for the wired cues. Re-runs skip what's already here. Then reload
-the host page.
+Copies your clips + `manifest.json` from `gabriel-source/sound-local/` (your
+editable stash) into this folder, then tops up anything missing by downloading a
+curated set from Myinstants. Re-runs skip what's already here. Then reload the
+host page.
 
 ### By hand
 

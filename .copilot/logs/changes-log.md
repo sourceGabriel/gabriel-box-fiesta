@@ -326,15 +326,16 @@ User report: É Você! drawing → clicking undo/submit a big drawing → `Range
 - Host `shell/localSounds.ts` fetches `/sound-local/manifest.json` once at boot (`main.tsx`) and registers it. `host/public/sound-local/` = gitignored drop folder (`.gitkeep` + `README.md` + `manifest.example.json` committed; clips + `manifest.json` ignored). `.gitignore` updated.
 - 7 `host/src/games/<id>/sound-map.ts` now return `{ cue: 'meme.*', fallback: <old spec> }` at: round/question start (`meme.roundStart`), reveal (`meme.reveal`), match win (`meme.win` — UNO/Coup + Zap! sweep), game over (`meme.gameover`), Coup challenge (`meme.betrayal`), Coup elimination (`meme.elimination`). Reserved (listed, not wired): loser/correct/timeout/afk/fooled/deadLobby.
 
-### Attract screen: owner AI art + live CRT overlay + parallax
-- `tools/build-attract-bg.py` (Pillow, dev-only) bakes `host/src/shell/attract-bg.webp` (2000px cap, q82, ~260KB) + `attract-bg.CREDITS.md` from a PNG in `gabriel-source/` (gitignored). Current art: `home.png`, a portrait (1086×1448) game-night room.
-- `AttractScreen.tsx` rewritten: `background-size: cover` fills the viewport (portrait → nearly whole image, wide → zoom to centre, never an exposed edge). Room code / phone count / QR + join URL / yellow "pressione qualquer tecla" banner overlay the blank CRT — `AttractScreen` recomputes that rect from the object-fit-cover math (`GLASS` normalized rect × art size) on every resize so it tracks the TV. `onMouseMove` drifts a 6%-bleed layer (`--px/--py`, bounded < bleed, 220ms ease-out) for parallax. CRT glass FX (vignette/scanlines/flicker) + CTA pulse, `prefers-reduced-motion` kills FX + parallax. `BrandMark`/tagline dropped (in the art). `App` passes `joinUrl`/`joinQrDataUrl` (was lobby-only).
-- No wire/protocol/core/engine changes. 144 server / 13 ui tests, tsc+oxlint, 5-ws build green. Live-verified: portrait / 16:9 / ultrawide, overlay stays on the TV, parallax bounded.
+### Attract screen: owner art (cover) + self-contained CRT panel + parallax
+- `tools/build-attract-bg.py` (Pillow) bakes `host/src/shell/attract-bg.webp` (~250KB) + CREDITS from a PNG in `gabriel-source/` (gitignored). Current art: a 16:9 game-night room.
+- `AttractScreen.tsx`: `background-size: cover` fills the viewport; `onMouseMove` drifts a 6%-bleed `.attract-scene` (`--px/--py`, bounded, 240ms ease-out); a radial vignette pulls focus centre. The live bits (SALA / code / count / QR + url) live in `.attract-panel` — a **self-contained CRT card** (dark glass, bezel `box-shadow` ring, `.attract-screen-fx` scanlines + flicker, glow), plus the yellow CTA sticker below. **Nothing is measured against the art**, so any background image works. `prefers-reduced-motion` kills flicker + CTA pulse + parallax. `BrandMark`/tagline are in the art. `App` passes `joinUrl`/`joinQrDataUrl` (was lobby-only).
+- Earlier tries (aspect-locked 16:9 stage, then object-fit-cover `GLASS` math) pinned the overlay to the baked TV and broke on every new image — dropped for the panel.
+- No wire/protocol/core/engine changes. 144 server / 13 ui tests, tsc+oxlint, 5-ws build green. Live-verified portrait / 16:9 / wide.
 
 ### follow-ups (same branch)
-- Attract overlay was misaligned on wide/fullscreen — reworked to `cover`-fill +
-  cover-fit-computed CRT rect + mouse parallax after the owner supplied a portrait
-  illustration (`home.png`); compacted the block; dropped the broken 📱 glyph.
+- Attract screen finalised: `cover`-fill bg + mouse parallax + a self-contained CRT
+  panel for the live bits (no measurement against the art → never breaks on an image
+  swap). `fetch-local-sounds.mjs` also copies from `gabriel-source/sound-local/`.
 - `tools/fetch-local-sounds.mjs` (Node, no deps) — owner convenience: scrapes the
   curated Myinstants pages for their real `/media/sounds/*.mp3`, downloads into the
   gitignored `host/public/sound-local/` and writes `manifest.json` (6 wired cues +
