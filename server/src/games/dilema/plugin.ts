@@ -9,7 +9,7 @@ export const dilemaPlugin: GamePlugin = {
     // "Dilema nos Trilhos" is this game's own name (trolley problem / Trial by
     // Trolley-inspired). Rename here + in BrandMark (which shows the short "Dilema").
     name: 'Dilema nos Trilhos',
-    tagline: 'Encha o trilho de inocentes, o inimigo de culpados — e reze pro Maquinista.',
+    tagline: 'Seu time escolhe as cartas em consenso — e reza pro Maquinista.',
     minPlayers: MIN_PLAYERS,
     maxPlayers: MAX_PLAYERS,
     lengthOptions: { label: 'Rodadas', values: [3, 5, 7], default: TOTAL_ROUNDS },
