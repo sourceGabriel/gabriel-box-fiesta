@@ -8,3 +8,5 @@ export { PlayerRoster, type RosterPlayer } from './PlayerRoster';
 export { Avatar } from './Avatar';
 export { AvatarEditor } from './AvatarEditor';
 export { TextAnswerInput } from './TextAnswerInput';
+export { DrawingCanvas } from './DrawingCanvas';
+export { DrawingView } from './DrawingView';

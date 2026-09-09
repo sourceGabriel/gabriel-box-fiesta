@@ -741,6 +741,65 @@ describe('multiplayer integration', () => {
     for (const ws of phones) ws.close();
   });
 
+  it('runs É Você!: SELECT_GAME + START_GAME, enquete round, player votes advance to results', async () => {
+    server = new PartyServer(0);
+    await server.start();
+    const roomCode = server.getRoomCode();
+    const port = server.getPort();
+
+    const host = await connect(port);
+    const catalogPromise = waitForMessage(host, 'GAME_CATALOG');
+    host.send(makeMessage('JOIN_ROOM', { roomCode, playerName: 'HOST', role: 'host' }));
+    await waitForMessage(host, 'ROOM_JOINED');
+    expect((await catalogPromise).payload.games.map((g) => g.id)).toEqual(
+      expect.arrayContaining(['uno', 'coup', 'zap', 'lorota', 'sabetudo', 'fdp', 'evoce']),
+    );
+
+    const reselected = waitForMessageWhere(host, 'GAME_CATALOG', (m) => m.payload.selectedGameId === 'evoce');
+    host.send(makeMessage('SELECT_GAME', { gameId: 'evoce' }));
+    await reselected;
+
+    const phones = [] as Awaited<ReturnType<typeof connect>>[];
+    for (const name of ['Ana', 'Bia', 'Caio']) {
+      const ws = await connect(port);
+      ws.send(makeMessage('JOIN_ROOM', { roomCode, playerName: name, role: 'player' }));
+      await waitForMessage(ws, 'ROOM_JOINED');
+      phones.push(ws);
+    }
+
+    const firstPublic = waitForMessage(host, 'GAME_STATE_PUBLIC');
+    const started = waitForMessage(host, 'GAME_STARTED');
+    host.send(makeMessage('START_GAME', { gameId: 'evoce' }));
+    expect((await started).payload.gameId).toBe('evoce');
+
+    const pub = (await firstPublic).payload.state as { phase: string; roundKind: string; prompt: string };
+    expect(pub.phase).toBe('answering');
+    expect(pub.roundKind).toBe('enquete');
+    expect(pub.prompt).toBeTruthy();
+
+    const privs = await Promise.all(phones.map((ws) => waitForMessage(ws, 'PLAYER_STATE_PRIVATE')));
+    for (const p of privs) expect((p.payload.state as { pendingDecision: string }).pendingDecision).toBe('vote_player');
+
+    const resultsReached = waitForMessageWhere(
+      host,
+      'GAME_STATE_PUBLIC',
+      (m) => (m.payload.state as { phase: string }).phase === 'roundResults',
+    );
+    // everyone votes Ana (p1's socket is phones[0])
+    const anaId = (privs[0].payload.state as { playerId: string }).playerId;
+    phones.forEach((ws) => ws.send(makeMessage('GAME_ACTION', { action: { type: 'votePlayer', targetId: anaId } })));
+    const resState = (await resultsReached).payload.state as { pollWinnerId: string | null; pollBars: unknown[] };
+    expect(resState.pollWinnerId).toBe(anaId);
+    expect(Array.isArray(resState.pollBars)).toBe(true);
+
+    const actionError = waitForMessage(phones[0], 'ERROR');
+    phones[0].send(makeMessage('GAME_ACTION', { action: { type: 'garbage' } }));
+    expect((await actionError).payload.message).toMatch(/INVALID_ACTION/i);
+
+    host.close();
+    for (const ws of phones) ws.close();
+  });
+
   it('SET_CONTENT_TIER: owner flips it in the lobby and the catalog reflects it', async () => {
     server = new PartyServer(0);
     await server.start();

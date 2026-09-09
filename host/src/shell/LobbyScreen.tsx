@@ -3,7 +3,7 @@ import { BrandMark, Button, PlayerRoster, QrPanel } from '@party/ui';
 import type { ShellPlayer } from './useRoomConnection';
 
 /** Games whose prompt/question bank has a `leve`/`pesado` split. */
-const TIERED_GAMES = new Set(['zap', 'lorota', 'sabetudo', 'fdp']);
+const TIERED_GAMES = new Set(['zap', 'lorota', 'sabetudo', 'fdp', 'evoce']);
 
 interface LobbyScreenProps {
   roomCode: string;

@@ -230,3 +230,16 @@ The project is currently between the room lifecycle phase and the actual host ga
 - Content: each text game's bank split into leve/pesado + a `<game>Prompts(tier)` / `<game>Questions(tier)` helper. Zap +34 heavier prompts, Lorota +16 heavier real facts (+tagged old pack), Sabe-Tudo +11 (+tagged), FDP restructured (38 leve / 62 pesado, ~40 new). Guardrails unchanged and now written into each content file's header: no protected-group punchline, no real private people, no minors, no graphic sex about named real people, no real specific atrocity with real victims, no defaming real named businesses.
 - `content-tier.test.ts` (5) + `room.test.ts` +1 + integration +1. **Server 120 → 127.** tsc + oxlint + 5-ws build green. Live smoke: FDP in Leve served only leve prompts; toggle roundtrips + persists across game switch; 0 console errors on fresh loads.
 - §52 note: this is a platform feature (like reactions/avatars) so it touches protocol + ws-server + Room + GameContext + both shells — but zero game *rules* changed; the engines only swap which array they shuffle.
+
+## 2026-09-08 — É Você! (game #7, *That's You!*-inspired) — full slice (branch `feature/e-voce`, off `main`)
+- User loved PlayStation's *That's You!* (removed from the store) and asked for something similar. Researched it (Wish Studios/Sony 2017 PlayLink) then built an adaptation.
+- §47 name **"É Você!"** (`gameId: "evoce"`). A "how well do you know your friends" game. 6 fixed rounds: `enquete → legenda → rabisco → enquete → legenda → final` (final ×2).
+- **No camera** (LAN http blocks getUserMedia): a player's face = their pixel `<Avatar>`; drawings = a light **stroke list** in a 0–1000 square, not a bitmap.
+- New mechanics for the platform: **voting for a player** (enquete, consensus scoring: 250/other-agreer) + the **Curinga** wildcard (2 each, doubles enquete points if your vote matched the group) + **drawing**.
+- `shared/src/models/evoce.ts` + `games/evoce/events.ts` (types-only). `shared/src/index.ts` +2.
+- `server/src/games/evoce/`: `constants`, `prompts.ts` (4 PT-BR banks each split leve/pesado), `evoce-game.ts` (`implements PausableGame, TurnTimedGame`; self-advancing; per-kind decks; target rotation; consensus + Curinga + VOTE_POINTS/PICK_WINNER_BONUS scoring), `action-schema` (zod + bounded stroke schema), `plugin`. **+1 line in `GAMES`.**
+- `@party/ui`: **`DrawingCanvas`** (pointer paint → stroke list) + **`DrawingView`** (read-only SVG) + CSS — reusable by future games.
+- `host/src/games/evoce/` (`EvoceHostView` phase×kind, `EvoceCover` SVG, `describeEvent`, `sound-map`, css) +2 imports +1 entry in `HOST_GAMES`. `mobile/src/games/evoce/` (`EvoceControllerView`, `HowToPlay`, css) +1 line in `CONTROLLER_GAMES`. `evoce` added to both tiered-games sets (Leve/Pesado toggle).
+- `evoce-game.test.ts` (11) + integration (+1) + content-tier (+1). **Server 127 → 140.** tsc server/shared/ui + oxlint + 5-ws build green + ui 7 tests.
+- Full live smoke: complete 6-round match, host + 3 controllers — consensus scoring, Curinga doubling, `[NOME]` substitution, rabisco model-excluded + `DrawingCanvas`→`DrawingView` strokes over the wire, final ×2, gameover overlay. 0 console errors (fresh tabs).
+- **§52 held** — nothing in `core/`, `ws-server`, either shell flow, `shared/protocol`. **7 games in the catalog.**

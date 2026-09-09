@@ -577,3 +577,37 @@ Even in `pesado`: never a protected group (raça, religião — inclui crente, o
 ### Validation
 - 127 server tests · `tsc` server/shared clean · `oxlint` host/mobile clean · 5-workspace build green.
 - **Live smoke** (host + 3 controllers): FDP lobby shows the toggle → flip to Leve (hint text changes, roundtrips via `GAME_CATALOG`) → phones' waiting screens show "😇 Modo leve" → start → every prompt across rounds 1–2 came from `FDP_PROMPTS_LEVE`. Toggle also renders on the Sabe-Tudo lobby and the setting persists across a game switch. Fresh page loads: zero console errors.
+
+## 2026-09-08 — É Você! — game #7 (inspired by PlayStation's *That's You!*), full slice (branch `feature/e-voce`)
+A "how well do you know your friends" game: every question is about the players in the room. Introduces two new mechanics for the platform — **voting for a player** (not a text answer) and **drawing** — plus the **Curinga** (wildcard) bet.
+
+**§47:** the game's own name is **"É Você!"**, `gameId: "evoce"`. Rename point: `evocePlugin.meta.name` + the `BrandMark text`.
+
+**No camera** (LAN http blocks `getUserMedia`): a player's "face" is their pixel `<Avatar>`, and drawings are captured as a light **stroke list** in a 0–1000 square (`{ strokes: [{ color, width, points }] }`) — not a bitmap — so they travel tiny over the wire and render crisp SVG at any size.
+
+### 6 fixed rounds
+`enquete → legenda → rabisco → enquete → legenda → final` (the last, "A Obra-Prima", is worth double).
+- **enquete** — "Quem de vocês…?" → tap a player. Points **by consensus**: `CONSENSUS_POINTS (250)` per other player who voted the same as you. A **Curinga** (2 per player) doubles your enquete points if your vote matched the group's pick; spent either way.
+- **legenda** — complete a sentence about the round's target player (`[NOME]` substituted) → vote the best. `VOTE_POINTS (300)` per vote received + `PICK_WINNER_BONUS (100)` for voting the winner.
+- **rabisco** — draw over the target ("Desenhe [NOME] como…"); the target ("modelo") does not draw → vote the best.
+- **final** — everyone draws themselves from a prompt → vote the best → ×2.
+
+### Added — code
+- `shared/src/models/evoce.ts` + `shared/src/games/evoce/events.ts` (types-only): `EvocePublicState` / `EvocePrivateState` / `EvocePhase` (`answering|voting|roundResults|gameover|paused`) / `EvoceRoundKind` / `EvoceStroke` / `EvoceDrawing` / `EvoceSubmission` / `EvocePollBar` / `EvoceAction` (`votePlayer|playJoker|submitCaption|submitDrawing|castVote`) / `EvoceGameEvent`. Authors + votes are `null` in the public state until `roundResults`; events carry no caption/drawing/vote content. `shared/src/index.ts` re-exports both.
+- `server/src/games/evoce/`: `constants.ts` (3–8 players; `ROUND_PLAN`; 25/50/75s answering by kind, 25s voting, 9s results; scoring + `JOKER_COUNT 2`; drawing payload guards `MAX_STROKES 500` / `MAX_POINTS_PER_STROKE 512`), `prompts.ts` (four PT-BR banks — enquete / legenda / rabisco / final — each split `leve`/`pesado` with `enquetePrompts(tier)` etc.), `evoce-game.ts` (`EvoceGame implements PausableGame, TurnTimedGame` — self-advancing; per-kind decks; target rotation; consensus + Curinga scoring; `sanitizeDrawing`), `action-schema.ts` (zod incl. a bounded stroke/drawing schema), `plugin.ts`. **+1 line in `GAMES`.**
+- `@party/ui`: **`DrawingCanvas`** (pointer-events finger paint, colour/width/undo/clear, exports a stroke list; give it a fresh `key` per round) + **`DrawingView`** (read-only SVG render of a stroke list) + `.ui-draw*` CSS. Exported from `@party/ui`.
+- `host/src/games/evoce/`: `EvoceHostView` (phase-driven for all 4 round kinds — answering progress + roster with 🃏 pips, legenda/rabisco/final voting (caption list or `DrawingView` grid), enquete `roundResults` poll bars, creative `roundResults` sorted by votes with 👑, `gameover` Overlay; side panel = standings + `describeEvent` feed + pause/end + `sound-map.ts` "🔊 Som" toggle), `EvoceCover` (inline SVG — a ring of faces + a pointing hand), `describeEvent.ts`, `evoce-host.css` (scoped `.evoce-host`). **+2 imports + 1 entry in `HOST_GAMES`.** Added `evoce` to the lobby's tiered-games set.
+- `mobile/src/games/evoce/`: `EvoceControllerView` (enquete player ballot + Curinga button; legenda `@party/ui TextAnswerInput`; rabisco/final `@party/ui DrawingCanvas`, or a "você é o modelo" panel; voting = caption buttons or `DrawingView` grid; standings + reactions), `HowToPlay.tsx`, `evoce-controller.css`. **+1 line in `CONTROLLER_GAMES`.** Added `evoce` to the mobile tiered-games set.
+
+### Tests
+- `server/src/tests/evoce-game.test.ts` — 11 tests (setup, min-players, malformed payload, enquete consensus scoring + `matchedGroup`, Curinga double + waste + reject-twice, legenda caption→vote→VOTE_POINTS+PICK_WINNER_BONUS+winner, rabisco model excluded from drawing + not expected, empty-drawing + oversized-stroke rejection, full 6-round match to a winner, final ×2, answering timeout, pause).
+- `multiplayer.integration.test.ts` +1 (É Você! catalog + SELECT_GAME + START_GAME + enquete + `votePlayer` via `GAME_ACTION` → `roundResults` with `pollWinnerId` + `pollBars` + malformed rejection).
+- `content-tier.test.ts` +1 (all four É Você! banks have a strict `leve` prefix of `pesado`).
+- **Server tests: 140 (was 127).**
+
+### Validation
+- 140 server tests · `tsc` server/shared/ui clean · `oxlint` mobile clean, host only the established `set-state-in-effect` advisory · 5-workspace build green · `@party/ui` 7 tests green.
+- **Full live smoke** (host TV + 3 controllers, real server, a complete 6-round match): enquete consensus scoring + a Curinga doubling Ana's points; legenda `[NOME]` substitution + caption vote + `PICK_WINNER_BONUS`; rabisco "0/2" (model excluded) + "você é o modelo" screen + `DrawingCanvas` strokes → `DrawingView` rendering the 3 polylines on the host + the mobile ballot + vote + score; round plan sequence; final "A Obra-Prima" with the ×2 multiplier on votes *and* the pick bonus; `gameover` overlay ("🏆 Bia venceu!" 2600/1950/1700). Toggle shows on the É Você! lobby ("🔞 Modo pesado" on the phones). **Zero console errors** on the host tab and the fresh controller tab.
+
+### §52
+- The whole game = `shared/{models,games}/evoce` + `server/src/games/evoce/` + `host/src/games/evoce/` + `mobile/src/games/evoce/` + `@party/ui` `DrawingCanvas`/`DrawingView` (reusable) + **one line in each of the 3 registries** (+ 2 lines adding `evoce` to the frontend tiered-games sets). Zero edits to `core/`, `ws-server.ts`, either shell's flow, or `shared/protocol`. **7 games in the catalog.**

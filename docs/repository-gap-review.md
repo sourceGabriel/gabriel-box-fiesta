@@ -1,6 +1,6 @@
 # Revisão do repositório: lacunas em relação ao prompt mestre
 
-_Atualizado em 2026-09-08 (run autônoma: Lorota! + pack adulto +18 + Sabe-Tudo mergeados em `main`; branch `feature/fdp` — **jogo #6 "FDP — Foi De Propósito" COMPLETO**, 120 testes de servidor; 6 jogos no catálogo)._
+_Atualizado em 2026-09-08 (Lorota! + pack +18 + Sabe-Tudo + FDP + toggle Leve/Pesado mergeados; branch `feature/e-voce` — **jogo #7 "É Você!" COMPLETO**, 140 testes; 7 jogos no catálogo)._
 
 > **2026-09-07 — Avatares customizáveis (plataforma, agnóstico de jogo).** O "avatar" antigo era um único emoji colado no nome. Agora cada jogador monta um retrato pixel-art "foto 3x4" na tela de entrada: corpo (feminino/masculino), pele, cabelo (25 estilos) + cor, cor dos olhos, camisa, chapéu engraçado, fundo. Arte = subconjunto curado do Universal LPC Spritesheet Character Generator, extraído por `tools/build-avatars.py` para `ui/src/avatar-assets/` (69 PNGs, ~35 KB; fontes em `tools/lpc-source/`, nada fora do repo). Render híbrido: partes finitas assadas, cabelo recolorido em runtime num `<canvas>` 46×46. `AvatarSpec` (types-only em `shared`), catálogos + renderer + editor em `@party/ui`, `sanitizeAvatar` no cliente + validação estrutural no servidor. Aparece no join, sala de espera, roster do lobby (TV) e nos assentos/pills dentro de UNO e Coup. Créditos LPC em `ui/src/avatar-assets/CREDITS.md` + linha no join. **60 testes de servidor verdes.** §52 preservado — nenhuma edição em `core/`, `ws-server`, shells ou engines.
 
@@ -109,5 +109,14 @@ Setting de sala que o host vira no lobby, pros jogos de texto (Zap!/Lorota!/Sabe
 - `content-tier.test.ts` (5) + `room.test.ts` +1 + integration +1. **Testes de servidor 120 → 127.** Smoke ao vivo: FDP em Leve só serviu prompts leves; toggle roundtrip + persiste na troca de jogo; 0 erros de console.
 - §52: nenhuma *regra* de jogo mudou; toca protocol/ws-server/Room/GameContext/shells como qualquer feature de plataforma.
 
-**6 jogos no catálogo: UNO, Coup, Zap!, Lorota!, Sabe-Tudo, FDP.**
+## Jogo #7 — É Você! (inspirado no *That's You!* da PlayStation) — COMPLETO (branch `feature/e-voce`)
+`gameId: "evoce"`, §47 nome próprio **"É Você!"**. Jogo de "o quanto vocês se conhecem". 6 rodadas fixas: `enquete → legenda → rabisco → enquete → legenda → final` (a última "A Obra-Prima" vale ×2). Sem câmera — rosto = avatar pixel, desenho = **lista de traços** num quadrado 0–1000 (não bitmap).
+- Mecânicas novas de plataforma: **votar num jogador** (enquete, pontos por consenso: 250 por outro que votou igual) + **Curinga** (2 por jogador, dobra os pontos da enquete se seu voto bateu com o da galera) + **desenho**.
+- `shared/src/models/evoce.ts` + `games/evoce/events.ts` (types-only).
+- `server/src/games/evoce/` (`constants`, `prompts` 4 bancos PT-BR split leve/pesado, `evoce-game` `implements PausableGame, TurnTimedGame` self-advancing, `action-schema` zod com schema de traço limitado, `plugin`) + 1 linha em `GAMES`.
+- `@party/ui` **`DrawingCanvas`** (paint → lista de traços) + **`DrawingView`** (SVG read-only) — reutilizáveis.
+- `host/src/games/evoce/` (`EvoceHostView` por fase×tipo, `EvoceCover` SVG, `describeEvent`, `sound-map`, css `.evoce-host`) +2 imports +1 entrada em `HOST_GAMES`. `mobile/src/games/evoce/` +1 linha em `CONTROLLER_GAMES`. `evoce` nos dois tiered-games sets.
+- `evoce-game.test.ts` (11) + integration + content-tier. **Testes de servidor 127 → 140.** §52 preservado. Smoke ao vivo completo (6 rodadas, host + 3 controllers, DrawingCanvas→DrawingView, Curinga, final ×2, gameover, 0 erros).
+
+**7 jogos no catálogo: UNO, Coup, Zap!, Lorota!, Sabe-Tudo, FDP, É Você!**
 Plano: `C:\Users\gabri\.claude\plans\quiplax-e-proximos-jogos.md`.

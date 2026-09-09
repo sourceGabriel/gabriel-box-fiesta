@@ -6,6 +6,7 @@ import { zapPlugin } from './zap/plugin';
 import { lorotaPlugin } from './lorota/plugin';
 import { sabeTudoPlugin } from './sabetudo/plugin';
 import { fdpPlugin } from './fdp/plugin';
+import { evocePlugin } from './evoce/plugin';
 
 /**
  * The platform's game catalog. Adding a game = one import + one entry here.
@@ -18,6 +19,7 @@ export const GAMES: Readonly<Record<string, GamePlugin>> = {
   [lorotaPlugin.meta.id]: lorotaPlugin,
   [sabeTudoPlugin.meta.id]: sabeTudoPlugin,
   [fdpPlugin.meta.id]: fdpPlugin,
+  [evocePlugin.meta.id]: evocePlugin,
 };
 
 export const DEFAULT_GAME_ID = unoPlugin.meta.id;

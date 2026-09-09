@@ -1,0 +1,208 @@
+/* É Você! — host/TV view. Loaded only when É Você! is active.
+   All rules scoped under .evoce-host so they can't collide with other games. */
+
+.evoce-host {
+  --evoce-purple: #a78bfa;
+  --evoce-gold: #fbbf24;
+  --evoce-green: #22c55e;
+  position: relative;
+}
+
+.evoce-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: clamp(0.5rem, 1.5vmin, 1rem) clamp(0.75rem, 2vmin, 1.5rem);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+}
+.evoce-brand { display: flex; align-items: baseline; gap: 0.9rem; min-width: 0; }
+.evoce-brand-sub { color: var(--muted); font-size: clamp(0.8rem, 1.5vmin, 1.1rem); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.evoce-conn-pill {
+  font-size: 0.7em; text-transform: uppercase; letter-spacing: 0.04em;
+  padding: 0.2em 0.7em; border-radius: 999px;
+  background: rgba(251, 191, 36, 0.16); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.4);
+}
+
+.evoce-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(240px, 24vw, 380px);
+  gap: clamp(0.5rem, 1.5vmin, 1.25rem);
+}
+.evoce-stage {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--panel);
+  padding: clamp(0.75rem, 2.4vmin, 2rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(0.6rem, 1.6vmin, 1.2rem);
+  overflow-y: auto;
+}
+
+.evoce-target {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  font-weight: 800;
+  font-size: clamp(1rem, 2.2vmin, 1.5rem);
+  color: var(--evoce-purple);
+}
+
+.evoce-eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: clamp(0.7rem, 1.5vmin, 0.95rem);
+  color: var(--evoce-purple);
+  font-weight: 700;
+  text-align: center;
+}
+.evoce-prompt {
+  font-size: clamp(1.25rem, 3.2vmin, 2.3rem);
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.25;
+  max-width: 30ch;
+}
+.evoce-prompt.is-final { color: var(--evoce-gold); }
+
+.evoce-answering, .evoce-voting, .evoce-poll {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.evoce-progress {
+  width: min(70%, 520px);
+  height: 14px;
+  border-radius: 999px;
+  background: #0d1420;
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+.evoce-progress-fill { height: 100%; background: linear-gradient(90deg, var(--evoce-purple), var(--evoce-green)); transition: width 0.4s ease; }
+.evoce-count { color: var(--muted); font-size: clamp(0.85rem, 1.7vmin, 1.1rem); }
+
+.evoce-roster { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; }
+.evoce-roster-chip {
+  display: flex; align-items: center; gap: 0.4rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: #0f1826;
+  font-size: clamp(0.8rem, 1.5vmin, 1rem);
+  opacity: 0.6;
+}
+.evoce-roster-chip.is-done { opacity: 1; border-color: var(--evoce-green); }
+
+/* ---------- submissions (legenda captions / rabisco+final drawings) ---------- */
+.evoce-subs {
+  width: 100%;
+  max-width: 900px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+.evoce-subs.is-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.7rem;
+}
+.evoce-sub {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: clamp(0.5rem, 1.4vmin, 0.9rem);
+  border-radius: 12px;
+  border: 2px solid var(--line);
+  background: #0f1826;
+}
+.evoce-subs.is-grid .evoce-sub { flex-direction: column; align-items: stretch; gap: 0.4rem; }
+.evoce-sub.is-winner { border-color: var(--evoce-gold); background: rgba(251, 191, 36, 0.12); }
+.evoce-sub-n { font-weight: 800; color: var(--muted); min-width: 1.4ch; }
+.evoce-sub-text { flex: 1; font-size: clamp(1rem, 2.2vmin, 1.4rem); font-weight: 600; }
+.evoce-sub-draw { aspect-ratio: 1 / 1; width: 100%; border-radius: 8px; overflow: hidden; }
+.evoce-sub-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 0.15rem; text-align: right; }
+.evoce-subs.is-grid .evoce-sub-meta { align-items: flex-start; text-align: left; }
+.evoce-sub-author { font-size: clamp(0.72rem, 1.4vmin, 0.9rem); font-weight: 700; color: var(--evoce-gold); }
+.evoce-sub-votes { font-size: clamp(0.7rem, 1.3vmin, 0.85rem); color: var(--muted); }
+
+/* ---------- enquete poll bars ---------- */
+.evoce-poll-bars { width: min(90%, 640px); display: flex; flex-direction: column; gap: 0.4rem; }
+.evoce-poll-bars li {
+  display: flex; align-items: center; gap: 0.6rem;
+  padding: 0.4rem 0.6rem; border-radius: 10px;
+  background: #0f1826; border: 1px solid var(--line);
+}
+.evoce-poll-bars li.is-top { border-color: var(--evoce-purple); }
+.evoce-poll-name { min-width: 6ch; font-weight: 700; }
+.evoce-poll-track { flex: 1; height: 12px; border-radius: 999px; background: #0b1120; overflow: hidden; }
+.evoce-poll-track span { display: block; height: 100%; background: linear-gradient(90deg, var(--evoce-purple), var(--evoce-gold)); transition: width 0.5s ease; }
+.evoce-poll-count { font-weight: 800; color: var(--evoce-gold); min-width: 2ch; text-align: right; }
+
+/* ---------- side panel ---------- */
+.evoce-side {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--panel);
+  padding: clamp(0.6rem, 1.8vmin, 1.1rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  min-height: 0;
+}
+.evoce-side-head { display: flex; align-items: center; justify-content: space-between; }
+.evoce-side-head h2 { margin: 0; font-size: clamp(1rem, 2vmin, 1.35rem); }
+.evoce-standings { display: flex; flex-direction: column; gap: 0.3rem; }
+.evoce-standings li, .evoce-final-standings li {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.4rem 0.55rem; border-radius: 10px;
+  background: #0f1826; border: 1px solid var(--line);
+}
+.evoce-standings li:first-child { border-color: var(--evoce-gold); }
+.evoce-rank { color: var(--muted); font-weight: 700; font-size: 0.85em; min-width: 2.2ch; }
+.evoce-standings-name, .evoce-final-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.evoce-jk { font-size: 0.7em; letter-spacing: -0.15em; }
+.evoce-standings-delta { color: var(--evoce-purple); font-weight: 700; font-size: 0.85em; }
+.evoce-standings-score, .evoce-final-score { font-weight: 800; color: var(--evoce-gold); }
+.evoce-feed {
+  flex: 1; min-height: 0; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 0.25rem;
+  font-size: clamp(0.75rem, 1.5vmin, 0.95rem); color: var(--muted);
+  border-top: 1px solid var(--line); padding-top: 0.5rem;
+}
+.evoce-side-actions { display: flex; gap: 0.5rem; }
+.evoce-side-actions button { flex: 1; }
+.evoce-sound-toggle {
+  border: 1px solid var(--line); background: transparent; color: var(--muted);
+  border-radius: 10px; padding: 0.45rem; font-size: 0.82rem; font-weight: 600; cursor: pointer;
+}
+.evoce-result-actions { display: flex; gap: 0.6rem; justify-content: center; margin-top: 0.8rem; flex-wrap: wrap; }
+.evoce-final-standings { display: flex; flex-direction: column; gap: 0.3rem; margin: 0.8rem 0 0; width: min(360px, 80vw); }
+
+.evoce-reactions {
+  position: absolute; right: clamp(0.5rem, 2vw, 1.5rem); bottom: clamp(0.5rem, 2vh, 1.5rem);
+  display: flex; flex-direction: column; gap: 0.4rem; pointer-events: none; z-index: 5;
+}
+.evoce-reaction-bubble {
+  display: flex; align-items: center; gap: 0.4rem;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 0.3rem 0.7rem;
+}
+.evoce-reaction-emoji { font-size: 1.3rem; }
+.evoce-reaction-who { color: var(--muted); font-size: 0.8rem; }
+
+@media (max-width: 900px) {
+  .evoce-body { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .evoce-progress-fill, .evoce-poll-track span { transition: none; }
+}

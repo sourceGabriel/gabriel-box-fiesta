@@ -3,6 +3,7 @@ import { zapPrompts, ZAP_PROMPTS_LEVE, ZAP_PROMPTS_PESADO } from '../games/zap/p
 import { lorotaQuestions } from '../games/lorota/questions';
 import { sabeTudoQuestions } from '../games/sabetudo/questions';
 import { fdpPrompts, FDP_PROMPTS_LEVE, FDP_PROMPTS_PESADO } from '../games/fdp/prompts';
+import { enquetePrompts, legendaPrompts, rabiscoPrompts, finalPrompts } from '../games/evoce/prompts';
 
 describe('content tier — bank filtering', () => {
   it('Zap!: leve is a strict subset, pesado is leve + the +18 pack', () => {
@@ -40,5 +41,14 @@ describe('content tier — bank filtering', () => {
     expect(leve).toEqual([...FDP_PROMPTS_LEVE]);
     expect(pesado).toEqual([...FDP_PROMPTS_LEVE, ...FDP_PROMPTS_PESADO]);
     expect(pesado.length).toBeGreaterThan(leve.length);
+  });
+
+  it('É Você!: every bank has a strict leve subset', () => {
+    for (const bank of [enquetePrompts, legendaPrompts, rabiscoPrompts, finalPrompts]) {
+      expect(bank('pesado').length).toBeGreaterThan(bank('leve').length);
+      expect(bank(undefined)).toEqual(bank('pesado'));
+      // leve is a prefix of pesado
+      expect(bank('pesado').slice(0, bank('leve').length)).toEqual(bank('leve'));
+    }
   });
 });
