@@ -509,3 +509,8 @@ User report: É Você! drawing → clicking undo/submit a big drawing → `Range
   `margin-block: auto` to kill the JoinScreen gap. Plain-card lobby kept as the
   documented fallback (all 9 games ship art → only renders on an empty catalog).
 - Also: pruned 10 merged remote branches (`git push origin --delete`).
+- **Merged `--no-ff` → `develop` @ `429d8e4` (pushed):** `feature/lobby-acabamento`
+  (`311e417`) → `feature/glory-cameo` (`a50c871`) → `feature/sintonia` (`541a5fb`),
+  in that order (glory-cameo defines `<VictorySplash>` and lobby-acabamento defines
+  `.game-cover`, both used by Sintonia). All local feature branches deleted.
+  `main` unchanged at `29ed754` — owner promotes.

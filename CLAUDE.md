@@ -18,14 +18,12 @@ Local (LAN, no internet, no accounts, in-memory) "Jackbox-style" party-game plat
 - Change history + rationale: `docs/CHANGELOG.md` · Gap vs spec: `docs/repository-gap-review.md` · Short log: `.copilot/logs/changes-log.md`
 
 ## Current state (2026-09-09)
-**`develop` = `main` = `29ed754`** (pushed) — through `feature/mobile-arte` (mobile bg art + JoinScreen redesign). 10 merged remote branches **pruned**. **§47 fully retired.** **8 games merged. Server tests 167 on `develop`.**
+**`develop` = `429d8e4`** (pushed) — 3 batches merged `--no-ff` this session: `feature/lobby-acabamento` (`311e417`) → `feature/glory-cameo` (`a50c871`) → `feature/sintonia` (`541a5fb`). **`main` still at `29ed754`** (owner promotes `develop` → `main` manually). 10 merged remote branches **pruned**. **§47 fully retired.** **9 games. Server tests 186.**
 
-**Uncommitted on `feature/sintonia` (working tree) — 3 points done + validated + live-smoked, awaiting owner OK to commit (will split into 3 branches, one per point):**
+**This session's 3 batches:**
 1. **Sintonia — game #9** (*Wavelength*-inspired, clean-room). `gameId: "sintonia"`, BrandMark "Sintonia", accent teal `#2dd4bf`, vibe `TELEPATIA`. **Team game, scored by team.** `minPlayers 3`, `maxPlayers 8`, **tiered** (leve/pesado spectrums), rounds `[4,6,8]` default `6`. Loop (self-advancing off one deadline, like Dilema): `cluing` (45s — teams re-split each round, a **médium** rotates by join order, sees a hidden `target` ∈ [4,96], types ONE clue ≤ 60 chars, digits rejected) → `guessing` (40s — médium's team drags a 0–100 dial; other team bets `left`/`right` of where it lands) → `reveal` (9s — bands ±6/±14/±22 → 4/3/2 pts active team, +1 other team for the right side-call; no clue = round skipped) → next round → `gameover`. Whole game = `shared/{models,games}/sintonia` + `server/src/games/sintonia/{constants,spectrums,pairing,sintonia-game,action-schema,plugin}.ts` (`spectrums.ts` ~66 PT-BR pairs leve/pesado, `pairing.ts` pure planner) + `host/src/games/sintonia/` (`SintoniaHostView`, `SintoniaDial` = pure-SVG gauge sampled as polylines, `SintoniaCover` = `<img>` from owner `cover.webp`, `describeEvent`, `sound-map`, `personality`, `lobby-bg.webp`, css) + `mobile/src/games/sintonia/` (`SintoniaControllerView` role-driven, `HowToPlay`, css) + **1 line in each of the 3 registries** + `sintonia` in `TIERED_GAMES` (host `LobbyScreen` + `mobile/App.tsx`). `sintonia-game.test.ts` (18) + 1 integration → **167 → 186 server tests**. §52 held. **Owner key art landed** — `build-screen-bg.py` `GAMES` dict gained `sintonia`; `cover-sintonia`/`lobby-sintonia` bake `cover.webp` (q70) + `lobby-bg.webp` from `gabriel-source/{thumbs,backgrounds}/sintonia.png`; `HOST_GAMES.sintonia` has `lobbyBg` → the lobby renders in **art mode** like the other 8. Prompt lines in `tools/{cover-art,lobby-bg}-prompts.md`.
 2. **`<VictorySplash>`** in `@party/ui` — winner's face big in the `gameover` overlay: "Gabsinto" preset → full portrait (`-full.webp`), else pixel `<Avatar>` @ 220px, accent glow + CSS confetti, `prefers-reduced-motion`-guarded. Wired into all **9** host `gameover` overlays. No wire/server change.
-3. **Lobby/covers finishing touches** — `.lobby-slot-start:disabled` opaque; `.lobby-slot-code` raised + `.lobby-qr-url` shrunk (URL fits the painted box); `build-screen-bg.py` `COVER_QUALITY = 70` for the `cover-<id>` branch (**8 pre-existing covers' rebuild pending — owner reruns**; the `sintonia` cover was already baked at q70); `.game-cover-svg` → `.game-cover`; mobile `.join` `margin-block: auto` (kills the JoinScreen gap). Plain-card `LobbyScreen` branch **kept as documented fallback** (owner's call) — all 9 games ship art, so it only renders on an empty catalog. **Still owner-only:** regen `dilema.png` (`TRIILHOS` typo), `fdp.png`/`evoce.png` accents; re-render the 8 pre-existing covers at q70.
-
-**9 games. Server tests 186 (on `feature/sintonia`).**
+3. **Lobby/covers finishing touches** — `.lobby-slot-start:disabled` opaque + `justify-content: center`; `.lobby-slot-code` raised + `.lobby-qr-url` shrunk (URL fits the painted box); `build-screen-bg.py` `COVER_QUALITY = 70` for the `cover-<id>` branch (**8 pre-existing covers' rebuild pending — owner reruns**; the `sintonia` cover was already baked at q70); `.game-cover-svg` → `.game-cover`; mobile `.join` `margin-block: auto` (kills the JoinScreen gap). Plain-card `LobbyScreen` branch **kept as documented fallback** (owner's call) — all 9 games ship art, so it only renders on an empty catalog. **Still owner-only:** regen `dilema.png` (`TRIILHOS` typo), `fdp.png`/`evoce.png` accents; re-render the 8 pre-existing covers at q70.
 
 <details><summary>Batch on `feature/dilema` (MERGED → develop @ `f8fb257`)</summary>
 
@@ -165,7 +163,7 @@ Monorepo, npm workspaces: `server` · `shared` (**types-only, no runtime, no zod
 ## Validation
 `/validate` runs it all and reports one line. Under the hood:
 ```
-npm run -w server test       # must stay green (167 on develop; 186 on feature/sintonia)
+npm run -w server test       # must stay green (currently 186)
 npm run -w server lint        # tsc --noEmit
 npm run -w host lint          # oxlint
 npm run -w mobile lint        # oxlint
