@@ -1232,12 +1232,12 @@ Depois evoluir para:
 * transições.
 
 > **Retirado pelo dono em 2026-09-08.** A antiga exigência de "identidade visual
-> própria / não usar assets, sons ou elementos de terceiros" **não vale mais**.
-> Packs de arte e som de licença permissiva (CC0 / CC-BY / OGA-BY / MIT-like)
-> podem ser usados livremente, desde que empacotados no repo (sem internet em
-> runtime) e com um `CREDITS.md` por pack. Não copiar marca/identidade registrada
-> de produtos comerciais (ex.: o logotipo do UNO) continua valendo — isso é
-> questão de marca, não de "identidade própria".
+> própria / não usar assets, sons ou elementos de terceiros" **não vale mais** —
+> ignore o §47 por completo. Assets de qualquer origem (arte, som, fontes,
+> ícones, inclusive material de produtos comerciais) podem ser usados
+> livremente, desde que empacotados no repo (sem internet em runtime) e com um
+> `CREDITS.md` por pack quando a licença pedir crédito. Uso local, sem
+> distribuição pública.
 
 ---
 
