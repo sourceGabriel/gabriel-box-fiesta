@@ -1003,6 +1003,38 @@ describe('multiplayer integration', () => {
     phones[0].send(makeMessage('GAME_ACTION', { action: { type: 'garbage' } }));
     expect((await actionError).payload.message).toMatch(/INVALID_ACTION/i);
 
+    // assigning → pickInnocent (auto-advances after ~4s), then drive one team through propose over the wire.
+    const picking = waitForMessageWhere(
+      host,
+      'GAME_STATE_PUBLIC',
+      (m) => (m.payload.state as { phase: string }).phase === 'pickInnocent',
+      8000,
+    );
+    const pickState = (await picking).payload.state as {
+      tracks: { left: { memberIds: string[] }; right: { memberIds: string[] } };
+    };
+    const seatId = [...pickState.tracks.left.memberIds, ...pickState.tracks.right.memberIds][0];
+    const seatPhone = phones.find(
+      (_ws, i) => (privs[i].payload.state as { playerId: string }).playerId === seatId,
+    )!;
+    const seatPriv = await waitForMessageWhere(
+      seatPhone,
+      'PLAYER_STATE_PRIVATE',
+      (m) => Array.isArray((m.payload.state as { candidates?: unknown[] }).candidates)
+        && ((m.payload.state as { candidates: unknown[] }).candidates.length > 0),
+    );
+    const candId = (seatPriv.payload.state as { candidates: { id: string }[] }).candidates[0].id;
+    const proposed = waitForMessageWhere(
+      host,
+      'GAME_STATE_PUBLIC',
+      (m) => {
+        const st = m.payload.state as { tracks: Record<string, { pick: { proposalCardId: string | null } | null }> };
+        return st.tracks.left.pick?.proposalCardId === candId || st.tracks.right.pick?.proposalCardId === candId;
+      },
+    );
+    seatPhone.send(makeMessage('GAME_ACTION', { action: { type: 'propose', cardId: candId } }));
+    await proposed;
+
     host.close();
     for (const ws of phones) ws.close();
   });
@@ -1071,6 +1103,27 @@ describe('multiplayer integration', () => {
     const actionError = waitForMessage(phones[0], 'ERROR');
     phones[0].send(makeMessage('GAME_ACTION', { action: { type: 'garbage' } }));
     expect((await actionError).payload.message).toMatch(/INVALID_ACTION/i);
+
+    // Every guesser sets + locks their own dial over the wire → reveal.
+    const revealReached = waitForMessageWhere(
+      host,
+      'GAME_STATE_PUBLIC',
+      (m) => (m.payload.state as { phase: string }).phase === 'reveal',
+      6000,
+    );
+    phones.forEach((ws, i) => {
+      if (i === mediumIdx) return;
+      ws.send(makeMessage('GAME_ACTION', { action: { type: 'setGuess', value: 50 } }));
+      ws.send(makeMessage('GAME_ACTION', { action: { type: 'lockGuess' } }));
+    });
+    const reveal = (await revealReached).payload.state as {
+      target: number;
+      results: { playerId: string; points: number }[];
+      mediumPoints: number | null;
+    };
+    expect(typeof reveal.target).toBe('number');
+    expect(reveal.results.length).toBe(2); // 3 players − médium
+    expect(reveal.mediumPoints).not.toBeNull();
 
     host.close();
     for (const ws of phones) ws.close();
