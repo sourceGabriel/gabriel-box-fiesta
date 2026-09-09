@@ -19,7 +19,6 @@ function App() {
   const [flow, setFlow] = useState<Flow>('attract');
   const prevActiveRef = useRef<string | null>(null);
 
-  const onlineCount = conn.players.filter((p) => p.connected).length;
   const covers = useMemo<Record<string, FC>>(
     () => Object.fromEntries(Object.entries(HOST_GAMES).map(([id, entry]) => [id, entry.Cover])),
     [],
@@ -71,14 +70,7 @@ function App() {
 
   if (flow === 'attract') {
     return (
-      <AttractScreen
-        roomCode={conn.roomCode}
-        connected={conn.connected}
-        onlineCount={onlineCount}
-        joinUrl={conn.joinUrl}
-        joinQrDataUrl={conn.joinQrDataUrl}
-        onStart={() => setFlow('catalog')}
-      />
+      <AttractScreen onStart={() => setFlow('catalog')} />
     );
   }
 

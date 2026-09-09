@@ -202,7 +202,10 @@ export function DilemaHostView({ publicState, events, players, connected, reacti
 
           <div className="dil-tracks">
             <TrackColumn track={pub.tracks.left} avatarOf={avatarOf} state={trackState('left')} />
-            <div className="dil-fork" aria-hidden="true">
+            <div
+              className={`dil-fork ${inResults && pub.killedTrack ? `is-crash-${pub.killedTrack}` : ''}`}
+              aria-hidden="true"
+            >
               <span className="dil-trolley">🚋</span>
             </div>
             <TrackColumn track={pub.tracks.right} avatarOf={avatarOf} state={trackState('right')} />

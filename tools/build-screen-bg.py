@@ -8,19 +8,25 @@ shell screens use as their backdrops.
 
   python tools/build-screen-bg.py [key ...]
 
-  key            one or more of: catalog, lobby-lorota (default: all)
+  key   one or more of:
+          catalog                         -> host/src/shell/catalog-bg.webp
+          lobby-<id>  (id = uno, coup, zap, lorota, sabetudo, fdp, evoce, dilema)
+                                          -> host/src/games/<id>/lobby-bg.webp
+        (default: all)
 
 The attract-screen backdrop has its own script (`tools/build-attract-bg.py`).
 
-Each entry maps a source PNG in `gabriel-source/` to a committed `*.webp` +
-a sibling `*.CREDITS.md`. Sources are AI-generated illustrations for this
-local-only, non-distributed party-game app (see §47 — assets unrestricted).
+Sources are AI-generated illustrations for this local-only, non-distributed
+party-game app (see §47 — assets unrestricted). Each entry writes a committed
+`*.webp` + a sibling `*.CREDITS.md`.
 
-The lobby art is a TEMPLATE: it paints the panel frames ("ENTRE PELO SEU
-CELULAR", the players box, "COMO JOGAR?", the "COMEÇAR" button, the stats
-strip) and the shell only drops live content (QR + code, player tiles, a
-functional start button) into fixed % slots over a letterboxed 16:9 stage.
-A new per-game lobby background must keep that same panel geometry.
+The lobby art is a TEMPLATE. It paints the wordmark, the panel frames ("ENTRE
+PELO SEU CELULAR" + a QR square, the players box, "COMO JOGAR?"), the "COMEÇAR"
+button and the stats strip. The shell only drops live content — the real QR,
+the room code, the player tiles and a functional start button — into fixed %
+slots over a letterboxed 16:9 stage (geometry in `.lobby-slot-*`, shell.css).
+Every per-game lobby render must keep that same geometry; the whole set was
+generated from one prompt (`tools/lobby-bg-prompts.md`) so it already matches.
 """
 
 from __future__ import annotations
@@ -35,10 +41,25 @@ SRC_DIR = ROOT / "gabriel-source"
 MAX_W = 2000
 QUALITY = 82
 
-# key -> (source name in gabriel-source/, output .webp path relative to ROOT)
+# game id -> source file in gabriel-source/backgrounds/
+LOBBY_GAMES: dict[str, str] = {
+    "uno": "uno.png",
+    "coup": "coup.png",
+    "zap": "zap.png",
+    "lorota": "lorota.png",
+    "sabetudo": "sabe-tudo.png",
+    "fdp": "fdp.png",
+    "evoce": "ehvoce.png",
+    "dilema": "dilema.png",
+}
+
+# key -> (source path relative to gabriel-source/, output .webp relative to ROOT)
 TARGETS: dict[str, tuple[str, str]] = {
     "catalog": ("bg-catalog-room.png", "host/src/shell/catalog-bg.webp"),
-    "lobby-lorota": ("bg-lobby-lorota.png", "host/src/games/lorota/lobby-bg.webp"),
+    **{
+        f"lobby-{gid}": (f"backgrounds/{src}", f"host/src/games/{gid}/lobby-bg.webp")
+        for gid, src in LOBBY_GAMES.items()
+    },
 }
 
 CREDIT = (
@@ -52,26 +73,29 @@ CREDIT = (
     "{note}"
 )
 
-WHERE = {
-    "catalog": (
-        "Catalog-screen background",
-        "game-picker screen",
-        "- The wordmark, heading, coverflow reel and start button are drawn "
-        "live over this room; nothing is measured against it (`cover` fit).\n",
-    ),
-    "lobby-lorota": (
-        "Lobby background — Lorota!",
-        "lobby for Lorota!",
-        "- Panel frames are painted in. The shell letterboxes this at 16:9 and "
-        "drops the QR + room code, the player tiles and a functional start "
-        "button into fixed % slots. Keep the panel geometry for other games.\n",
-    ),
-}
+_LOBBY_NOTE = (
+    "- Panel frames, wordmark, \"COMO JOGAR?\", the \"COMEÇAR\" button and the "
+    "stats strip are painted in. The shell letterboxes this at 16:9 and drops "
+    "the real QR, the room code, the player tiles and a functional start button "
+    "into fixed % slots (`.lobby-slot-*`, shell.css). Keep that geometry.\n"
+)
+
+
+def where_for(key: str) -> tuple[str, str, str]:
+    if key == "catalog":
+        return (
+            "Catalog-screen background",
+            "game-picker screen",
+            "- The wordmark, heading, coverflow reel and start button are drawn "
+            "live over this room; nothing is measured against it (`cover` fit).\n",
+        )
+    gid = key.removeprefix("lobby-")
+    return (f"Lobby background — {gid}", f"lobby for {gid}", _LOBBY_NOTE)
 
 
 def build(key: str) -> None:
-    src_name, out_rel = TARGETS[key]
-    src = SRC_DIR / src_name
+    src_rel, out_rel = TARGETS[key]
+    src = SRC_DIR / src_rel
     if not src.is_file():
         sys.exit(f"missing source: {src}")
 
@@ -84,12 +108,17 @@ def build(key: str) -> None:
     out.parent.mkdir(parents=True, exist_ok=True)
     im.save(out, "WEBP", quality=QUALITY, method=6)
     kb = out.stat().st_size / 1024
-    print(f"{src_name}  ->  {out_rel}  {im.width}x{im.height}  {kb:.0f} KB")
+    print(f"{src_rel}  ->  {out_rel}  {im.width}x{im.height}  {kb:.0f} KB")
 
-    title, where, note = WHERE[key]
+    title, where, note = where_for(key)
     (out.with_suffix(".CREDITS.md")).write_text(
         CREDIT.format(
-            title=title, webp=out.name, where=where, src=src_name, key=key, note=note
+            title=title,
+            webp=out.name,
+            where=where,
+            src=src_rel,
+            key=key,
+            note=note,
         ),
         encoding="utf-8",
     )

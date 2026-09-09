@@ -1,286 +1,201 @@
-# Gabriel Box Fiesta — Plataforma Party Games (MVP Local)
+<!--
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │  Personalize à vontade (o "fru-fru"):                                │
+  │  • Badges → troque texto/cor nos links img.shields.io abaixo.        │
+  │  • Cor de destaque do projeto: #f97316 (laranja). Busque e troque.   │
+  │  • Emojis de cada jogo ficam na tabela "O catálogo".                 │
+  │  • Um print/GIF da TV + celular cai muito bem em "Como funciona".    │
+  └─────────────────────────────────────────────────────────────────────┘
+-->
 
-Este repositório implementa um **MVP local de plataforma de party games multiplayer**. Dois jogos: um inspirado em UNO e um inspirado em Coup.
+<div align="center">
 
-> Escopo atual: MVP do UNO completo e validado (Fases 1–10) + núcleo agnóstico de jogo (Fases A–C, §52) + **Coup como 2º jogo** (Fase D, regras clássicas). Ver `docs/CHANGELOG.md` e `docs/repository-gap-review.md`.
-> Adicionar um jogo = `server/src/games/<id>/` + `host/src/games/<id>/` + `mobile/src/games/<id>/` + 1 linha em cada registry. Zero mudança no núcleo.
+# 🎉 Box Fiesta
 
-## 1) Arquitetura recomendada
+### Plataforma de _party games_ para jogar na sala — TV + celulares, tudo na rede local
 
-- **Monolito modular TypeScript** (sem microsserviços no MVP).
-- **Servidor autoritativo** para regras, estado, turnos, timer, validação e eventos.
-- **Clientes React separados por papel**:
-  - `host`: tela principal + administração;
-  - `mobile`: controle do jogador.
-- **Camada `shared`** com tipos/protocolo/eventos compartilhados.
-- **Estado em memória** com interfaces preparadas para persistência futura.
+<br>
 
-## 2) Diagrama de componentes
+![status](https://img.shields.io/badge/status-MVP%20jog%C3%A1vel-success)
+![jogos](https://img.shields.io/badge/jogos-8-blueviolet)
+![testes](https://img.shields.io/badge/testes-167%20passing-brightgreen)
+![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)
+![Node](https://img.shields.io/badge/Node-%E2%89%A5%2020-5FA04E?logo=nodedotjs&logoColor=white)
+![license](https://img.shields.io/badge/licen%C3%A7a-ISC-yellow)
+![PRs](https://img.shields.io/badge/PRs-bem--vindos-ff69b4)
 
-```text
-            ┌─────────────────────────────┐
-            │          HOST (React)       │
-            │  Tela principal + Admin UI  │
-            └──────────────┬──────────────┘
-                           │ WebSocket
-┌──────────────────────────┴──────────────────────────┐
-│              SERVER (Node + TypeScript)             │
-│                                                      │
-│  ┌──────────────┐   ┌─────────────────────────────┐ │
-│  │ WS Gateway   │──▶│ Room/Application Services   │ │
-│  │ (entrada)    │   │ Sessions, Owner, Lifecycle  │ │
-│  └──────────────┘   └──────────────┬──────────────┘ │
-│                                     │                │
-│                         ┌───────────▼───────────┐    │
-│                         │      Game Engine      │    │
-│                         │ (Game interface)      │    │
-│                         └───────────┬───────────┘    │
-│                                     │                │
-│                           ┌─────────▼─────────┐      │
-│                           │     UnoGame       │      │
-│                           │ rules/state/events│      │
-│                           └───────────────────┘      │
-└──────────────────────────┬───────────────────────────┘
-                           │ WebSocket
-            ┌──────────────▼──────────────┐
-            │       MOBILE (React)        │
-            │ Controle + mão privada      │
-            └─────────────────────────────┘
-```
+<br>
 
-## 3) Responsabilidades por componente
+**Uma TV compartilhada** mostra o jogo · **cada pessoa usa o próprio celular** como controle · **um servidor autoritativo** manda em tudo.
+Sem internet, sem contas, sem banco de dados — sobe, lê o QR code, joga.
 
-- **WS Gateway**: autenticação de sessão, parsing/validação de mensagens, rate limiting básico, roteamento de ações.
-- **Room Service**: uma sala ativa por servidor, entrada/saída, owner, reconexão, broadcast segmentado.
-- **Session Service**: emissão/validação de session token, vínculo player↔sessão↔conexão.
-- **Game Engine Core**: contrato comum entre jogos.
-- **UnoGame**: regras e transições de estado de UNO-like.
-- **Host Client**: render público e animações orientadas a eventos.
-- **Mobile Client**: render privado do jogador e envio de ações.
+</div>
 
-## 4) Modelo de domínio (alto nível)
+---
 
-- `Room`: `id`, `code`, `ownerPlayerId`, `players`, `game`, `connections`, `status`.
-- `Player`: `id`, `name`, `connected`, `seat`, `sessionId`.
-- `Session`: `id`, `playerId`, `tokenHash`, `expiresAt`, `lastSeenAt`.
-- `Game` (abstração): estado e transições.
-- `UnoState`: baralho, descarte, mãos, cor atual, jogador da vez, direção, penalidade pendente, placar, rodada, timer.
+## ✨ Destaques
 
-## 5) Game Engine (contrato)
+- **8 jogos** num catálogo só, do baralho clássico ao debate filosófico com bonde desgovernado.
+- **Zero configuração de rede** — o servidor imprime uma URL da LAN; o celular abre por QR code.
+- **Servidor autoritativo de verdade** — toda regra, turno, timer e validação vivem no servidor; os clientes só desenham.
+- **Núcleo agnóstico de jogo** — adicionar um jogo novo é ~6 arquivos numa pasta e **1 linha em cada registry**. O núcleo nunca muda.
+- **Reconexão sem dor** — derrubou o celular? Recarrega a aba e volta pro mesmo lugar. Dono caiu? A sala transfere sozinha.
+- **Modo Leve / Pesado** — um botão no lobby troca a intensidade do conteúdo dos jogos de texto.
+- **TypeScript estrito** ponta a ponta, monorepo com _workspaces_, **167 testes** de servidor.
 
-```ts
-interface Game<TState, TAction, TEvent> {
-  start(): void;
-  handleAction(action: TAction): TEvent[];
-  getState(): TState;
-  getPublicState(): unknown;
-  getPrivateState(playerId: string): unknown;
-  getEvents(): TEvent[];
-}
-```
+---
 
-UNO será uma implementação isolada desse contrato, executável sem navegador.
+## 🕹️ O catálogo
 
-## 6) Máquina de estados do UNO
+| # | Jogo | Vibe | Como é |
+|---|------|------|--------|
+| 1 | **Cartas** 🎨 | `RAIVA` | Combine cor ou número, solte cartas de ação e grite na penúltima carta. |
+| 2 | **Blefe** 🎭 | `TRAIÇÃO` | Cada um tem 2 personagens secretos. Declare ações, minta e desafie até sobrar só você com influência. |
+| 3 | **Zap!** ⚡ | `EGO` | O celular te dá _prompts_; responda com a piada mais afiada. A sala vota o vencedor de cada duelo. |
+| 4 | **Lorota!** 🤥 | `MENTIRA` | Um fato com uma lacuna. Cada um inventa uma resposta falsa e depois caça a verdadeira no meio das mentiras. |
+| 5 | **Sabe-Tudo** 🧠 | `SOBERBA` | Pergunta com 4 alternativas na TV, resposta no celular. Acerto + velocidade + sequência valem pontos. |
+| 6 | **FDP** 🔞 | `SAFADEZA` | Complete a frase com a resposta mais podre que conseguir. Voto anônimo elege a melhor. _(+18)_ |
+| 7 | **É Você!** 🫂 | `AMIZADE` | Perguntas sobre a própria galera: vote em quem combina, escreva legendas e desenhe. 6 rodadas. |
+| 8 | **Dilema nos Trilhos** 🚋 | `DILEMA` | Cada time enche o próprio trilho de inocentes e o do inimigo de culpados. O Maquinista puxa a alavanca — o trilho poupado marca ponto. |
 
-Estados principais:
+> Jogos de texto trazem bancos de _prompts_ originais em PT-BR, divididos em **leve** e **pesado**.
 
-- `waiting_players`
-- `ready`
-- `round_active`
-- `awaiting_color_choice`
-- `round_finished`
-- `game_finished`
-- `paused`
+---
 
-Transições dirigidas por ações validadas no servidor (`PLAY_CARD`, `DRAW_CARD`, `CHOOSE_COLOR`, `UNO_CALL`, `UNO_CHALLENGE`, `TIMEOUT`, etc.).
+## 🚀 Começando
 
-## 7) Ciclo de vida da partida
-
-1. Criar sala e código.
-2. Entrar jogadores (2–8).
-3. Owner inicia.
-4. Embaralhar/distribuir (7 cartas).
-5. Turnos com timer.
-6. Encerrar rodada ao jogador zerar mão.
-7. Calcular pontuação e iniciar nova rodada.
-8. Encerrar jogo por condição definida.
-
-## 8) Ciclo de vida da sala
-
-1. `room_created`
-2. `accepting_players`
-3. `in_game`
-4. `paused` (opcional)
-5. `ended`/`reset`
-
-Com transferência automática de owner em desconexão.
-
-## 9) Estratégia de WebSocket
-
-- Comunicação full-duplex com mensagens tipadas/versionadas.
-- Envelope comum: `messageId`, `clientSeq`, `type`, `payload`, `sentAt`, `protocolVersion`.
-- ACK opcional e idempotência por `messageId` para lidar com duplicidade/reenvio.
-
-## 10) Estratégia de reconexão
-
-- Sessão emitida no `JOIN_ROOM` bem-sucedido.
-- Token assinado/aleatório (armazenado no cliente), validado no reconnect.
-- Reconexão reaproveita `playerId` e mão existente.
-- Timeout de presença apenas marca desconectado; estado do jogador é preservado.
-
-## 11) Protocolo de mensagens (base)
-
-Cliente → servidor:
-- `JOIN_ROOM`, `RECONNECT_SESSION`, `START_GAME`, `PLAY_CARD`, `DRAW_CARD`, `CHOOSE_COLOR`, `UNO_CALL`, `UNO_CHALLENGE`, `PAUSE_GAME`, `RESUME_GAME`, `KICK_PLAYER`
-
-Servidor → clientes:
-- `ROOM_JOINED`, `ROOM_STATE`, `PLAYER_JOINED`, `PLAYER_RECONNECTED`, `OWNER_CHANGED`
-- `GAME_STARTED`, `GAME_STATE_PUBLIC`, `PLAYER_STATE_PRIVATE`
-- `CARD_PLAYED`, `CARD_DRAWN`, `COLOR_CHANGED`, `DIRECTION_CHANGED`, `TURN_STARTED`, `TURN_ENDED`
-- `UNO_CALLED`, `UNO_PENALTY_APPLIED`, `ROUND_FINISHED`, `SCORE_UPDATED`, `ERROR`
-
-## 12) Privacidade das cartas
-
-- `getPublicState()` nunca inclui mãos completas.
-- `getPrivateState(playerId)` retorna apenas a mão do jogador autenticado.
-- Host recebe apenas agregados públicos (topo descarte, contagem de cartas por jogador, turnos, eventos).
-
-## 13) Estratégia de timer
-
-- Timer autoritativo no servidor por turno (default 30s, configurável).
-- Expiração gera `TIMEOUT` interno:
-  - compra automática ou ação válida conforme estado;
-  - garante progresso e evita travamento.
-
-## 14) Estratégia de sincronização (estado + animação)
-
-- Servidor aplica ação, gera eventos semânticos e publica snapshot/version.
-- Host executa animações por evento.
-- Clientes reconciliam por `stateVersion` (descartando snapshots antigos).
-
-## 15) Estrutura inicial de diretórios
-
-```text
-party-game/
-├── server/
-│   ├── core/            # Room / Session / game-plugin.ts (agnóstico)
-│   ├── games/uno/       # engine + plugin do UNO
-│   ├── games/coup/      # engine + plugin do Coup (Fase D)
-│   ├── websocket/
-│   └── app/
-├── shared/              # só tipos: protocol/ + models/ + games/{uno,coup}/events.ts
-├── ui/                  # @party/ui — tokens + componentes + sons (consumido como fonte)
-├── host/  src/{shell,games/{uno,coup}}/
-└── mobile/ src/{shell,games/{uno,coup}}/
-```
-
-## 16) Dependências necessárias (MVP)
-
-- Backend: `node`, `typescript`, `ws` (ou `socket.io`), `zod` (validação), `nanoid` (ids), `pino` (logs), `qrcode` (QR).
-- Frontend (host/mobile): `react`, `react-dom`, `vite`, `typescript`.
-- Testes: `vitest` (engine e regras).
-
-> Recomendação: usar `ws` para simplicidade e controle fino no MVP.
-
-## 17) Riscos técnicos
-
-- Reconexão segura sem banco.
-- Tratamento de ordem/duplicidade em rede instável.
-- Regras especiais (+2/+4 acumulando com regra customizada).
-- Sincronização de animação no host sem impactar autoridade do servidor.
-- Descoberta de IP correta em múltiplas interfaces.
-
-## 18) Decisões em aberto
-
-- Biblioteca final de WebSocket (`ws` vs `socket.io`).
-- Política exata de expiração de sessão no modo local.
-- Regra de pontuação final por partida (limite de pontos/rodadas).
-- Política de desempate e UX de denúncia UNO em janela de 2 rodadas.
-- Estratégia UX para escolha de interface de IP quando houver múltiplas.
-
-## 19) Roadmap por fases
-
-1. **Fase 1 (atual)**: arquitetura, domínio, protocolo.
-2. **Fase 2**: core (Room/Player/Session/GameState).
-3. **Fase 3**: engine UNO + testes de regras.
-4. **Fase 4**: WebSocket e validações.
-5. **Fase 5**: host funcional.
-6. **Fase 6**: mobile funcional.
-7. **Fase 7**: reconexão completa.
-8. **Fase 8**: testes multiplayer 2–8.
-9. **Fase 9–11**: UX, animações, polimento party game.
-10. **Fase 12**: consolidação de plataforma multi-jogos.
-
-## Implementação atual (incremental)
-
-_Atualizado em 2026-09-06. Detalhe por mudança em `docs/CHANGELOG.md`._
-
-- ✅ **Fase 2** — Core (`Room`, `Session`, `RoomManager`, interface `Game`, janela de graça de 30s na desconexão).
-- ✅ **Fase 3** — Engine UNO completo: todas as cartas, acúmulo de +2, +4 sobre +2, denúncia com janela determinística, múltiplas rodadas + placar, fim de partida por meta, pausa/retomada, timeout autoritativo.
-- ✅ **Fase 4** — Servidor WebSocket com protocolo tipado + `zod`, dedupe por `messageId`, rate-limit, logs estruturados.
-- ✅ **Fase 5** — Host: board de jogo real (monte/descarte com arte, cor, sentido, +N, turno, timer, placar), controles do owner.
-- ✅ **Fase 6** — Mobile: entrada com avatar, faixa da mesa, mão com destaque de jogável, modal de cor pós-jogada, denúncia, retomada de sessão no reload; identidade visual "party" própria.
-- ✅ **Fase 7** — Reconexão por token de sessão assinado + transferência automática de owner + auto-reconnect com backoff nos dois clients.
-- ✅ **Fase 8** — Testes de integração multiplayer (join/owner/reconexão, 8 jogadores, partida sustentada, mensagem duplicada).
-- ✅ **Fase 9–10** — UX + animações dirigidas por evento no host (cartas voando, flash de cor, burst de UNO/vitória; respeita `prefers-reduced-motion`).
-- ✅ **Fase A (núcleo agnóstico, §52)** — `GamePlugin`/registry + `GameInstance` opaco + `Room` agnóstico; shell por papel (`host`/`mobile`) + módulos `games/uno/`; fio genérico (só `GAME_ACTION`, payloads `{ gameId, state|event: unknown }`).
-- ✅ **Fase B** — fluxo de 3 telas no host (`AttractScreen` → `CatalogScreen` → `LobbyScreen`), arte de capa por jogo, QR só no lobby; fim de jogo volta pro lobby do mesmo jogo.
-- ✅ **Fase C** — `@party/ui` (workspace `ui/`): tokens + componentes + sons sintetizados (Web Audio, host) + mapa de arte das cartas do UNO. Sem CSS duplicado entre os apps. §47: nome "UNO" mantido (`BrandMark.text` é o ponto único de rename).
-- ✅ **Fase D** — **Coup como 2º jogo** (regras clássicas, portado de um app standalone). `server/src/games/coup/` (engine pura), `host`/`mobile` `games/coup/` (views + tela "Como jogar"), + **reações emoji genéricas** no protocolo. Bots e a expansão "Reformation" ficaram para depois. Plano: `.claude/plans/em-paralelo-ao-que-purring-moler.md`.
-- 🔜 **Fase 11 (§47)** — identidade visual própria completa; adiada (nomes "UNO"/"Coup" mantidos por ora).
-
-## Como rodar a aplicação (rede local)
-
-Pré-requisito: **Node.js 20+**.
-
-**Primeira vez / após puxar mudanças:**
+**Pré-requisitos:** Node.js ≥ 20 e npm.
 
 ```bash
+git clone <url-do-repo> box-fiesta
+cd box-fiesta
 npm install
+npm run dev
 ```
 
-**Subir os 3 serviços (um terminal cada, na raiz do repo):**
+`npm run dev` sobe os três processos:
 
 ```bash
-npm run -w server dev    # servidor autoritativo — porta 3001
+npm run -w server dev
 ```
 ```bash
-npm run -w host dev      # tela da TV/PC — porta 5173
+npm run -w host dev
 ```
 ```bash
-npm run -w mobile dev    # controle do celular — porta 5174
+npm run -w mobile dev
+```
+| Processo | Porta | O quê |
+|---|---|---|
+| **server** | `3001` | servidor autoritativo (WebSocket + estado em memória) |
+| **host** | `5173` | a tela da TV — abra num navegador ligado na TV/projetor |
+| **mobile** | `5174` | o controle — cada jogador abre no próprio celular |
+
+No terminal o servidor imprime algo como `http://192.168.0.10:5174/join/ABCD`.
+Abra a **host** na TV, aponte a câmera do celular pro **QR code** que aparece, e pronto.
+
+> Todos os aparelhos precisam estar na **mesma rede Wi-Fi**. Nada sai pra internet.
+
+---
+
+## 🧩 Como funciona
+
+```text
+        ┌──────────────────────────┐
+        │        HOST (TV)         │   render público + animações
+        │     React · :5173        │   dirigidas por eventos
+        └────────────┬─────────────┘
+                     │  WebSocket
+        ┌────────────┴─────────────┐
+        │   SERVER · Node · :3001  │   ── fonte única da verdade ──
+        │                          │
+        │  Gateway WS  →  Sala      │   sessões · dono · reconexão
+        │       │         (Room)    │   · ciclo de vida
+        │       ▼                   │
+        │  Motor do jogo (plugin)   │   regras · turnos · timer
+        │  uno · coup · zap · …     │   · validação · eventos
+        └────────────┬─────────────┘
+                     │  WebSocket
+        ┌────────────┴─────────────┐
+        │     MOBILE (celular)     │   render privado (sua mão)
+        │     React · :5174        │   + envio de ações
+        └──────────────────────────┘
 ```
 
-**Jogar:**
+- **O servidor decide tudo.** Host e mobile nunca aplicam regra — só mandam ações e desenham o estado que volta.
+- **`shared/`** é o único contrato entre as pontas, e é **só tipos** (sem runtime).
+- **`@party/ui`** é o _design system_ compartilhado: _tokens_, componentes, sons (pacotes de áudio CC0) — consumido como código-fonte pelos dois apps.
+- Estado **em memória**, uma sala por servidor. Sem DB, sem Redis, sem nuvem.
 
-1. Abra a tela do host no PC/TV: `http://localhost:5173`. Ele mostra o **código da sala** e um **QR code**.
-2. Cada jogador abre no celular (na mesma rede Wi-Fi) `http://<IP-DO-PC>:5174/join/<CÓDIGO>` — ou escaneia o QR. O IP aparece no log do servidor ao subir.
-3. Na TV, escolha o jogo no catálogo (setas/Enter ou clique). Cada jogador digita o nome, escolhe um avatar e entra pelo celular. O **primeiro** jogador vira o **owner** e vê o botão "Iniciar" (o host também pode iniciar).
-4. Contagem de jogadores por jogo (UNO 2–8, Coup 2–6 — o lobby mostra). Owner inicia; o jogo roda; owner pode pausar/continuar/expulsar/encerrar.
+<details>
+<summary><b>Estrutura do repositório</b></summary>
 
-**Configuração opcional (`.env` em `host/` e `mobile/`):**
+```text
+box-fiesta/
+├── server/    Node + ws + zod — gateway, Sala, sessões, motores de jogo, testes
+│   └── src/games/<id>/     um motor de jogo por pasta (TS puro)
+├── shared/    tipos do protocolo e dos modelos de jogo (sem runtime)
+├── ui/        @party/ui — tokens, componentes, sons, arte de cartas
+├── host/      app da TV (React + Vite) — shell + host/src/games/<id>/
+├── mobile/    app do celular (React + Vite) — shell + mobile/src/games/<id>/
+└── docs/      CHANGELOG e revisão de lacunas
+```
+</details>
 
-- `VITE_SERVER_ORIGIN` — se o servidor não estiver em `http://<mesmo-host>:3001` (ex.: `http://192.168.0.10:3001`).
+---
 
-**Firewall:** em rede real, libere a porta `3001` (servidor) e `5174` (mobile) no sistema operacional. Em máquina com várias interfaces (Wi-Fi/Ethernet/VPN/Docker) o IP mostrado pode não ser o certo — use `PARTY_PUBLIC_URL=http://<ip>:5174` no ambiente do servidor para forçar.
+## ➕ Adicionar um jogo
 
-## Como validar
+O núcleo é **agnóstico de jogo**. Um jogo novo é uma pasta em cada camada e **uma linha em cada _registry_** — nada em `core/`, no gateway ou nos _shells_:
+
+```text
+shared/src/models/<id>.ts          tipos do estado público/privado
+shared/src/games/<id>/events.ts    tipos dos eventos de domínio
+server/src/games/<id>/             motor (implementa GamePlugin) + zod + banco de conteúdo
+  └── + 1 linha em server/src/games/registry.ts
+host/src/games/<id>/               View + Cover + personality + sons
+  └── + 1 linha em host/src/games/registry.ts
+mobile/src/games/<id>/             ControllerView + "Como jogar"
+  └── + 1 linha em mobile/src/games/registry.ts
+```
+
+O motor recebe um relógio e um RNG injetados (partidas reproduzíveis), roda um timer que o servidor "tica", e projeta um estado público + um estado privado por jogador. O resto da plataforma trata tudo como opaco.
+
+---
+
+## 🛠️ Stack
+
+| Camada | Tecnologia |
+|---|---|
+| Linguagem | **TypeScript** (estrito, ponta a ponta) |
+| Servidor | **Node** · `ws` (WebSocket cru) · `zod` (validação de borda) |
+| Front | **React 19** · **Vite** · um _shell_ por papel + jogos como módulos |
+| Design system | `@party/ui` — _tokens_ CSS + componentes + Web Audio |
+| Testes | **Vitest** — motores, Sala e integração multiplayer |
+| Monorepo | npm _workspaces_ (`server` · `shared` · `ui` · `host` · `mobile`) |
+
+---
+
+## ✅ Qualidade
 
 ```bash
-npm run -w server test    # ~57 testes (regras UNO + Coup + integração multiplayer)
-npm run -w server lint    # tsc --noEmit
-npm run -w host lint      # oxlint
-npm run -w mobile lint    # oxlint
-npm run build             # build dos 5 workspaces (incl. ui)
+npm run -w server test     # 167 testes (motores + Sala + integração)
+npm run -w server lint     # tsc --noEmit
+npm run -w host lint       # oxlint
+npm run -w mobile lint     # oxlint
+npm run build              # os 5 workspaces
 ```
 
-Ou tudo de uma vez a partir da raiz: `npm test && npm run lint && npm run build`.
+Cada _pull request_ mantém o app rodável, os testes e o _build_ verdes, e os documentos de acompanhamento (`docs/CHANGELOG.md`, `docs/repository-gap-review.md`) atualizados no mesmo lote.
 
-**Smoke manual:** suba os 3 serviços, abra o host + 2 celulares (ou 2 abas do navegador em `/join/<código>`), escolha um jogo no catálogo da TV, jogue uma partida completa, pause/continue, recarregue uma aba de celular (a sessão deve retomar), feche a aba do owner (o owner deve transferir após ~30s).
+---
 
-## Problemas conhecidos e rede local
+## 🎨 Assets
 
-- Em rede local real, firewalls podem bloquear acesso externo à porta `3001`.
-- É necessário liberar a porta do servidor no sistema operacional.
-- Em ambientes com múltiplas interfaces (Wi-Fi/Ethernet/VPN/Docker), o IP exibido pode não ser o ideal; a seleção atual prioriza IPv4 privado.
+Arte e som usam pacotes de domínio público / licença permissiva (CC0 / CC-BY / OGA-BY), empacotados no repositório com um `CREDITS.md` por pacote. Nada é baixado em tempo de execução. Coberturas inline em SVG e sons sintetizados via Web Audio são o _fallback_ padrão.
+
+---
+
+## 📄 Licença
+
+ISC — veja [`LICENSE`](LICENSE).

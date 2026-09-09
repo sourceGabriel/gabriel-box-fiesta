@@ -876,3 +876,85 @@ The lobby (the screen players stare at while waiting) now wears the selected gam
 ### Why
 - Next game on the roadmap after É Você!. Same §52 mould as the 7 prior games; the one
   new idea (teams) lives entirely inside the game module.
+
+## 2026-09-09 — polish + repo presentation (branch `feature/dilema-melhorias`, off `feature/dilema`)
+### Added
+- **`README.md` rewritten** for GitHub — badge row, centred header, the 8-game catalogue
+  table, quick start, an ASCII component diagram, the "add a game = a folder per layer +
+  one registry line" story, a stack table, quality commands. A top-of-file comment points
+  at the knobs to personalise (badges, accent colour, per-game emoji). No third-party
+  product names.
+- **`LICENSE`** — the ISC text `package.json` already declared.
+- **`CONTRIBUTING.md`** — environment, the pre-PR check list, the project principles, the
+  "add a game" pointer.
+### Changed
+- **Dilema nos Trilhos**: the trolley slides into the doomed track on `roundResults`
+  (`dil-crash-left` / `dil-crash-right`, `prefers-reduced-motion`-guarded). +3
+  engine tests (disconnect closes the round, idempotent pass, Maquinista can't
+  pass) → `dilema-game.test.ts` 19 → 22, **server suite 164 → 167**.
+- **Hidden "Lendas" avatar row** — the unlock now lives in `sessionStorage`, not
+  `localStorage`, and any old permanent unlock is cleared on load. The easter-egg row no
+  longer stays visible to whoever next picks up that phone; it still survives reloads and
+  reconnects within one session. (`mobile/src/App.tsx`.)
+### Unchanged
+- 167 server tests, `tsc` + `oxlint` clean, 5-workspace build green.
+
+## 2026-09-09 — attract screen = pure poster (branch `feature/dilema-melhorias`)
+### Changed
+- **Attract/start screen is now pure presentation.** The owner-supplied posters
+  (`gabriel-source/mock-poster-{wide,portrait}.png`, wordmark + tagline already
+  painted in) fill the viewport with `background-size: cover` + mouse parallax;
+  the only live element is the yellow "toque para começar" sticker. The room
+  code, QR code and connected-phone count were **removed** from the attract
+  screen — they live in the lobby only (`LobbyScreen`'s `QrPanel`, unchanged).
+- `tools/build-attract-bg.py` now bakes two variants —
+  `host/src/shell/attract-bg.webp` (landscape, 1672×941, 246 KB) and
+  `attract-bg-portrait.webp` (portrait, 1086×1448, 295 KB); a
+  `@media (orientation: portrait)` rule swaps to the portrait poster
+  (`background-position: left center` to keep the wordmark).
+- `AttractScreen` props collapsed to just `onStart` — `App.tsx` no longer passes
+  `roomCode`/`connected`/`onlineCount`/`joinUrl`/`joinQrDataUrl` (and its now-unused
+  `onlineCount` local was dropped). Removed the `.attract-panel` / CRT-`fx` /
+  `.attract-code` / `.attract-join*` CSS + the `attract-flicker` keyframes.
+### Unchanged
+- §52 untouched (shell-only). 167 server tests, `tsc` + `oxlint` clean, 5-workspace build green; live-verified on the host (landscape + portrait) — poster fills the screen, tap/key advances to the catalog, lobby still shows the QR + code.
+
+## 2026-09-09 — lobby "art mode" for all 8 games (branch `feature/dilema-melhorias`)
+### Added
+- **Every game now ships `host/src/games/<id>/lobby-bg.webp`** — one owner-generated
+  painted room per game (wordmark + tagline, `ENTRE PELO SEU CELULAR` panel with a
+  blank QR square, an empty centre frame, a `COMO JOGAR?` panel with 3 steps, a
+  painted `COMEÇAR X` pill, a stats strip). All 8 were made from one prompt so they
+  share pixel-identical panel geometry. Sources: `gabriel-source/backgrounds/*.png`
+  (gitignored). The whole catalogue lands in "art mode" — the plain-card lobby is
+  now only the fallback when a game has no `lobbyBg`.
+- **`tools/lobby-bg-prompts.md`** — the master image prompt + per-game fill-in table
+  + the measured live-zone coordinates, so a render can be regenerated to match.
+### Changed
+- `tools/build-screen-bg.py` — the single `lobby-lorota` key became
+  `lobby-<id>` for all 8 games (`gabriel-source/backgrounds/<file>.png` →
+  `host/src/games/<id>/lobby-bg.webp` + `.CREDITS.md`). Lorota's old backdrop
+  (from `bg-lobby-lorota.png`) was replaced by the new consistent-geometry render.
+- `host/src/games/registry.ts` — all 8 `HOST_GAMES` entries now carry `lobbyBg`.
+- `host/src/shell/LobbyScreen.tsx` (art-mode branch) — the QR slot split into
+  `.lobby-slot-qr` (the real QR image only, over the painted white square) +
+  `.lobby-slot-code` (room code + url, over the painted dark box); roster avatars
+  40px.
+- `host/src/shell/shell.css` — `.lobby-slot-*` retuned to the **measured**
+  geometry (QR 14.4%/36.8%/11.5%×20.6%, code 12%/58.5%, players 30%/28.5%/41%×42%
+  with a 5-col grid, start 37.5%/74%/25%×13% as a pill). Softer stage vignette.
+- The full-bleed `.host-lobby::after` wash (built to sink the blurred cover-art
+  behind the *plain card*) was fogging the painted room in art mode — scoped it to
+  `.host-lobby:not(.lobby-art)::after`. `--game-accent` now has a base value on
+  `.host-lobby` so it's never undefined.
+- **Esc in the lobby** now goes back to the catalog (same as "Trocar de jogo") —
+  a `keydown` effect in `LobbyScreen`, mirroring `CatalogScreen`'s Esc→attract.
+### Unchanged
+- §52 untouched (shell + tooling only — no `core/`, `ws-server`, `shared/`, engines).
+  167 server tests, `tsc` + `oxlint` clean, 5-workspace build green. Live-verified
+  on the host: the 4 live slots render exactly on the painted panels (measured in
+  the DOM), all 8 `lobbyBg` imports resolve.
+### Notes / follow-ups
+- `dilema.png` wordmark reads "TRIILHOS" (double i); `fdp.png` accent came out
+  near-identical pink to `zap.png`. Both are regen-only fixes (owner's call).
+- Design canvas (Box Fiesta Lobby artifact) matches what shipped.

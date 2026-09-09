@@ -317,6 +317,37 @@ describe('DilemaGame — rounds, endgame, pause', () => {
     expect(pub.winnerId).toBe(top.playerId);
   });
 
+  it('advances to verdict when the last connected non-Maquinista drops', () => {
+    const game = mkGame(P5);
+    game.start();
+    toPlaying(game);
+    const conductor = game.getPublicState().conductorId!;
+    const others = P5.filter((p) => p.id !== conductor);
+    // All but the last pass; then the last one disconnects.
+    for (const p of others.slice(0, -1)) game.handleAction(p.id, { type: 'pass' });
+    expect(game.getPublicState().phase).toBe('playing');
+    game.setPlayerConnected(others[others.length - 1].id, false);
+    expect(game.getPublicState().phase).toBe('verdict');
+  });
+
+  it('treats a second pass as a no-op and rejects a non-player', () => {
+    const game = mkGame();
+    game.start();
+    toPlaying(game);
+    const nonConductor = P3.find((p) => p.id !== game.getPublicState().conductorId)!;
+    game.handleAction(nonConductor.id, { type: 'pass' });
+    expect(() => game.handleAction(nonConductor.id, { type: 'pass' })).not.toThrow();
+    expect(() => game.handleAction('ghost', { type: 'pass' })).toThrow(/REJECTED/);
+  });
+
+  it('rejects the Maquinista trying to pass', () => {
+    const game = mkGame();
+    game.start();
+    toPlaying(game);
+    const conductor = game.getPublicState().conductorId!;
+    expect(() => game.handleAction(conductor, { type: 'pass' })).toThrow(/REJECTED/);
+  });
+
   it('freezes the timer and rejects actions while paused', () => {
     const game = mkGame();
     game.start();
