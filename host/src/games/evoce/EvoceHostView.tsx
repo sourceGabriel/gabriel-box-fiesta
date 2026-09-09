@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { EvoceGameEvent, EvocePublicState, EvoceSubmission } from '@party/shared';
-import { Avatar, BrandMark, Button, DrawingView, getSounds, Overlay, Timer } from '@party/ui';
+import { Avatar, BrandMark, Button, DrawingView, getSounds, Overlay, roundTaunt, Timer } from '@party/ui';
 import type { HostGameViewProps } from '../types';
 import { describeEvent } from './describeEvent';
 import { soundForEvent } from './sound-map';
@@ -237,6 +237,11 @@ export function EvoceHostView({ publicState, events, players, connected, reactio
               </ol>
             </div>
           ) : null}
+
+          {inResults && !over ? (() => {
+            const taunt = roundTaunt(standings, pub.round);
+            return taunt ? <p className="round-taunt">{taunt}</p> : null;
+          })() : null}
         </section>
 
         <aside className="evoce-side">

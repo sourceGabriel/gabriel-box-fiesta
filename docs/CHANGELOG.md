@@ -703,3 +703,23 @@ An elaborate É Você! drawing serialised past the 16 KB `maxPayload` cap; `ws` 
 
 ## 2026-09-09 — §47 "own visual identity" clause retired (owner instruction)
 `.copilot/spec-kit/master-prompt.md` §47 kept its heading and number but the two lines forbidding third-party visual identity / assets / sounds are struck, with a dated retirement note in their place. Permissively-licensed asset packs (CC0/CC-BY/OGA-BY/MIT-like), bundled with a `CREDITS.md`, are now unrestricted. Reproducing a real product's trademark/logo is still out. Every `§47:` code comment was cleaned up; no behaviour change.
+
+## 2026-09-09 — round taunts + Taylor Swift content (branch `feature/mais-diversao`)
+
+### The "atiçada" — a roast/hype line between rounds
+- `@party/ui` `roundTaunt(standings, seed)` — a deterministic PT-BR one-liner that names the current leader and the current last place (14 templates + a flat-tie line; one references Taylor Swift's re-recordings, per request). `.round-taunt` style in `components.css` (accent, italic, slides in, reduced-motion aware).
+- Wired into the results/reveal phase of **all five multi-round games** — Sabe-Tudo, Zap!, FDP, Lorota!, É Você! (seed = round number so it doesn't reshuffle on re-render).
+- `ui/src/taunt.test.ts` (4). **`@party/ui` tests 8 → 12.**
+
+### Taylor Swift facts
+- Sabe-Tudo: 12 new questions, category "Taylor Swift" (leve) — 1989 / re-recordings / Folklore+Evermore / Eras Tour / the cats / lucky number 13 / Grammy AOTY record / Travis Kelce / debut album / the 10-minute "All Too Well".
+- Lorota!: 7 new "fato com lacuna" (leve) on the same facts.
+
+### Still deferred (same original message)
+- Configurable round / question counts per game (a lobby control).
+- A full transitional scoreboard *scene* (this ships the taunt line; the animated full-screen scene is separate).
+- Per-game background art.
+- **Sound polish is now the owner's — being done in a separate chat.**
+
+### Validation
+- 141 server tests · 12 `@party/ui` tests · `tsc` + `oxlint` clean · 5-workspace build green.

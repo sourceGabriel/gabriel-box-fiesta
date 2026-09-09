@@ -64,6 +64,15 @@ export const LOROTA_QUESTIONS: readonly LorotaQuestion[] = [
   { text: 'O país que consome mais chocolate por pessoa é a ___.', answer: 'Suíça' },
   { text: 'A Mona Lisa não tem ___.', answer: 'sobrancelhas' },
 
+  // ─── Taylor Swift ─────────────────────────────────────────────────────────
+  { text: 'O álbum "1989" da Taylor Swift tem esse nome porque é o ___ dela.', answer: 'ano de nascimento', alt: ['ano que nasceu', 'ano de nascimento dela'] },
+  { text: 'A Taylor Swift começou a carreira cantando ___.', answer: 'country', alt: ['música country'] },
+  { text: 'A Taylor regravou os próprios discos como "(Taylor\'s Version)" porque perdeu os direitos das ___ originais.', answer: 'gravações', alt: ['masters', 'gravacoes'] },
+  { text: 'Em 2020 a Taylor lançou de surpresa os álbuns Folklore e ___.', answer: 'Evermore' },
+  { text: 'A The Eras Tour se tornou a turnê de maior ___ de todos os tempos.', answer: 'arrecadação', alt: ['bilheteria', 'faturamento', 'arrecadacao'] },
+  { text: 'O número da sorte da Taylor Swift é o ___.', answer: '13', alt: ['treze'] },
+  { text: 'A Taylor Swift cresceu numa fazenda de árvores de ___ na Pensilvânia.', answer: 'Natal', alt: ['natal'] },
+
   // ─── PACK PESADO (+18) — fatos reais, do tipo nojento / sexual / mórbido ────
   { tier: 'pesado', text: 'A palavra "orquídea" vem do grego antigo para ___.', answer: 'testículo', alt: ['testiculos', 'testículos', 'testiculo'] },
   { tier: 'pesado', text: 'A palavra "vagina" vem do latim para ___.', answer: 'bainha', alt: ['bainha de espada'] },

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { SabeTudoGameEvent, SabeTudoPublicState } from '@party/shared';
-import { Avatar, BrandMark, Button, getSounds, Overlay, Timer } from '@party/ui';
+import { Avatar, BrandMark, Button, getSounds, Overlay, roundTaunt, Timer } from '@party/ui';
 import type { HostGameViewProps } from '../types';
 import { describeEvent } from './describeEvent';
 import { soundForEvent } from './sound-map';
@@ -155,6 +155,11 @@ export function SabeTudoHostView({ publicState, events, players, connected, reac
               );
             })}
           </ol>
+
+          {inReveal && !over ? (() => {
+            const taunt = roundTaunt(standings, pub.round);
+            return taunt ? <p className="round-taunt">{taunt}</p> : null;
+          })() : null}
 
           {pub.phase === 'question' ? (
             <div className="sabetudo-answering">

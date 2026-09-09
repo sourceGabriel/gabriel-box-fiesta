@@ -37,3 +37,4 @@ export {
   type SoundSpec,
   type SampleId,
 } from './sound';
+export { roundTaunt, type TauntStanding } from './taunt';

@@ -69,6 +69,20 @@ export const SABETUDO_QUESTIONS: readonly SabeTudoQuestion[] = [
   { text: 'Qual é o maior estado do Brasil em área?', options: ['Amazonas', 'Pará', 'Mato Grosso', 'Bahia'], correct: 0, category: 'Geografia' },
   { text: 'Qual é o único mamífero capaz de voar de verdade?', options: ['Morcego', 'Esquilo-voador', 'Colugo', 'Bugio'], correct: 0, category: 'Ciência' },
 
+  // ─── Taylor Swift ─────────────────────────────────────────────────────────
+  { text: 'O álbum "1989" da Taylor Swift leva esse nome por quê?', options: ['É o ano em que ela nasceu', 'Foi gravado em 1989', 'Tem 1989 segundos de duração', 'É o número da casa da infância dela'], correct: 0, category: 'Taylor Swift' },
+  { text: 'Em que gênero musical a Taylor Swift começou a carreira?', options: ['Country', 'Pop', 'Rock', 'R&B'], correct: 0, category: 'Taylor Swift' },
+  { text: 'Por que a Taylor regravou os próprios álbuns como "(Taylor\'s Version)"?', options: ['Perdeu o controle das gravações originais (masters)', 'Não gostava da mixagem antiga', 'Exigência da gravadora nova', 'Para mudar as letras'], correct: 0, category: 'Taylor Swift' },
+  { text: 'Quais dois álbuns surpresa a Taylor lançou em 2020, na pandemia?', options: ['Folklore e Evermore', 'Lover e Midnights', 'Red e 1989', 'Reputation e Speak Now'], correct: 0, category: 'Taylor Swift' },
+  { text: 'A turnê "The Eras Tour" entrou para a história como...', options: ['A turnê de maior arrecadação de todos os tempos', 'A primeira turnê 100% no metaverso', 'A turnê mais curta de uma artista pop', 'A única turnê sem ingressos pagos'], correct: 0, category: 'Taylor Swift' },
+  { text: 'De qual série de TV vêm os nomes de duas das gatas da Taylor Swift?', options: ['Grey\'s Anatomy e Law & Order: SVU', 'Friends e The Office', 'Sex and the City e Lost', 'Gossip Girl e Glee'], correct: 0, category: 'Taylor Swift' },
+  { text: 'Qual música é o carro-chefe do álbum "1989" e virou meme de "haters gonna hate"?', options: ['Shake It Off', 'Blank Space', 'Style', 'Bad Blood'], correct: 0, category: 'Taylor Swift' },
+  { text: 'Qual número a Taylor Swift considera seu número da sorte?', options: ['13', '7', '89', '22'], correct: 0, category: 'Taylor Swift' },
+  { text: 'Quantas vezes a Taylor Swift já ganhou o Grammy de Álbum do Ano (recorde)?', options: ['4', '2', '3', '6'], correct: 0, category: 'Taylor Swift' },
+  { text: 'Qual jogador de futebol americano começou a namorar a Taylor Swift em 2023?', options: ['Travis Kelce', 'Patrick Mahomes', 'Tom Brady', 'Aaron Rodgers'], correct: 0, category: 'Taylor Swift' },
+  { text: 'Qual foi o primeiro álbum da Taylor Swift, lançado em 2006?', options: ['Taylor Swift', 'Fearless', 'Speak Now', 'Red'], correct: 0, category: 'Taylor Swift' },
+  { text: 'A versão de "All Too Well" que virou curta-metragem tem quantos minutos?', options: ['10', '5', '7', '13'], correct: 0, category: 'Taylor Swift' },
+
   // ─── PACK PESADO (+18) — fatos reais, do tipo mórbido / nojento / sexo / drogas ──
   { tier: 'pesado', text: 'Qual bactéria causou a Peste Negra que dizimou a Europa medieval?', options: ['Yersinia pestis', 'Escherichia coli', 'Vibrio cholerae', 'Clostridium tetani'], correct: 0, category: 'História macabra' },
   { tier: 'pesado', text: 'O que os antigos romanos usavam como enxaguante bucal para clarear os dentes?', options: ['Urina', 'Vinagre de vinho', 'Cinza de madeira', 'Mel diluído'], correct: 0, category: 'Nojeira histórica' },

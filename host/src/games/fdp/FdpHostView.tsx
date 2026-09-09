@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FdpAnswer, FdpGameEvent, FdpPublicState } from '@party/shared';
-import { Avatar, BrandMark, Button, getSounds, Overlay, Timer } from '@party/ui';
+import { Avatar, BrandMark, Button, getSounds, Overlay, roundTaunt, Timer } from '@party/ui';
 import type { HostGameViewProps } from '../types';
 import { describeEvent } from './describeEvent';
 import { soundForEvent } from './sound-map';
@@ -200,6 +200,11 @@ export function FdpHostView({ publicState, events, players, connected, reactions
           {inResults && pub.answers.length === 0 ? (
             <p className="fdp-eyebrow">Ninguém respondeu essa 😬</p>
           ) : null}
+
+          {inResults && !over ? (() => {
+            const taunt = roundTaunt(standings, pub.round);
+            return taunt ? <p className="round-taunt">{taunt}</p> : null;
+          })() : null}
         </section>
 
         <aside className="fdp-side">

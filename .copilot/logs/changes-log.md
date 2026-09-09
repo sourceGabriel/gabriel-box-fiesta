@@ -296,3 +296,9 @@ User report: É Você! drawing → clicking undo/submit a big drawing → `Range
 - Cleaned every `§47:` tag out of the source (plugin/model comments, BrandMark, ui/README, sound.ts docstring which still claimed "no audio files").
 - CLAUDE.md: the "§47 LIFTED" note → "clause REMOVED"; hard-rules asset line reworded; the coverflow section's "§47 synth-only + own-identity decisions stand" line dropped.
 - No behaviour change. 141 server tests / tsc / build green.
+
+## 2026-09-09 — round taunts + Taylor Swift content (branch `feature/mais-diversao`)
+- `@party/ui` `roundTaunt(standings, seed)` — deterministic PT-BR roast/hype one-liner (names leader + last place; 14 templates incl. a Taylor Swift re-recordings joke; flat-tie fallback). `.round-taunt` CSS in components.css. Wired into the results/reveal phase of Sabe-Tudo, Zap!, FDP, Lorota!, É Você! (seed = round #). `taunt.test.ts` (4) → ui tests 8→12.
+- Taylor Swift content: Sabe-Tudo +12 questions (category "Taylor Swift", leve), Lorota! +7 "fato com lacuna" (leve).
+- 141 server / 12 ui tests, tsc+oxlint, 5-ws build green.
+- Sound polish handed to the owner (separate chat). Still deferred: configurable round/question counts; full transitional scoreboard scene; per-game background art.

@@ -313,6 +313,26 @@
   image-rendering: crisp-edges;
 }
 
+/* ---------- Round taunt (the "atiçada" between rounds) ---------- */
+.round-taunt {
+  margin: 0.6rem auto 0;
+  max-width: 44ch;
+  text-align: center;
+  font-size: clamp(0.95rem, 2vmin, 1.35rem);
+  font-weight: 700;
+  font-style: italic;
+  line-height: 1.35;
+  color: var(--accent, #f59e0b);
+  animation: round-taunt-in 0.4s ease both;
+}
+@keyframes round-taunt-in {
+  from { opacity: 0; transform: translateY(6px) rotate(-1deg); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .round-taunt { animation: none; }
+}
+
 /* Preset ("Lendas") portraits are real photos — no nearest-neighbour scaling. */
 .ui-avatar-preset {
   image-rendering: auto;
