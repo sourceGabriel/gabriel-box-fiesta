@@ -334,6 +334,25 @@ describe('DilemaGame — rounds, endgame, pause', () => {
     expect(s.winnerId).toBe(top.playerId);
   });
 
+  it('ends with no winner when the top spared count is tied', () => {
+    // 4 players, 2 rounds: kill a different track each round so the two who sit
+    // out as Maquinista and the rotation leave >1 player tied at the top.
+    const P4 = [...P3, { id: 'p4', name: 'Duda' }];
+    const game = mkGame(P4, { matchLength: 2, random: () => 0.5 });
+    game.start();
+    for (let r = 1; r <= 2; r++) {
+      toVerdict(game);
+      game.handleAction(pub(game).conductorId!, { type: 'castVerdict', killedTrack: r === 1 ? 'left' : 'right' });
+      game.onTurnTimeout();
+    }
+    const s = pub(game);
+    expect(s.phase).toBe('gameover');
+    const top = s.standings[0];
+    const tiedAtTop = s.standings.filter((x) => x.spared === top.spared).length > 1;
+    if (tiedAtTop) expect(s.winnerId).toBeNull();
+    else expect(s.winnerId).toBe(top.playerId);
+  });
+
   it('a disconnected team member no longer blocks the lock', () => {
     const game = mkGame(P5);
     game.start();

@@ -496,7 +496,9 @@ export class DilemaGame implements PausableGame, TurnTimedGame {
     this.phase = 'gameover';
     this.clearTimer();
     this.standings = this.computeStandings();
-    this.winnerId = this.standings[0]?.playerId ?? null;
+    const top = this.standings[0];
+    const tie = top != null && this.standings.filter((s) => s.spared === top.spared).length > 1;
+    this.winnerId = top != null && !tie ? top.playerId : null;
     this.emit({ type: 'game_finished', winnerId: this.winnerId ?? '', standings: this.standings });
   }
 

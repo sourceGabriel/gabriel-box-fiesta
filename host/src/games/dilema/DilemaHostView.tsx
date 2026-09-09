@@ -168,11 +168,15 @@ export function DilemaHostView({ publicState, events, players, connected, reacti
       {over ? (
         <Overlay label="Fim da partida">
           <p className="eyebrow">Fim de Dilema nos Trilhos</p>
-          <VictorySplash
-            winner={{ name: pub.winnerId ? nameOf(pub.winnerId) : '—', avatar: pub.winnerId ? avatarOf(pub.winnerId) : undefined }}
-            subtitle="o mais poupado"
-            accent="#f97316"
-          />
+          {pub.winnerId ? (
+            <VictorySplash
+              winner={{ name: nameOf(pub.winnerId), avatar: avatarOf(pub.winnerId) }}
+              subtitle="o mais poupado"
+              accent="#f97316"
+            />
+          ) : (
+            <h2>🤝 Empate — ninguém foi mais poupado</h2>
+          )}
           <ol className="dil-final-standings">
             {scoreRows.map((s, i) => (
               <li key={s.playerId}>

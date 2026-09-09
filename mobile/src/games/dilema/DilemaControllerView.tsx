@@ -155,7 +155,13 @@ export function DilemaControllerView({
         </section>
       ) : over ? (
         <section className="dil-panel dil-center">
-          <h2>{pub.winnerId === playerId ? '🏆 Você foi o mais poupado!' : `🏆 ${nameOf(pub.winnerId)} foi o mais poupado`}</h2>
+          <h2>
+            {!pub.winnerId
+              ? '🤝 Empate!'
+              : pub.winnerId === playerId
+                ? '🏆 Você foi o mais poupado!'
+                : `🏆 ${nameOf(pub.winnerId)} foi o mais poupado`}
+          </h2>
           {myRank ? <p className="hint">Você terminou em {myRank}º — poupado {myStanding?.spared ?? 0}×</p> : null}
           <p className="hint">Aguarde o anfitrião iniciar uma nova partida.</p>
         </section>
