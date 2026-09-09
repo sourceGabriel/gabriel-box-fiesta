@@ -11,7 +11,7 @@ import type { PlayerId, TurnTimer } from './common';
  * anonymous → everyone votes for the best one (never their own) → +100 per vote,
  * plus a sweep bonus → 5 rounds, the last ("Final FDP") worth double.
  *
- * §47: "FDP — Foi De Propósito" is this game's own name — swap `fdpPlugin.meta.name`
+ * "FDP — Foi De Propósito" is this game's own name — the rename point is `fdpPlugin.meta.name`
  * + the `BrandMark text` ("FDP") to rename. `gameId` stays `"fdp"`.
  */
 

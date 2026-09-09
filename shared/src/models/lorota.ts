@@ -11,7 +11,7 @@ import type { PlayerId, TurnTimer } from './common';
  * answer → everyone hunts for the truth → points for finding the truth, and for
  * every player your lie fooled. 3 rounds; the last ("Lorota Final") pays double.
  *
- * §47: "Lorota!" is this game's own name — swap `lorotaPlugin.meta.name` +
+ * "Lorota!" is this game's own name — the rename point is `lorotaPlugin.meta.name` +
  * `BrandMark text` to rename. `gameId` stays `"lorota"`.
  */
 

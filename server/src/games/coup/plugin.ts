@@ -6,7 +6,7 @@ import { CoupGame } from './coup-game';
 export const coupPlugin: GamePlugin = {
   meta: {
     id: 'coup',
-    // §47: replace with an original name before any distribution.
+    // Placeholder name — give it an original one before any public distribution (trademark).
     name: 'Coup',
     tagline: 'Blefe, desafie e seja o último com influência na corte',
     minPlayers: MIN_PLAYERS,

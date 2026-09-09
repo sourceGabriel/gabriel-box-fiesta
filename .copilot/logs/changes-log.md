@@ -289,3 +289,10 @@ User report: É Você! drawing → clicking undo/submit a big drawing → `Range
 - **Catalog how-to**: `GamePersonality.how` (one plain mechanics sentence) rendered under the blurb in the coverflow; one line per `personality.ts` (×7).
 - 141 server / 8 ui tests, tsc+oxlint, 5-ws build green.
 - **Deferred (same user message, own slices)**: configurable round/question counts per game; transitional scoreboard scenes + player taunts (roast last, hype leader); Taylor Swift facts in trivia/Lorota banks; per-game background art.
+
+## 2026-09-09 — §47 "own visual identity" clause removed (owner instruction, branch `feature/mais-diversao`)
+- The owner said it three times, then "ignore totalmente o §47, remova-o". Overrode the CLAUDE.md "never edit master-prompt.md" rule on that explicit instruction.
+- `.copilot/spec-kit/master-prompt.md` §47: struck the two lines ("não copiar identidade visual/assets/sons de terceiros" + "identidade visual própria") and added a dated retirement note. Section number + heading kept so every `§47` cross-ref still resolves. Trademark/logo caveat kept (don't ship a game literally called "UNO").
+- Cleaned every `§47:` tag out of the source (plugin/model comments, BrandMark, ui/README, sound.ts docstring which still claimed "no audio files").
+- CLAUDE.md: the "§47 LIFTED" note → "clause REMOVED"; hard-rules asset line reworded; the coverflow section's "§47 synth-only + own-identity decisions stand" line dropped.
+- No behaviour change. 141 server tests / tsc / build green.

@@ -6,7 +6,7 @@ import { EvoceGame } from './evoce-game';
 export const evocePlugin: GamePlugin = {
   meta: {
     id: 'evoce',
-    // §47: "É Você!" is this game's own name (inspired by PlayStation's That's You!).
+    // "É Você!" is this game's own name (inspired by PlayStation's That's You!).
     name: 'É Você!',
     tagline: 'Perguntas sobre vocês mesmos — quem conhece melhor a galera ganha',
     minPlayers: MIN_PLAYERS,

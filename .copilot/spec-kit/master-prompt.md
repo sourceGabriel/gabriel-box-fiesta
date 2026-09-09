@@ -1231,9 +1231,13 @@ Depois evoluir para:
 * sons;
 * transições.
 
-Não copiar exatamente identidade visual, assets, sons ou elementos proprietários do UNO.
-
-O objetivo é uma experiência inspirada no gênero, mas com identidade visual própria.
+> **Retirado pelo dono em 2026-09-08.** A antiga exigência de "identidade visual
+> própria / não usar assets, sons ou elementos de terceiros" **não vale mais**.
+> Packs de arte e som de licença permissiva (CC0 / CC-BY / OGA-BY / MIT-like)
+> podem ser usados livremente, desde que empacotados no repo (sem internet em
+> runtime) e com um `CREDITS.md` por pack. Não copiar marca/identidade registrada
+> de produtos comerciais (ex.: o logotipo do UNO) continua valendo — isso é
+> questão de marca, não de "identidade própria".
 
 ---
 

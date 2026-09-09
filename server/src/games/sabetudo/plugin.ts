@@ -6,7 +6,7 @@ import { SabeTudoGame } from './sabetudo-game';
 export const sabeTudoPlugin: GamePlugin = {
   meta: {
     id: 'sabetudo',
-    // §47: "Sabe-Tudo" is this game's own name (a fast trivia). Rename here + in BrandMark.
+    // "Sabe-Tudo" is this game's own name (a fast trivia). Rename here + in BrandMark.
     name: 'Sabe-Tudo',
     tagline: 'Responda rápido, acerte mais que os outros e dispare no placar',
     minPlayers: MIN_PLAYERS,

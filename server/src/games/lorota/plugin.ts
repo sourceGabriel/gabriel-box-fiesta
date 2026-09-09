@@ -6,7 +6,7 @@ import { LorotaGame } from './lorota-game';
 export const lorotaPlugin: GamePlugin = {
   meta: {
     id: 'lorota',
-    // §47: "Lorota!" is this game's own name (Fibbage-inspired). Rename here + in BrandMark.
+    // "Lorota!" is this game's own name (Fibbage-inspired). Rename here + in BrandMark.
     name: 'Lorota!',
     tagline: 'Invente uma resposta falsa e ache a verdadeira no meio das mentiras',
     minPlayers: MIN_PLAYERS,

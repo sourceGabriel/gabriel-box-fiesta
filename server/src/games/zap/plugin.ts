@@ -6,7 +6,7 @@ import { ZapGame } from './zap-game';
 export const zapPlugin: GamePlugin = {
   meta: {
     id: 'zap',
-    // §47: "Zap!" is this game's own name (decided with the user 2026-09-07).
+    // "Zap!" is this game's own name (decided with the user 2026-09-07).
     name: 'Zap!',
     tagline: 'Responda o prompt, encare o duelo e roube os votos da sala',
     minPlayers: MIN_PLAYERS,

@@ -11,7 +11,7 @@ import type { PlayerId, TurnTimer } from './common';
  * streak bonus → the correct answer and the points land on screen → next
  * question. A match is `totalRounds` questions; the top score wins.
  *
- * §47: "Sabe-Tudo" is this game's own name — swap `sabeTudoPlugin.meta.name` +
+ * "Sabe-Tudo" is this game's own name — the rename point is `sabeTudoPlugin.meta.name` +
  * `BrandMark text` to rename. `gameId` stays `"sabetudo"`.
  */
 

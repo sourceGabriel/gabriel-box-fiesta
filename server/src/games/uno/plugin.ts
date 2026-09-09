@@ -5,7 +5,7 @@ import { UnoGame } from './uno-game';
 export const unoPlugin: GamePlugin = {
   meta: {
     id: 'uno',
-    // §47: replace with an original name before any distribution.
+    // Placeholder name — give it an original one before any public distribution (trademark).
     name: 'UNO',
     tagline: 'Combine cor ou número e seja o primeiro a esvaziar a mão',
     minPlayers: 2,

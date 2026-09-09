@@ -700,3 +700,6 @@ An elaborate É Você! drawing serialised past the 16 KB `maxPayload` cap; `ws` 
 ### Validation
 - 141 server tests · 8 `@party/ui` tests · `tsc` + `oxlint` clean · 5-workspace build green.
 - Live: a 400 KB frame now closes just that socket (server stays up, logs a warn); a 30 KB frame is accepted; the mobile leave button returns to Join; the text-scale button steps + persists the root font-size; the catalog shows the `how` line.
+
+## 2026-09-09 — §47 "own visual identity" clause retired (owner instruction)
+`.copilot/spec-kit/master-prompt.md` §47 kept its heading and number but the two lines forbidding third-party visual identity / assets / sounds are struck, with a dated retirement note in their place. Permissively-licensed asset packs (CC0/CC-BY/OGA-BY/MIT-like), bundled with a `CREDITS.md`, are now unrestricted. Reproducing a real product's trademark/logo is still out. Every `§47:` code comment was cleaned up; no behaviour change.

@@ -3,8 +3,8 @@ export type BrandSize = 'sm' | 'md' | 'lg' | 'xl';
 
 /**
  * The wordmark. `variant="game"` is the amber→red game logo (default, e.g. "UNO");
- * `variant="platform"` is the multicolour "Box Fiesta" mark. §47: the game text is
- * a prop so the name can change without touching every screen.
+ * `variant="platform"` is the multicolour "Box Fiesta" mark. The game text is a
+ * prop so the name can change without touching every screen.
  */
 export function BrandMark({
   text,

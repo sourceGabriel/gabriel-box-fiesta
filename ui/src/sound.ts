@@ -1,9 +1,11 @@
 /**
- * @party/ui — synthesized UI sounds. Web Audio only, no audio files (§47):
- * every sound is a few oscillators shaped by a gain envelope.
+ * @party/ui — the app sound system: synthesized Web-Audio blips (a few
+ * oscillators shaped by a gain envelope) plus a bundled CC0 sample pack
+ * (`./sound-assets/`, loaded lazily). Both share one master gain + mute.
  *
  *   import { getSounds } from '@party/ui';
- *   getSounds().cardPlay();
+ *   getSounds().cardPlay();                 // synth
+ *   getSounds().play({ sample: 'card-play' }); // sampled clip
  *
  * The AudioContext starts suspended until a user gesture; `getSounds()` installs
  * a one-time pointer/key listener that resumes it, and `unlock()` can force it.

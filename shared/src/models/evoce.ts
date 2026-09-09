@@ -17,7 +17,7 @@ import type { PlayerId, TurnTimer } from './common';
  * No camera (LAN http blocks it): a player's "face" is their pixel `<Avatar>` and
  * drawings are captured as a light **stroke list**, not a bitmap.
  *
- * §47: "É Você!" is this game's own name — swap `evocePlugin.meta.name` + the
+ * "É Você!" is this game's own name — the rename point is `evocePlugin.meta.name` + the
  * `BrandMark text`. `gameId` stays `"evoce"`.
  */
 
