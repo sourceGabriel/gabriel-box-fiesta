@@ -18,7 +18,7 @@
 
 ![status](https://img.shields.io/badge/status-MVP%20jog%C3%A1vel-success)
 ![jogos](https://img.shields.io/badge/jogos-8-blueviolet)
-![testes](https://img.shields.io/badge/testes-164%20passing-brightgreen)
+![testes](https://img.shields.io/badge/testes-167%20passing-brightgreen)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)
 ![Node](https://img.shields.io/badge/Node-%E2%89%A5%2020-5FA04E?logo=nodedotjs&logoColor=white)
@@ -42,7 +42,7 @@ Sem internet, sem contas, sem banco de dados — sobe, lê o QR code, joga.
 - **Núcleo agnóstico de jogo** — adicionar um jogo novo é ~6 arquivos numa pasta e **1 linha em cada registry**. O núcleo nunca muda.
 - **Reconexão sem dor** — derrubou o celular? Recarrega a aba e volta pro mesmo lugar. Dono caiu? A sala transfere sozinha.
 - **Modo Leve / Pesado** — um botão no lobby troca a intensidade do conteúdo dos jogos de texto.
-- **TypeScript estrito** ponta a ponta, monorepo com _workspaces_, **164 testes** de servidor.
+- **TypeScript estrito** ponta a ponta, monorepo com _workspaces_, **167 testes** de servidor.
 
 ---
 
@@ -170,7 +170,7 @@ O motor recebe um relógio e um RNG injetados (partidas reproduzíveis), roda um
 ## ✅ Qualidade
 
 ```bash
-npm run -w server test     # 164 testes (motores + Sala + integração)
+npm run -w server test     # 167 testes (motores + Sala + integração)
 npm run -w server lint     # tsc --noEmit
 npm run -w host lint       # oxlint
 npm run -w mobile lint     # oxlint

@@ -18,7 +18,7 @@ Local (LAN, no internet, no accounts, in-memory) "Jackbox-style" party-game plat
 - Change history + rationale: `docs/CHANGELOG.md` · Gap vs spec: `docs/repository-gap-review.md` · Short log: `.copilot/logs/changes-log.md`
 
 ## Current state (2026-09-09)
-**`develop` = `c2e7daf`** (pushed) — `feature/telas-com-arte` (catalog + Lorota lobby over owner room art) merged. `main` still at `4bc1551` (owner promotes it). **§47 fully retired.** **8 games. Server tests 164.**
+**`develop` = `c2e7daf`** (pushed) — `feature/telas-com-arte` (catalog + Lorota lobby over owner room art) merged. `main` still at `4bc1551` (owner promotes it). **§47 fully retired.** **8 games. Server tests 167.**
 
 **Batch on `feature/dilema`** (off `develop` @ `c2e7daf`, committed, **NOT merged**): **game #8 "Dilema nos Trilhos"** — trolley-problem debate game inspired by *Trial by Trolley* (clean-room; mechanic only, all PT-BR text original). `gameId: "dilema"`, BrandMark "Dilema", accent `#f97316`, vibe `DILEMA`. Round (self-advancing off one deadline, like FDP/Lorota): `assigning` (4s — a **Maquinista** is picked, rotating by join order; the rest are **re-split** into Trilho Esquerdo/Direito *each round*; one seed innocent per track) → `playing` (75s — every non-Maquinista holds a 5-card hand, plays freely: `innocent`→own track, `guilty`→enemy track, `modifier`→stapled to a specific base card on either side; "✅ Pronto" to stop early) → `verdict` (30s — the Maquinista picks which track the trolley runs over; timeout = coin flip) → `roundResults` (8.5s). **No points economy** — the score IS `spared` (rounds your track survived); `standings` also carry `roundDelta` so `RoundScoreboard` works. `minPlayers 3`, `maxPlayers 10`, rounds 3/5/7 (default 5), Leve/Pesado tiers. Whole game = `shared/{models,games}/dilema` + `server/src/games/dilema/{constants,cards,pairing,dilema-game,action-schema,plugin}.ts` + `host/src/games/dilema/` + `mobile/src/games/dilema/` + **1 line in each of the 3 registries** + `dilema` added to `TIERED_GAMES` in `host/src/shell/LobbyScreen.tsx` + `mobile/src/App.tsx` (same as every tiered game). `pairing.ts` is a pure round planner. `dilema-game.test.ts` (19) + integration (1) → **144 → 164 server tests**. §52 held — zero edits to `core/`, `ws-server.ts`, `shared/protocol`, or either shell flow. Live smoke: host + 3 phones, full round 1 (all card types + modifier target picker + pass + playing timeout → verdict → results with ATROPELADO/POUPADO stamps) into round 2 (re-division + Maquinista rotation), 0 console errors. Follow-up ideas parked: trolley slide animation on `roundResults`; modifier-on-modifier stacking; "most persuasive card" bonus.
 **A second branch `feature/dilema-melhorias`** (off `feature/dilema`) collects opportunistic gap-fixes + a GitHub-ready README — see `docs/CHANGELOG.md`.
@@ -150,7 +150,7 @@ Monorepo, npm workspaces: `server` · `shared` (**types-only, no runtime, no zod
 ## Validation
 `/validate` runs it all and reports one line. Under the hood:
 ```
-npm run -w server test       # must stay green (currently 164)
+npm run -w server test       # must stay green (currently 167)
 npm run -w server lint        # tsc --noEmit
 npm run -w host lint          # oxlint
 npm run -w mobile lint        # oxlint

@@ -889,10 +889,12 @@ The lobby (the screen players stare at while waiting) now wears the selected gam
   "add a game" pointer.
 ### Changed
 - **Dilema nos Trilhos**: the trolley slides into the doomed track on `roundResults`
-  (`dil-crash-left` / `dil-crash-right`, `prefers-reduced-motion`-guarded).
+  (`dil-crash-left` / `dil-crash-right`, `prefers-reduced-motion`-guarded). +3
+  engine tests (disconnect closes the round, idempotent pass, Maquinista can't
+  pass) → `dilema-game.test.ts` 19 → 22, **server suite 164 → 167**.
 - **Hidden "Lendas" avatar row** — the unlock now lives in `sessionStorage`, not
   `localStorage`, and any old permanent unlock is cleared on load. The easter-egg row no
   longer stays visible to whoever next picks up that phone; it still survives reloads and
   reconnects within one session. (`mobile/src/App.tsx`.)
 ### Unchanged
-- 164 server tests, `tsc` + `oxlint` clean, 5-workspace build green.
+- 167 server tests, `tsc` + `oxlint` clean, 5-workspace build green.
