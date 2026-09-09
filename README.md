@@ -17,8 +17,8 @@
 <br>
 
 ![status](https://img.shields.io/badge/status-MVP%20jog%C3%A1vel-success)
-![jogos](https://img.shields.io/badge/jogos-8-blueviolet)
-![testes](https://img.shields.io/badge/testes-167%20passing-brightgreen)
+![jogos](https://img.shields.io/badge/jogos-9-blueviolet)
+![testes](https://img.shields.io/badge/testes-193%20passing-brightgreen)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)
 ![Node](https://img.shields.io/badge/Node-%E2%89%A5%2020-5FA04E?logo=nodedotjs&logoColor=white)
@@ -36,13 +36,13 @@ Sem internet, sem contas, sem banco de dados — sobe, lê o QR code, joga.
 
 ## ✨ Destaques
 
-- **8 jogos** num catálogo só, do baralho clássico ao debate filosófico com bonde desgovernado.
+- **9 jogos** num catálogo só, do baralho clássico ao debate filosófico com bonde desgovernado.
 - **Zero configuração de rede** — o servidor imprime uma URL da LAN; o celular abre por QR code.
 - **Servidor autoritativo de verdade** — toda regra, turno, timer e validação vivem no servidor; os clientes só desenham.
 - **Núcleo agnóstico de jogo** — adicionar um jogo novo é ~6 arquivos numa pasta e **1 linha em cada registry**. O núcleo nunca muda.
 - **Reconexão sem dor** — derrubou o celular? Recarrega a aba e volta pro mesmo lugar. Dono caiu? A sala transfere sozinha.
 - **Modo Leve / Pesado** — um botão no lobby troca a intensidade do conteúdo dos jogos de texto.
-- **TypeScript estrito** ponta a ponta, monorepo com _workspaces_, **167 testes** de servidor.
+- **TypeScript estrito** ponta a ponta, monorepo com _workspaces_, **193 testes** de servidor.
 
 ---
 
@@ -57,7 +57,8 @@ Sem internet, sem contas, sem banco de dados — sobe, lê o QR code, joga.
 | 5 | **Sabe-Tudo** 🧠 | `SOBERBA` | Pergunta com 4 alternativas na TV, resposta no celular. Acerto + velocidade + sequência valem pontos. |
 | 6 | **FDP** 🔞 | `SAFADEZA` | Complete a frase com a resposta mais podre que conseguir. Voto anônimo elege a melhor. _(+18)_ |
 | 7 | **É Você!** 🫂 | `AMIZADE` | Perguntas sobre a própria galera: vote em quem combina, escreva legendas e desenhe. 6 rodadas. |
-| 8 | **Dilema nos Trilhos** 🚋 | `DILEMA` | Cada time enche o próprio trilho de inocentes e o do inimigo de culpados. O Maquinista puxa a alavanca — o trilho poupado marca ponto. |
+| 8 | **Dilema nos Trilhos** 🚋 | `DILEMA` | Cada time escolhe, **em consenso**, um inocente pro próprio trilho, um culpado pro inimigo e um modificador. O Maquinista puxa a alavanca — o trilho poupado marca ponto. |
+| 9 | **Sintonia** 📻 | `TELEPATIA` | Um médium vê um alvo escondido num espectro e dá uma dica. Cada um puxa o próprio ponteiro; quem chega mais perto pontua mais. |
 
 > Jogos de texto trazem bancos de _prompts_ originais em PT-BR, divididos em **leve** e **pesado**.
 
@@ -179,7 +180,7 @@ O motor recebe um relógio e um RNG injetados (partidas reproduzíveis), roda um
 ## ✅ Qualidade
 
 ```bash
-npm run -w server test     # 167 testes (motores + Sala + integração)
+npm run -w server test     # 193 testes (motores + Sala + integração)
 npm run -w server lint     # tsc --noEmit
 npm run -w host lint       # oxlint
 npm run -w mobile lint     # oxlint
