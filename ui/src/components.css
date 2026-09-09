@@ -444,12 +444,36 @@
 .ui-ae-preview {
   display: grid;
   justify-items: center;
-  gap: 0.4rem;
+  gap: 0.5rem;
+}
+
+.ui-ae-stage {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .ui-ae-preview .ui-avatar {
   border-radius: 18px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+.ui-ae-arrow {
+  flex: none;
+  width: 2.4rem;
+  height: 2.4rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel-2);
+  color: var(--text, inherit);
+  cursor: pointer;
+  transition: border-color 0.12s ease, transform 0.12s ease;
+}
+.ui-ae-arrow:hover {
+  border-color: var(--accent, #f59e0b);
+  transform: scale(1.06);
 }
 
 .ui-ae-name {
@@ -462,13 +486,45 @@
   background: var(--panel-2);
   color: var(--text, inherit);
   border-radius: 999px;
-  padding: 0.35rem 0.9rem;
+  padding: 0.4rem 1rem;
   font-size: 0.85rem;
   font-weight: 700;
   cursor: pointer;
 }
 
 .ui-ae-random:hover { border-color: var(--accent, #f59e0b); }
+
+/* collapsible "Personalizar avatar" accordion */
+.ui-ae-more {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--panel-2) 60%, transparent);
+  overflow: hidden;
+}
+.ui-ae-more > summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.7rem 0.9rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+.ui-ae-more > summary::-webkit-details-marker { display: none; }
+.ui-ae-more[open] > summary {
+  border-bottom: 1px solid var(--line);
+  color: var(--text, inherit);
+}
+.ui-ae-more[open] > summary svg { transform: rotate(180deg); }
+.ui-ae-more-body {
+  display: grid;
+  gap: 0.7rem;
+  padding: 0.9rem;
+}
 
 .ui-ae-row {
   display: grid;
@@ -561,6 +617,7 @@
 @media (prefers-reduced-motion: reduce) {
   .ui-ae-swatch { transition: none; }
   .ui-ae-legend { transition: none; }
+  .ui-ae-arrow { transition: none; }
 }
 
 /* ---------- TextAnswerInput (Zap!, Fibbage) ---------- */

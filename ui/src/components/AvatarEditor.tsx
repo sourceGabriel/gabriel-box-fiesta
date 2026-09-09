@@ -25,6 +25,9 @@ export function AvatarEditor({
   onChange,
   name,
   presetsUnlocked = false,
+  previewSize = 128,
+  collapsible = false,
+  arrows = false,
 }: {
   value: AvatarSpec;
   onChange: (next: AvatarSpec) => void;
@@ -32,6 +35,12 @@ export function AvatarEditor({
   name?: string;
   /** Show the hidden "Lendas" portrait row (unlocked by the Gabsinto name). */
   presetsUnlocked?: boolean;
+  /** Pixel size of the live preview (default 128). */
+  previewSize?: number;
+  /** Tuck the attribute pickers into a closed `<details>` ("Personalizar avatar"). */
+  collapsible?: boolean;
+  /** Flank the preview with ‹ › buttons that re-roll a random avatar. */
+  arrows?: boolean;
 }) {
   const spec = sanitizeAvatar(value);
   // Any normal attribute change drops the preset and returns to the paperdoll.
@@ -43,16 +52,8 @@ export function AvatarEditor({
   const pickPreset = (id: string): void =>
     onChange({ ...spec, preset: spec.preset === id ? undefined : id });
 
-  return (
-    <div className="ui-avatar-editor">
-      <div className="ui-ae-preview">
-        <Avatar spec={spec} size={128} />
-        {name ? <span className="ui-ae-name">{name}</span> : null}
-        <button type="button" className="ui-ae-random" onClick={() => onChange(randomAvatar())}>
-          🎲 Surpresa
-        </button>
-      </div>
-
+  const controls = (
+    <>
       {presetsUnlocked ? (
         <div className="ui-ae-row ui-ae-legends">
           <span className="ui-ae-label">🕵️ Lendas</span>
@@ -82,7 +83,53 @@ export function AvatarEditor({
       <SwatchRow label="Camisa" options={SHIRTS} value={spec.shirt} onPick={(id) => set({ shirt: id })} />
       <ChipRow label="Chapéu" options={HATS} value={spec.hat} onPick={(id) => set({ hat: id })} />
       <SwatchRow label="Fundo" options={BG_COLORS} value={spec.bg} onPick={(id) => set({ bg: id })} />
+    </>
+  );
+
+  return (
+    <div className="ui-avatar-editor">
+      <div className="ui-ae-preview">
+        <div className="ui-ae-stage">
+          {arrows ? (
+            <button type="button" className="ui-ae-arrow" aria-label="Outro avatar" onClick={() => onChange(randomAvatar())}>
+              <Chevron dir="left" />
+            </button>
+          ) : null}
+          <Avatar spec={spec} size={previewSize} />
+          {arrows ? (
+            <button type="button" className="ui-ae-arrow" aria-label="Outro avatar" onClick={() => onChange(randomAvatar())}>
+              <Chevron dir="right" />
+            </button>
+          ) : null}
+        </div>
+        {name ? <span className="ui-ae-name">{name}</span> : null}
+        <button type="button" className="ui-ae-random" onClick={() => onChange(randomAvatar())}>
+          🎲 Surpresa
+        </button>
+      </div>
+
+      {collapsible ? (
+        <details className="ui-ae-more">
+          <summary>
+            <span>Personalizar avatar</span>
+            <Chevron dir="down" />
+          </summary>
+          <div className="ui-ae-more-body">{controls}</div>
+        </details>
+      ) : (
+        controls
+      )}
     </div>
+  );
+}
+
+function Chevron({ dir }: { dir: 'left' | 'right' | 'down' }) {
+  const d =
+    dir === 'left' ? 'M15 6l-6 6 6 6' : dir === 'right' ? 'M9 6l6 6-6 6' : 'M6 9l6 6 6-6';
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d={d} />
+    </svg>
   );
 }
 

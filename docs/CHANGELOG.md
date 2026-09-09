@@ -973,3 +973,27 @@ The lobby (the screen players stare at while waiting) now wears the selected gam
 - Shell + tooling only. 167 server tests, `tsc` + `oxlint` clean, 5-workspace
   build green; live-verified — coverflow shows the real art, vibe chip + badge
   overlay correctly, 0 console errors.
+
+## 2026-09-09 — mobile art + join-screen redesign (branch `feature/mobile-arte`)
+### Added
+- **`mobile/src/shell/mobile-bg.webp`** — owner "phone as controller" illustration
+  as the `body` background (full-bleed, fading to near-solid dark), 720 px / ~107 KB.
+  `tools/build-screen-bg.py` gained a `mobile-bg` key; `tools/mobile-art-prompts.md`.
+- `@party/ui` `AvatarEditor` gained `previewSize` / `collapsible` / `arrows` props
+  (backward-compatible — `WaitingScreen`'s usage is unchanged).
+### Changed
+- **`JoinScreen` redesigned** (owner direction): name + avatar up top, the avatar
+  is the protagonist (168 px preview, ‹ › re-roll, 🎲 Surpresa, the attribute
+  pickers tucked into a closed **"Personalizar avatar"** accordion); the room-code
+  field + **🎮 Entrar na sala** sit together in a **sticky footer**. No card
+  wrapper — the illustration breathes through; labels over it get a chip. The
+  "Seu celular é o controle" tagline and the on-screen avatar credit line were
+  removed (the LPC/OGA-BY credit stays in `ui/src/avatar-assets/CREDITS.md`).
+- `mobile/src/shell/shell.css` — `.join` open layout + `.join-cta-bar` sticky
+  footer; `.waiting-panel` / `.players-panel` frosted so the bg reads behind them;
+  removed the now-dead `.avatar-credit`.
+- `mobile/src/App.tsx` / `JoinScreen` dropped the unused `brandName` prop.
+### Unchanged
+- Shell + `@party/ui` only (§52 untouched). 167 server tests, `tsc` + `oxlint`
+  clean, 5-workspace build green; live-verified on a phone viewport (default,
+  accordion open, and the sticky footer holding while scrolling).

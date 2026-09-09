@@ -462,3 +462,16 @@ User report: É Você! drawing → clicking undo/submit a big drawing → `Range
   gained `cover-<id>` keys (sources in `gabriel-source/thumbs/`, capped 1000px).
 - Shell + tooling only. 167 server tests, tsc + oxlint, 5-ws build green; live:
   coverflow shows the real art, vibe chip + badge overlay OK, 0 console errors.
+
+## 2026-09-09 — mobile art + join-screen redesign (branch `feature/mobile-arte`)
+- `mobile/src/shell/mobile-bg.webp` — owner "phone as controller" illustration as the
+  `body` bg. `build-screen-bg.py` gained `mobile-bg`; `tools/mobile-art-prompts.md`.
+- `@party/ui` `AvatarEditor`: new `previewSize` / `collapsible` / `arrows` props
+  (WaitingScreen unaffected).
+- `JoinScreen` reworked: name + big avatar (‹ › + 🎲, customisation in a closed
+  "Personalizar avatar" accordion) up top; room-code field + `🎮 Entrar na sala` in a
+  sticky footer. No card wrapper; label chips over the illustration. Tagline + on-screen
+  avatar credit removed (LPC/OGA credit stays in `ui/src/avatar-assets/CREDITS.md`).
+  `.waiting-panel`/`.players-panel` frosted. Dropped the unused `brandName` prop.
+- Shell + `@party/ui` only. 167 server tests, tsc + oxlint, 5-ws build green; live on a
+  phone viewport (default + accordion open + sticky footer while scrolling).

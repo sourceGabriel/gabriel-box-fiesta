@@ -26,9 +26,18 @@ body,
 
 body {
   color: var(--text);
-  background:
+  /* Owner illustration ("phone as controller" scene up top, fading to near-solid
+     dark). The gradients are the fallback if the image fails. Labels that sit
+     over it carry their own chip (see `.field-label` / `.join-brand p`).
+     See mobile-bg.CREDITS.md. */
+  background-color: #0b0f17;
+  background-image:
+    url('./shell/mobile-bg.webp'),
     radial-gradient(120% 45% at 50% 0%, rgba(245, 158, 11, 0.12), transparent 60%),
     linear-gradient(180deg, #0d121c 0%, var(--bg-0) 45%, #080b12 100%);
+  background-position: top center, top, top;
+  background-size: cover, auto, auto;
+  background-repeat: no-repeat;
   background-attachment: fixed;
 }
 

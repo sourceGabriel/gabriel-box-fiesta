@@ -1,5 +1,5 @@
 import type { AvatarSpec } from '@party/shared';
-import { AvatarEditor, BrandMark, Button } from '@party/ui';
+import { AvatarEditor, Button } from '@party/ui';
 import { MobileHeader } from './MobileHeader';
 
 interface JoinScreenProps {
@@ -13,7 +13,6 @@ interface JoinScreenProps {
   legendsUnlocked?: boolean;
   connected: boolean;
   onJoin: () => void;
-  brandName?: string;
 }
 
 export function JoinScreen({
@@ -26,21 +25,42 @@ export function JoinScreen({
   legendsUnlocked,
   connected,
   onJoin,
-  brandName = 'UNO',
 }: JoinScreenProps) {
+  // A QR deep-link (`/join/ABCD`) prefills the code; typed-URL players enter it.
   const canSubmit = connected && roomCode.trim().length > 0 && playerName.trim().length > 0;
+  const name = playerName.trim();
 
   return (
     <>
       <MobileHeader roomCode={roomCode} connected={connected} />
 
-      <section className="join-panel">
-        <div className="join-hero">
-          <BrandMark text={brandName} size="md" />
-          <p>Entre na sala e pegue seu celular como controle.</p>
-        </div>
-
+      <div className="join">
         <label className="field">
+          <span className="field-label">Seu nome</span>
+          <input
+            value={playerName}
+            onChange={(event) => onPlayerNameChange(event.target.value)}
+            placeholder="Como a galera vai te chamar?"
+            maxLength={20}
+          />
+        </label>
+
+        <div className="field join-avatar">
+          <span className="field-label">Seu avatar</span>
+          <AvatarEditor
+            value={avatar}
+            onChange={onAvatarChange}
+            name={name || undefined}
+            presetsUnlocked={legendsUnlocked}
+            previewSize={168}
+            collapsible
+            arrows
+          />
+        </div>
+      </div>
+
+      <div className="join-cta-bar">
+        <label className="field join-code">
           <span className="field-label">Código da sala</span>
           <input
             className="code-input"
@@ -48,41 +68,14 @@ export function JoinScreen({
             onChange={(event) => onRoomCodeChange(event.target.value.toUpperCase())}
             placeholder="ABCD"
             autoCapitalize="characters"
+            autoCorrect="off"
             maxLength={6}
           />
         </label>
-
-        <label className="field">
-          <span className="field-label">Seu nome</span>
-          <input
-            value={playerName}
-            onChange={(event) => onPlayerNameChange(event.target.value)}
-            placeholder="Como querem te chamar?"
-            maxLength={20}
-          />
-        </label>
-
-        <div className="field">
-          <span className="field-label">Seu avatar</span>
-          <AvatarEditor
-            value={avatar}
-            onChange={onAvatarChange}
-            name={playerName.trim() || undefined}
-            presetsUnlocked={legendsUnlocked}
-          />
-          {legendsUnlocked ? (
-            <span className="avatar-credit">🕵️ Lendas desbloqueadas — role até o fim das opções</span>
-          ) : (
-            <span className="avatar-credit">
-              Bonecos: arte LPC / OpenGameArt (CC-BY-SA · OGA-BY · CC0)
-            </span>
-          )}
-        </div>
-
-        <Button variant="success" className="join-submit" disabled={!canSubmit} onClick={onJoin}>
-          {connected ? 'Entrar na sala' : 'Conectando…'}
+        <Button variant="success" className="join-cta" disabled={!canSubmit} onClick={onJoin}>
+          🎮 {connected ? 'Entrar na sala' : 'Conectando…'}
         </Button>
-      </section>
+      </div>
     </>
   );
 }
