@@ -1,21 +1,22 @@
 import type { SabeTudoGameEvent } from '@party/shared';
-import type { SoundName } from '@party/ui';
+import type { SoundSpec } from '@party/ui';
 
 /**
- * Which `@party/ui` sound (if any) each Sabe-Tudo event triggers on the host.
- * Mirrors `host/src/games/{uno,zap,lorota}/sound-map.ts`.
+ * Which sound each Sabe-Tudo event triggers on the host — a synth `@party/ui`
+ * name or a bundled CC0 clip via `{ sample: id }`.
  */
-export function soundForEvent(event: SabeTudoGameEvent): SoundName | null {
+export function soundForEvent(event: SabeTudoGameEvent): SoundSpec | null {
   switch (event.type) {
     case 'question_started':
       return 'turn';
     case 'all_answers_in':
-      return 'select';
+      return { sample: 'ui-confirm' };
     case 'reveal_started':
-      return 'special';
+      return { sample: 'ui-question' };
     case 'round_finished':
+      return { sample: 'stinger-round' };
     case 'game_finished':
-      return 'win';
+      return { sample: 'stinger-fanfare' };
     default:
       return null;
   }

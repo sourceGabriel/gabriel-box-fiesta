@@ -1,16 +1,17 @@
 import type { UnoGameEvent } from '@party/shared';
-import type { SoundName } from '@party/ui';
+import type { SoundSpec } from '@party/ui';
 
 /**
- * Which `@party/ui` sound (if any) each UNO event triggers on the host. Lives in
- * the UNO module — the shell has no idea what a "card_played" is.
+ * Which sound (if any) each UNO event triggers on the host — a synth
+ * `@party/ui` name, or a bundled CC0 clip via `{ sample: id }`. Lives in the
+ * UNO module — the shell has no idea what a "card_played" is.
  */
-export function soundForEvent(event: UnoGameEvent): SoundName | null {
+export function soundForEvent(event: UnoGameEvent): SoundSpec | null {
   switch (event.type) {
     case 'card_played':
-      return 'cardPlay';
+      return { sample: 'card-play' };
     case 'card_drawn':
-      return 'draw';
+      return { sample: 'card-deal' };
     case 'turn_started':
       return 'turn';
     case 'color_changed':
@@ -20,10 +21,11 @@ export function soundForEvent(event: UnoGameEvent): SoundName | null {
     case 'uno_called':
       return 'uno';
     case 'uno_penalty_applied':
-      return 'error';
+      return { sample: 'ui-error' };
     case 'round_finished':
+      return { sample: 'stinger-round' };
     case 'game_finished':
-      return 'win';
+      return { sample: 'stinger-fanfare' };
     default:
       return null;
   }

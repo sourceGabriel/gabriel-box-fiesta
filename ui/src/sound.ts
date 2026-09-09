@@ -10,6 +10,22 @@
  * Mute state persists in localStorage under `party:sound`.
  */
 
+import type { SampleId } from './sound-assets';
+
+export type { SampleId } from './sound-assets';
+
+/**
+ * The bundled clip pack is loaded lazily the first time a sample plays, so apps
+ * that never call `sample()` (the mobile controller) don't ship the .ogg files.
+ */
+let samplesPromise: Promise<Record<string, string>> | undefined;
+const sampleUrls = (): Promise<Record<string, string>> => {
+  if (!samplesPromise) {
+    samplesPromise = import('./sound-assets').then((m) => m.SOUND_SAMPLES).catch(() => ({}));
+  }
+  return samplesPromise;
+};
+
 export type SoundName =
   | 'cardPlay'
   | 'draw'
@@ -20,6 +36,9 @@ export type SoundName =
   | 'error'
   | 'select';
 
+/** How to play one sound: a synth name, or a sampled clip id with optional tuning. */
+export type SoundSpec = SoundName | { sample: SampleId; gain?: number; rate?: number };
+
 export interface Sounds {
   cardPlay(): void;
   draw(): void;
@@ -29,7 +48,10 @@ export interface Sounds {
   win(): void;
   error(): void;
   select(): void;
-  play(name: SoundName): void;
+  /** Play a synth sound by name, or a sampled clip via `{ sample: id }`. */
+  play(spec: SoundSpec): void;
+  /** Play a bundled CC0 clip (`ui/src/sound-assets/`), sharing the mute state. */
+  sample(id: SampleId, opts?: { gain?: number; rate?: number }): void;
   /** Resume the AudioContext (call from a user-gesture handler if needed). */
   unlock(): void;
   isEnabled(): boolean;
@@ -77,7 +99,7 @@ const silent = (): Sounds => {
   const noop = (): void => {};
   return {
     cardPlay: noop, draw: noop, turn: noop, special: noop, uno: noop, win: noop, error: noop, select: noop,
-    play: noop, unlock: noop,
+    play: noop, sample: noop, unlock: noop,
     isEnabled: () => enabled,
     setEnabled: (on) => { enabled = on; },
     toggle: () => { enabled = !enabled; return enabled; },
@@ -161,6 +183,47 @@ export function createSounds(injectedCtx?: AudioContext): Sounds {
     }
   };
 
+  // --- sampled clips (bundled CC0 ogg, decoded once, cached) ---
+  const bufferCache = new Map<string, Promise<AudioBuffer | null>>();
+
+  const loadSample = (id: SampleId): Promise<AudioBuffer | null> => {
+    let p = bufferCache.get(id);
+    if (!p) {
+      const c = ensure();
+      p = !c
+        ? Promise.resolve(null)
+        : sampleUrls()
+            .then((urls) => {
+              const url = urls[id];
+              if (!url) return null;
+              return fetch(url)
+                .then((r) => r.arrayBuffer())
+                .then((buf) => c.decodeAudioData(buf));
+            })
+            .catch(() => null);
+      bufferCache.set(id, p);
+    }
+    return p;
+  };
+
+  const sample = (id: SampleId, opts?: { gain?: number; rate?: number }): void => {
+    if (!enabled) return;
+    const c = ensure();
+    if (!c) return;
+    if (c.state === 'suspended') void c.resume();
+    void loadSample(id).then((buf) => {
+      if (!buf || !enabled) return;
+      const src = c.createBufferSource();
+      src.buffer = buf;
+      src.playbackRate.value = opts?.rate ?? 1;
+      const g = c.createGain();
+      g.gain.value = opts?.gain ?? 0.9;
+      src.connect(g);
+      g.connect(master ?? c.destination);
+      src.start();
+    });
+  };
+
   const sounds: Sounds = {
     cardPlay: () => render([{ type: 'triangle', freq: 520, to: 300, dur: 0.09, gain: 0.5 }]),
     draw: () => render([{ type: 'sine', freq: 240, to: 180, dur: 0.08, gain: 0.45 }]),
@@ -182,7 +245,11 @@ export function createSounds(injectedCtx?: AudioContext): Sounds {
     ]),
     error: () => render([{ type: 'sawtooth', freq: 200, to: 120, dur: 0.22, gain: 0.3 }]),
     select: () => render([{ type: 'sine', freq: 1200, dur: 0.03, gain: 0.25 }]),
-    play: (name) => sounds[name](),
+    sample,
+    play: (spec) => {
+      if (typeof spec === 'string') sounds[spec]();
+      else sample(spec.sample, spec);
+    },
     unlock,
     isEnabled: () => enabled,
     setEnabled: (on) => {

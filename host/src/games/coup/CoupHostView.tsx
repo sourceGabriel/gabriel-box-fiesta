@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CoupGameEvent, CoupPublicState } from '@party/shared';
-import { Avatar, BrandMark, Button, Overlay, Timer } from '@party/ui';
+import { Avatar, BrandMark, Button, getSounds, Overlay, Timer } from '@party/ui';
 import type { HostGameViewProps } from '../types';
 import { ACTION_LABEL, CHARACTER_META, getCoupCardArt, getCoupCardBackArt } from './coupCards';
 import { describeEvent } from './describeEvent';
+import { soundForEvent } from './sound-map';
 import './coup-host.css';
 
 const charLabel = (c: keyof typeof CHARACTER_META | null | undefined): string =>
@@ -30,6 +31,8 @@ export function CoupHostView({ publicState, events, players, connected, reaction
   const pub = publicState as CoupPublicState;
   const seenSeqRef = useRef(0);
   const [feed, setFeed] = useState<{ seq: number; text: string }[]>([]);
+  const sounds = useMemo(() => getSounds(), []);
+  const [soundOn, setSoundOn] = useState(() => sounds.isEnabled());
 
   const nameOf = useMemo(() => {
     const map = new Map<string, string>();
@@ -52,15 +55,22 @@ export function CoupHostView({ publicState, events, players, connected, reaction
     }
     const lastSeq = events[events.length - 1].seq;
     if (lastSeq <= seenSeqRef.current) return;
-    const fresh = events
-      .filter((e) => e.seq > seenSeqRef.current)
+    const freshRaw = events.filter((e) => e.seq > seenSeqRef.current);
+    seenSeqRef.current = lastSeq;
+
+    // Sound follows the raw events (ignores reduced-motion).
+    for (const { event } of freshRaw) {
+      const spec = soundForEvent(event as CoupGameEvent);
+      if (spec) sounds.play(spec);
+    }
+
+    const fresh = freshRaw
       .map((e) => ({ seq: e.seq, text: describeEvent(e.event as CoupGameEvent, nameOf) }))
       .filter((l): l is { seq: number; text: string } => l.text !== null);
-    seenSeqRef.current = lastSeq;
     if (fresh.length > 0) {
       setFeed((cur) => [...cur, ...fresh].slice(-9));
     }
-  }, [events, nameOf]);
+  }, [events, nameOf, sounds]);
 
   const paused = pub.phase === 'paused';
   const over = pub.phase === 'game_over';
@@ -220,6 +230,9 @@ export function CoupHostView({ publicState, events, players, connected, reaction
           <div className="side-actions">
             <Button variant="ghost" onClick={() => send(paused ? 'RESUME_GAME' : 'PAUSE_GAME', {})}>
               {paused ? '▶ Continuar' : '⏸ Pausar'}
+            </Button>
+            <Button variant="ghost" aria-pressed={soundOn} onClick={() => setSoundOn(sounds.toggle())}>
+              {soundOn ? '🔊 Som ligado' : '🔇 Som desligado'}
             </Button>
             <Button variant="danger" onClick={() => send('END_GAME', {})}>Encerrar partida</Button>
           </div>

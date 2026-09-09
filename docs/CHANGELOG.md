@@ -656,3 +656,18 @@ A hidden portrait avatar set unlocked by typing the name **"Gabsinto"** on the j
 
 ### §52
 - Platform-level change (like avatars / reactions): `shared` (1 optional field) + `@party/ui` + `mobile` shell + the protocol schema (1 optional field). No engine, no `core/`, no `ws-server` logic, no host game view. Adding a game is unaffected.
+
+## 2026-09-08 — Real sound: CC0 Kenney sample pack (branch `feature/gabsinto`)
+The host sound was synth-only (8 Web-Audio blips). Added a **bundled CC0 clip pack** on top, wired into every game.
+
+- **`@party/ui` sound engine** — `Sounds` gains `sample(id, opts?)` and `play()` now accepts `SoundSpec` (`SoundName | { sample, gain?, rate? }`). Clips decode once into `AudioBuffer`s, play through the same master gain + mute state as the synth. The pack (`ui/src/sound-assets/`) is loaded via a lazy `import()` the first time a sample plays, so the **mobile controller ships zero audio** (stays silent by design) — host gets a ~1 KB lazy chunk.
+- **`tools/build-sound-pack.py`** (dev-only) curates ~24 clips from three CC0 Kenney packs (Interface Sounds, Casino Audio, Music Jingles) into `ui/src/sound-assets/` (`<id>.ogg` + typed `index.ts` + `CREDITS.md`). ~260 KB. Only the renamed output is committed; `tools/sound-source/` is gitignored (re-fill with `--import`).
+- **Every game's `sound-map.ts` upgraded** to return `SoundSpec`: card sounds for UNO/Coup deals, chip/clash for Coup coins & challenges, `ui-*` clips for confirm/error/toggle/reveal, and **Kenney "Music Jingles" stingers** for round-end / game-over / the Zap! "ZAP!" sweep & É Você! Curinga. Synth stays for the fast, frequent events (turn ticks) and the iconic UNO call.
+- **Coup finally has sound** — new `host/src/games/coup/sound-map.ts` + wiring + a "🔊 Som" toggle in `CoupHostView` (closes the long-deferred D6 sound half).
+
+### Validation
+- 140 server tests · 8 `@party/ui` tests (2 new: `sample()` / `play({sample})`) · `tsc` + `oxlint` clean · 5-workspace build green.
+- Live check (host, real dev server): `getSounds().sample()` and `play({sample})` fetch + `decodeAudioData` + start `AudioBufferSourceNode` with no errors; the lazy `sound-assets` chunk splits out of the main bundle; fresh host tab has zero console errors.
+
+### License
+- All 24 clips are **Kenney.nl, CC0 1.0** (public domain). `ui/src/sound-assets/CREDITS.md` lists every clip → original. First use of the §47 lift.

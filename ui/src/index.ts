@@ -29,4 +29,11 @@ export {
   type AvatarColorOption,
   type AvatarPreset,
 } from './avatar';
-export { createSounds, getSounds, type Sounds, type SoundName } from './sound';
+export {
+  createSounds,
+  getSounds,
+  type Sounds,
+  type SoundName,
+  type SoundSpec,
+  type SampleId,
+} from './sound';

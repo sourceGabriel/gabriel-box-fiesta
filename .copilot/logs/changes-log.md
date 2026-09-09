@@ -271,3 +271,12 @@ The project is currently between the room lifecycle phase and the actual host ga
 - Not editing `.copilot/spec-kit/master-prompt.md` (§47 text stays as historical spec) — the override is recorded here + in `CLAUDE.md` + memory `[[box-fiesta-project-state]]`.
 - Constraints that remain: bundle everything (no runtime internet — LAN only), permissive licences only (CC0 / CC-BY / OGA-BY / MIT-like), keep a `CREDITS.md` per pack, keep the repo reasonably light, no heavy deps. Reference example the user gave: github.com/SpriteCook/spritecook-free-game-assets.
 - **Next slice(s):** curate per-game art + a small sound pack per game (each game already has a `sound-map.ts` hook on the host); the coverflow covers + `@party/ui` synth sounds stay as the fallback / baseline.
+
+## 2026-09-08 — real sound pack (CC0 Kenney) wired into every game (branch `feature/gabsinto`)
+- First use of the §47 lift. Host sound was synth-only; added a bundled CC0 sample layer.
+- `@party/ui` `sound.ts`: `Sounds.sample(id, opts?)` + `play(spec: SoundSpec)` where `SoundSpec = SoundName | { sample, gain?, rate? }`. Clips decode once to AudioBuffer, share the master gain + mute. Pack loaded via lazy `import('./sound-assets')` on first sample → mobile bundle ships no audio, host gets a ~1KB lazy chunk.
+- `tools/build-sound-pack.py` (dev-only, Pillow-free) curates ~24 clips from 3 CC0 Kenney packs (Interface Sounds / Casino Audio / Music Jingles) → `ui/src/sound-assets/` (`<id>.ogg` + typed `index.ts` + `CREDITS.md`, ~260KB). Only the renamed output is committed; `tools/sound-source/` gitignored.
+- All 7 `sound-map.ts` return `SoundSpec` now: casino card sounds for UNO/Coup, chip-lay/chips-collide for Coup coins & challenges, `ui-*` for confirm/error/reveal, Music-Jingles stingers for round-end/game-over/ZAP!/Curinga. Synth kept for turn ticks + the UNO call.
+- **Coup got sound** (new `coup/sound-map.ts` + `CoupHostView` wiring + "🔊 Som" toggle) — closes the D6 sound half.
+- 140 server tests / 8 ui tests (2 new) / tsc+oxlint / 5-ws build all green. Live: sample fetch+decode+play verified on the host, lazy chunk splits, 0 console errors.
+- All clips Kenney CC0 1.0; `ui/src/sound-assets/CREDITS.md` maps each to its original.

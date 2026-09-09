@@ -1,23 +1,24 @@
 import type { FdpGameEvent } from '@party/shared';
-import type { SoundName } from '@party/ui';
+import type { SoundSpec } from '@party/ui';
 
 /**
- * Which `@party/ui` sound (if any) each FDP event triggers on the host.
- * Mirrors `host/src/games/{uno,zap,lorota,sabetudo}/sound-map.ts`.
+ * Which sound each FDP event triggers on the host — a synth `@party/ui` name
+ * or a bundled CC0 clip via `{ sample: id }`.
  */
-export function soundForEvent(event: FdpGameEvent): SoundName | null {
+export function soundForEvent(event: FdpGameEvent): SoundSpec | null {
   switch (event.type) {
     case 'round_started':
       return 'turn';
     case 'all_answers_in':
-      return 'select';
+      return { sample: 'ui-confirm' };
     case 'voting_started':
-      return 'cardPlay';
+      return { sample: 'card-fan' };
     case 'results_started':
-      return 'special';
+      return { sample: 'stinger-reveal' };
     case 'round_finished':
+      return { sample: 'stinger-round' };
     case 'game_finished':
-      return 'win';
+      return { sample: 'stinger-fanfare' };
     default:
       return null;
   }

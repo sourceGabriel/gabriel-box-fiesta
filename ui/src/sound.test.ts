@@ -12,6 +12,8 @@ class FakeNode {
   type: OscillatorType = 'sine';
   frequency = new FakeParam();
   gain = new FakeParam();
+  playbackRate = new FakeParam();
+  buffer: unknown = null;
   connect(next: unknown) { return next; }
   disconnect() {}
   start() {}
@@ -24,6 +26,8 @@ class FakeAudioContext {
   destination = new FakeNode();
   createOscillator = vi.fn(() => new FakeNode());
   createGain = vi.fn(() => new FakeNode());
+  createBufferSource = vi.fn(() => new FakeNode());
+  decodeAudioData = vi.fn(() => Promise.resolve({} as AudioBuffer));
   resume = vi.fn(() => Promise.resolve());
   close = vi.fn(() => Promise.resolve());
 }
@@ -49,6 +53,15 @@ describe('createSounds', () => {
     sounds.win();
     expect(ctx.createOscillator.mock.calls.length).toBe(before);
     expect(sounds.isEnabled()).toBe(false);
+  });
+
+  it('sample() and play({sample}) do not throw (synth + sampled share the API)', () => {
+    const ctx = new FakeAudioContext();
+    const sounds = createSounds(ctx as unknown as AudioContext);
+    expect(() => sounds.sample('ui-click')).not.toThrow();
+    expect(() => sounds.play({ sample: 'stinger-win', gain: 0.8 })).not.toThrow();
+    sounds.setEnabled(false);
+    expect(() => sounds.sample('card-play')).not.toThrow();
   });
 
   it('toggle flips and reports the new state', () => {
