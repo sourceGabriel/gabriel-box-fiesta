@@ -79,7 +79,7 @@ ul, ol {
   opacity: 0.45;
   transform: scale(1.18);
 }
-.lobby-backdrop .game-cover-svg {
+.lobby-backdrop .game-cover {
   width: 100%;
   height: 100%;
 }
@@ -263,7 +263,7 @@ ul, ol {
 /* the room code, over the painted dark box below the QR */
 .lobby-slot-code {
   left: 12%;
-  top: 58.5%;
+  top: 57.3%;
   width: 16%;
   height: 9%;
   gap: 0.3cqh;
@@ -286,7 +286,7 @@ ul, ol {
   text-shadow: 0 0 1.4cqh color-mix(in srgb, var(--game-accent) 45%, transparent);
 }
 .lobby-qr-url {
-  font-size: 1.5cqh;
+  font-size: 1.3cqh;
   font-weight: 800;
   color: #ff2f86;
   background: rgba(255, 255, 255, 0.96);
@@ -382,6 +382,8 @@ ul, ol {
   background: var(--game-accent);
   color: #0c0904;
   font: inherit;
+  /* the parent `.lobby-slot` pins content to the top — the pill needs it centred */
+  justify-content: center;
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.03em;
@@ -397,7 +399,9 @@ ul, ol {
 }
 .lobby-slot-start:disabled {
   cursor: default;
-  background: rgba(10, 13, 17, 0.78);
+  /* Opaque — the painted "COMEÇAR X" underneath must not bleed through. */
+  background: #0b0e12;
+  border: 1px solid rgba(255, 255, 255, 0.12);
   color: #9aa4a1;
   box-shadow: none;
   animation: none;
@@ -635,7 +639,7 @@ ul, ol {
   text-shadow: 0 2px 14px rgba(0, 0, 0, 0.75);
 }
 
-.game-cover-svg {
+.game-cover {
   display: block;
   width: 100%;
   height: 100%;
