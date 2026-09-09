@@ -17,8 +17,7 @@ export function soundForEvent(event: DilemaGameEvent): SoundSpec | null {
       return { sample: 'ui-drop', gain: 0.5 };
     case 'team_locked':
       return { sample: 'ui-confirm' };
-    case 'both_locked':
-      return { sample: 'ui-open', gain: 0.6 };
+    // `both_locked` fires back-to-back with `pick_step_started` / `verdict_started` — let those be the cue.
     case 'verdict_started':
       return { cue: 'meme.reveal', fallback: { sample: 'ui-question' } };
     case 'verdict_cast':
