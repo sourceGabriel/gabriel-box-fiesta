@@ -68,7 +68,7 @@ function App() {
     conn.send('UPDATE_AVATAR', { avatar: next });
   };
   const selectedGame = conn.catalog.find((game) => game.id === conn.selectedGameId);
-  const TIERED_GAMES = new Set(['zap', 'lorota', 'sabetudo', 'fdp', 'evoce']);
+  const TIERED_GAMES = new Set(['zap', 'lorota', 'sabetudo', 'fdp', 'evoce', 'dilema']);
   const GameView = conn.activeGameId ? CONTROLLER_GAMES[conn.activeGameId] : undefined;
 
   let screen;

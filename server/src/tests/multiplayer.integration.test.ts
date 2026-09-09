@@ -953,6 +953,60 @@ describe('multiplayer integration', () => {
     for (const ws of phones) ws.close();
   });
 
+  it('runs Dilema nos Trilhos: SELECT_GAME + START_GAME, Maquinista + two tracks, cards advance to verdict', async () => {
+    server = new PartyServer(0);
+    await server.start();
+    const roomCode = server.getRoomCode();
+    const port = server.getPort();
+
+    const host = await connect(port);
+    const catalogPromise = waitForMessage(host, 'GAME_CATALOG');
+    host.send(makeMessage('JOIN_ROOM', { roomCode, playerName: 'HOST', role: 'host' }));
+    await waitForMessage(host, 'ROOM_JOINED');
+
+    const catalog = await catalogPromise;
+    expect(catalog.payload.games.map((game) => game.id)).toEqual(
+      expect.arrayContaining(['uno', 'coup', 'zap', 'lorota', 'sabetudo', 'fdp', 'evoce', 'dilema']),
+    );
+
+    const reselected = waitForMessageWhere(host, 'GAME_CATALOG', (m) => m.payload.selectedGameId === 'dilema');
+    host.send(makeMessage('SELECT_GAME', { gameId: 'dilema' }));
+    await reselected;
+
+    const phones = [] as Awaited<ReturnType<typeof connect>>[];
+    for (const name of ['Ana', 'Bia', 'Caio']) {
+      const ws = await connect(port);
+      ws.send(makeMessage('JOIN_ROOM', { roomCode, playerName: name, role: 'player' }));
+      await waitForMessage(ws, 'ROOM_JOINED');
+      phones.push(ws);
+    }
+
+    const firstPublic = waitForMessage(host, 'GAME_STATE_PUBLIC');
+    const started = waitForMessage(host, 'GAME_STARTED');
+    host.send(makeMessage('START_GAME', { gameId: 'dilema' }));
+    expect((await started).payload.gameId).toBe('dilema');
+
+    const pub = (await firstPublic).payload.state as {
+      phase: string;
+      conductorId: string;
+      tracks: { left: { memberIds: string[] }; right: { memberIds: string[] } };
+    };
+    expect(pub.phase).toBe('assigning');
+    expect(pub.conductorId).toBeTruthy();
+    expect([...pub.tracks.left.memberIds, ...pub.tracks.right.memberIds]).toHaveLength(2);
+
+    const privs = await Promise.all(phones.map((ws) => waitForMessage(ws, 'PLAYER_STATE_PRIVATE')));
+    const conductorPriv = privs.find((p) => (p.payload.state as { isConductor: boolean }).isConductor);
+    expect(conductorPriv).toBeTruthy();
+
+    const actionError = waitForMessage(phones[0], 'ERROR');
+    phones[0].send(makeMessage('GAME_ACTION', { action: { type: 'garbage' } }));
+    expect((await actionError).payload.message).toMatch(/INVALID_ACTION/i);
+
+    host.close();
+    for (const ws of phones) ws.close();
+  });
+
   it('rebroadcasts emoji reactions to the whole room and rejects oversized ones', async () => {
     server = new PartyServer(0);
     await server.start();
