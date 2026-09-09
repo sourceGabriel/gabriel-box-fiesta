@@ -4,6 +4,7 @@ import { AttractScreen } from './shell/AttractScreen';
 import { CatalogScreen } from './shell/CatalogScreen';
 import { LobbyScreen } from './shell/LobbyScreen';
 import { HOST_GAMES } from './games/registry';
+import type { GamePersonality } from './games/types';
 import './shell/shell.css';
 
 type Flow = 'attract' | 'catalog' | 'lobby';
@@ -21,6 +22,10 @@ function App() {
   const onlineCount = conn.players.filter((p) => p.connected).length;
   const covers = useMemo<Record<string, FC>>(
     () => Object.fromEntries(Object.entries(HOST_GAMES).map(([id, entry]) => [id, entry.Cover])),
+    [],
+  );
+  const personalities = useMemo<Record<string, GamePersonality>>(
+    () => Object.fromEntries(Object.entries(HOST_GAMES).map(([id, entry]) => [id, entry.personality])),
     [],
   );
 
@@ -72,6 +77,7 @@ function App() {
         catalog={conn.catalog}
         selectedGameId={conn.selectedGameId}
         covers={covers}
+        personalities={personalities}
         onPick={(gameId) => {
           conn.send('SELECT_GAME', { gameId });
           setFlow('lobby');

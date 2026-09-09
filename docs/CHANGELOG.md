@@ -611,3 +611,27 @@ A "how well do you know your friends" game: every question is about the players 
 
 ### §52
 - The whole game = `shared/{models,games}/evoce` + `server/src/games/evoce/` + `host/src/games/evoce/` + `mobile/src/games/evoce/` + `@party/ui` `DrawingCanvas`/`DrawingView` (reusable) + **one line in each of the 3 registries** (+ 2 lines adding `evoce` to the frontend tiered-games sets). Zero edits to `core/`, `ws-server.ts`, either shell's flow, or `shared/protocol`. **7 games in the catalog.**
+
+## 2026-09-08 — Catalog coverflow + per-game personality (branch `feature/catalog-coverflow`)
+The game picker (`host/src/shell/CatalogScreen.tsx`) was a flat 7-card grid. Redesigned it as a **3-up coverflow reel**: the focused game sits big and centre with its own accent glow, the two neighbours flank it small and tilted (3D `rotateY`), everything else parks off-stage. ← → / on-screen ‹ › arrows / clicking a side card / the position dots all rotate the reel; Enter or the centre card or the "▶ Iniciar" button starts it. Circular wrap-around.
+
+### Per-game "personality" (host, game-scoped — §52 spirit)
+- New `GamePersonality { accent, vibe, blurb }` in `host/src/games/types.ts`; each game ships one at `host/src/games/<id>/personality.ts` (7 files) and the registry wires it into `HostGameEntry` (now `{ View, Cover, personality }`).
+- `accent` retints the ambient wash, the focused frame's ring/shadow, the vibe tag, the blurb and the "Iniciar" button as you scroll. `vibe` is a one-word mood stamped on the centre card (RAIVA / TRAIÇÃO / EGO / MENTIRA / SOBERBA / SAFADEZA / AMIZADE). `blurb` is an acid PT-BR one-liner shown under the reel.
+- `App.tsx` passes a `personalities` record alongside `covers`; a `FALLBACK_PERSONALITY` covers an unknown id.
+
+### Sound
+- The catalog now plays the shared synth `@party/ui` sounds: `select()` on each reel step, `special()` on pick. (No audio files — the §47 synth-only decision stands; see "notes" below.)
+
+### CSS — `host/src/shell/shell.css`
+- Replaced the whole `.catalog-*` grid block with `.cf-stage` / `.cf-reel` / `.cf-card` (offset-driven `transform`/`opacity`/`z-index` via `--off`/`--abs` custom props) / `.cf-frame` (idle float on centre) / `.cf-vibe` / `.cf-hero` / `.cf-start` / `.cf-dots` / `.cf-arrow`. `color-mix()` for the accent tints. `prefers-reduced-motion` drops the float, the reel transition and the retint.
+
+### Notes / not done
+- **External sprite/sound packs (SpriteCook etc.):** left out on purpose — the project has a standing "own visual identity" (§47) rule and a synth-only sound decision. Vendoring third-party game art/audio would reverse both and add binary assets to a repo that deliberately has none. Flagged to the user to decide.
+
+### Validation
+- Host `tsc -b` + `vite build` green; `oxlint` host clean (only the established `set-state-in-effect` advisory, matching the rest of the shell). Server/shared/mobile/ui untouched — 140 server tests still the baseline.
+- Live check (host tab, real server): reel math verified for all 7 games (centre `--off:0` opacity 1, ±1 at 0.66 tilted, ±2 at 0.32, ±3 parked, circular wrap); accent/blurb/start-label/active-dot all track focus; "▶ Iniciar" → lobby with the right game selected; zero console errors.
+
+### §52
+- Zero edits to `core/`, `ws-server.ts`, `shared/`, the mobile app, or either shell's flow machine. Adding a game now also wants a `personality.ts` in its host folder (registry entry gains one field) — still a one-folder job.

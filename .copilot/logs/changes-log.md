@@ -243,3 +243,14 @@ The project is currently between the room lifecycle phase and the actual host ga
 - `evoce-game.test.ts` (11) + integration (+1) + content-tier (+1). **Server 127 → 140.** tsc server/shared/ui + oxlint + 5-ws build green + ui 7 tests.
 - Full live smoke: complete 6-round match, host + 3 controllers — consensus scoring, Curinga doubling, `[NOME]` substitution, rabisco model-excluded + `DrawingCanvas`→`DrawingView` strokes over the wire, final ×2, gameover overlay. 0 console errors (fresh tabs).
 - **§52 held** — nothing in `core/`, `ws-server`, either shell flow, `shared/protocol`. **7 games in the catalog.**
+
+## 2026-09-08 — Catalog coverflow + per-game personality (branch `feature/catalog-coverflow`, off `main`)
+- User asked for the game menu to show 3 cards at a time — centre one bigger/selected, siblings scrolling left/right — with a strong per-game personality and (acid, black) humour; animation welcome.
+- `host/src/shell/CatalogScreen.tsx` rebuilt as a 3-up coverflow reel: offset-driven `transform`/`opacity`/`z-index` (`--off`/`--abs`), 3D `rotateY` on the flanks, circular wrap, ‹ ›/arrows/dots/side-click to rotate, Enter/centre-card/"▶ Iniciar" to start. Idle float on the centre frame.
+- New `GamePersonality { accent, vibe, blurb }` (`host/src/games/types.ts`); one `host/src/games/<id>/personality.ts` per game (7); `HostGameEntry` gains `personality`; `registry.ts` + `App.tsx` wire a `personalities` record next to `covers`. Accent retints the ambient wash + focused frame + vibe tag + blurb + start button as you scroll.
+- Vibes: UNO RAIVA / Coup TRAIÇÃO / Zap! EGO / Lorota! MENTIRA / Sabe-Tudo SOBERBA / FDP SAFADEZA / É Você! AMIZADE. Blurbs are acid PT-BR one-liners.
+- Sound: catalog wired to the shared synth `@party/ui` sounds — `select()` per step, `special()` on pick. No audio files added (the §47 synth-only decision stands).
+- `shell.css`: `.catalog-*` grid block replaced with `.cf-stage`/`.cf-reel`/`.cf-card`/`.cf-frame`/`.cf-vibe`/`.cf-hero`/`.cf-start`/`.cf-dots`/`.cf-arrow`; `color-mix()` tints; `prefers-reduced-motion` guard.
+- **Deliberately not done:** vendoring SpriteCook / other open game art+audio packs — reverses §47 "own visual identity" + the synth-only sound call and adds binaries to an asset-free repo. Flagged to the user.
+- Validation: host `tsc -b` + `vite build` green, `oxlint` host clean (established advisory only). No server/shared/mobile/ui changes — 140 server tests unaffected. Live: reel math + accent/blurb/dot tracking + pick→lobby verified, 0 console errors.
+- §52: zero edits to `core/`, `ws-server`, `shared/`, mobile, or either shell flow.

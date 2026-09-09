@@ -20,9 +20,25 @@ export interface HostGameViewProps {
 
 export type HostGameView = FC<HostGameViewProps>;
 
-/** One registered game on the host: its in-game view + its catalog cover art. */
+/**
+ * A game's catalog "personality" — the acid one-liner and the accent colour that
+ * tint the coverflow while this game is focused. Kept in the game's own folder
+ * (`<id>/personality.ts`) so adding a game stays a one-folder job.
+ */
+export interface GamePersonality {
+  /** Main accent colour (hex) — tints the focused frame, the ambient glow and the vibe tag. */
+  accent: string;
+  /** One-word mood, stamped over the card (e.g. "RAIVA", "TRAIÇÃO"). */
+  vibe: string;
+  /** Acid PT-BR one-liner shown under the focused card. */
+  blurb: string;
+}
+
+/** One registered game on the host: its in-game view + its catalog cover art + its personality. */
 export interface HostGameEntry {
   View: HostGameView;
   /** Catalog cover art — an inline SVG component, no external assets. */
   Cover: FC;
+  /** Catalog personality — accent + vibe + acid blurb. */
+  personality: GamePersonality;
 }
