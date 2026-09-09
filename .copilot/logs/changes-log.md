@@ -440,3 +440,8 @@ User report: É Você! drawing → clicking undo/submit a big drawing → `Range
 - Shell + tooling only (§52 untouched). 167 server tests, tsc + oxlint, 5-ws build green.
   Live: the 4 live slots measured in the DOM land exactly on the painted panels; all 8
   `lobbyBg` imports resolve. Regen-only nits: dilema "TRIILHOS", fdp≈zap pink.
+- Follow-ups in the same batch: the `.host-lobby::after` wash scoped to
+  `:not(.lobby-art)` (it was fogging the painted room); **Esc in the lobby** →
+  back to the catalog (mirrors `CatalogScreen`); `tools/cover-art-prompts.md` — the
+  prompt + per-game table for regenerating the catalog coverflow thumbnails (not
+  wired yet — waits on the renders).
