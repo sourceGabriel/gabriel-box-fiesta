@@ -48,12 +48,12 @@ export function SintoniaControllerView({
     setLocalDial(v);
   };
 
-  // New round: the server clears every guess — snap the local dial back to centre
-  // so last round's value can't leak into this one (or get auto-locked).
+  // Reset the local dial to centre on a new round (the server has cleared every
+  // guess). `priv.myGuess` is intentionally not a dep — adding it would snap the
+  // slider back on every server echo and fight the drip.
   useEffect(() => {
     setDial(priv.myGuess ?? DIAL_START);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pub.round]);
+  }, [pub.round]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     // While locked / not our turn, follow the authoritative value.
