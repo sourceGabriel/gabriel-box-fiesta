@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { UnoGameEvent, UnoPublicState } from '@party/shared';
-import { Avatar, BrandMark, Button, getSounds, Overlay, Timer } from '@party/ui';
+import { Avatar, BrandMark, Button, getSounds, Overlay, Timer, VictorySplash } from '@party/ui';
 import { getCardArt, getCardBackArt } from '@party/ui/uno-cards';
 import type { HostGameViewProps } from '../types';
 import { describeEvent } from './describeEvent';
@@ -187,7 +187,15 @@ export function UnoHostView({ publicState, events, players, connected, send }: H
       {showResult && (roundOver || gameOver) ? (
         <Overlay label="Resultado da rodada">
           <p className="eyebrow">{gameOver ? 'Fim da partida' : `Rodada ${state.round}`}</p>
-          <h2>{gameOver ? `🏆 ${gameWinnerName} venceu!` : `${roundWinnerName} zerou a mão`}</h2>
+          {gameOver ? (
+            <VictorySplash
+              winner={{ name: gameWinnerName, avatar: state.gameWinnerPlayerId ? avatarOf(state.gameWinnerPlayerId) : undefined }}
+              subtitle="venceu a partida"
+              accent="#ef4444"
+            />
+          ) : (
+            <h2>{roundWinnerName} zerou a mão</h2>
+          )}
           <ol className="result-scoreboard">
             {scoreboard.map((player, index) => (
               <li key={player.id} className={index === 0 ? 'leader' : ''}>

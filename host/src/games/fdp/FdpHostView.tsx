@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FdpAnswer, FdpGameEvent, FdpPublicState } from '@party/shared';
-import { Avatar, BrandMark, Button, getSounds, Overlay, RoundScoreboard, roundTaunt, Timer } from '@party/ui';
+import { Avatar, BrandMark, Button, getSounds, Overlay, RoundScoreboard, roundTaunt, Timer, VictorySplash } from '@party/ui';
 import type { HostGameViewProps } from '../types';
 import { describeEvent } from './describeEvent';
 import { soundForEvent } from './sound-map';
@@ -114,7 +114,11 @@ export function FdpHostView({ publicState, events, players, connected, reactions
       {over ? (
         <Overlay label="Fim da partida">
           <p className="eyebrow">Fim do FDP</p>
-          <h2>🏆 {pub.winnerId ? nameOf(pub.winnerId) : '—'} venceu!</h2>
+          <VictorySplash
+            winner={{ name: pub.winnerId ? nameOf(pub.winnerId) : '—', avatar: pub.winnerId ? avatarOf(pub.winnerId) : undefined }}
+            subtitle="a mente mais podre da sala"
+            accent="#fb7185"
+          />
           <ol className="fdp-final-standings">
             {standings.map((s, i) => (
               <li key={s.playerId}>

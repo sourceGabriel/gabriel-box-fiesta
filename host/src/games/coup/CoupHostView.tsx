@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CoupGameEvent, CoupPublicState } from '@party/shared';
-import { Avatar, BrandMark, Button, getSounds, Overlay, Timer } from '@party/ui';
+import { Avatar, BrandMark, Button, getSounds, Overlay, Timer, VictorySplash } from '@party/ui';
 import type { HostGameViewProps } from '../types';
 import { ACTION_LABEL, CHARACTER_META, getCoupCardArt, getCoupCardBackArt } from './coupCards';
 import { describeEvent } from './describeEvent';
@@ -142,7 +142,11 @@ export function CoupHostView({ publicState, events, players, connected, reaction
       {over ? (
         <Overlay label="Fim da partida">
           <p className="eyebrow">Fim da partida</p>
-          <h2>🏆 {winnerName} venceu!</h2>
+          <VictorySplash
+            winner={{ name: winnerName, avatar: pub.winnerId ? avatarOf(pub.winnerId) : undefined }}
+            subtitle="último de pé"
+            accent="#e0b13c"
+          />
           <div className="result-actions">
             <Button variant="primary" onClick={() => send('START_GAME', {})}>Nova partida</Button>
             <Button variant="danger" onClick={() => send('END_GAME', {})}>Encerrar</Button>

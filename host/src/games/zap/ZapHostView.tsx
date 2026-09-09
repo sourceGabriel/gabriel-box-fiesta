@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ZapDuel, ZapGameEvent, ZapPublicState } from '@party/shared';
-import { Avatar, BrandMark, Button, getSounds, Overlay, RoundScoreboard, roundTaunt, Timer } from '@party/ui';
+import { Avatar, BrandMark, Button, getSounds, Overlay, RoundScoreboard, roundTaunt, Timer, VictorySplash } from '@party/ui';
 import type { HostGameViewProps } from '../types';
 import { describeEvent } from './describeEvent';
 import { soundForEvent } from './sound-map';
@@ -152,7 +152,11 @@ export function ZapHostView({ publicState, events, players, connected, reactions
       {over ? (
         <Overlay label="Fim da partida">
           <p className="eyebrow">Fim do Zap!</p>
-          <h2>🏆 {pub.winnerId ? nameOf(pub.winnerId) : '—'} venceu!</h2>
+          <VictorySplash
+            winner={{ name: pub.winnerId ? nameOf(pub.winnerId) : '—', avatar: pub.winnerId ? avatarOf(pub.winnerId) : undefined }}
+            subtitle="venceu o Zap!"
+            accent="#ff3caf"
+          />
           <ol className="zap-final-standings">
             {standings.map((s, i) => (
               <li key={s.playerId}>
