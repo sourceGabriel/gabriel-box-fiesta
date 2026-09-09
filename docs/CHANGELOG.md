@@ -958,3 +958,18 @@ The lobby (the screen players stare at while waiting) now wears the selected gam
 - `dilema.png` wordmark reads "TRIILHOS" (double i); `fdp.png` accent came out
   near-identical pink to `zap.png`. Both are regen-only fixes (owner's call).
 - Design canvas (Box Fiesta Lobby artifact) matches what shipped.
+
+## 2026-09-09 — real catalog covers (branch `feature/thumbs-catalogo`)
+### Changed
+- The 8 coverflow thumbnails are now **owner-generated key art**
+  (`host/src/games/<id>/cover.webp`, 3:2, ~170 KB) instead of inline SVG — all
+  from one prompt (`tools/cover-art-prompts.md`) for a consistent set. Each
+  `<Id>Cover.tsx` is now a 3-line `<img className="game-cover-svg">`; the CSS
+  class gained `object-fit: cover`. `HOST_GAMES` / `CatalogScreen` unchanged
+  (`Cover` is still an FC).
+- `tools/build-screen-bg.py` gained `cover-<id>` keys (`gabriel-source/thumbs/*.png`
+  → `cover.webp`, capped at 1000 px).
+### Unchanged
+- Shell + tooling only. 167 server tests, `tsc` + `oxlint` clean, 5-workspace
+  build green; live-verified — coverflow shows the real art, vibe chip + badge
+  overlay correctly, 0 console errors.

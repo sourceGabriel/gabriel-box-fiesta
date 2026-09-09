@@ -454,3 +454,11 @@ User report: É Você! drawing → clicking undo/submit a big drawing → `Range
   `oxlint` clean, 5-workspace build green. All local feature branches deleted;
   10 fully-merged remote branches pending prune (`git push origin --delete`).
   `main` unchanged at `4bc1551` — owner promotes manually.
+
+## 2026-09-09 — real catalog covers (branch `feature/thumbs-catalogo`)
+- Coverflow thumbnails: inline SVG → owner key art (`host/src/games/<id>/cover.webp`,
+  3:2, one prompt = `tools/cover-art-prompts.md`). Each `<Id>Cover.tsx` is now an
+  `<img className="game-cover-svg">` (+ `object-fit: cover`). `build-screen-bg.py`
+  gained `cover-<id>` keys (sources in `gabriel-source/thumbs/`, capped 1000px).
+- Shell + tooling only. 167 server tests, tsc + oxlint, 5-ws build green; live:
+  coverflow shows the real art, vibe chip + badge overlay OK, 0 console errors.

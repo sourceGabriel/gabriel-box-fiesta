@@ -12,6 +12,7 @@ shell screens use as their backdrops.
           catalog                         -> host/src/shell/catalog-bg.webp
           lobby-<id>  (id = uno, coup, zap, lorota, sabetudo, fdp, evoce, dilema)
                                           -> host/src/games/<id>/lobby-bg.webp
+          cover-<id>  (same ids)          -> host/src/games/<id>/cover.webp
         (default: all)
 
 The attract-screen backdrop has its own script (`tools/build-attract-bg.py`).
@@ -38,27 +39,32 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parent.parent
 SRC_DIR = ROOT / "gabriel-source"
-MAX_W = 2000
 QUALITY = 82
+MAX_W = 2000  # full-bleed backdrops
+COVER_MAX_W = 1000  # coverflow thumbnails render small
 
-# game id -> source file in gabriel-source/backgrounds/
-LOBBY_GAMES: dict[str, str] = {
-    "uno": "uno.png",
-    "coup": "coup.png",
-    "zap": "zap.png",
-    "lorota": "lorota.png",
-    "sabetudo": "sabe-tudo.png",
-    "fdp": "fdp.png",
-    "evoce": "ehvoce.png",
-    "dilema": "dilema.png",
+# game id -> (backgrounds/ source for lobby art, thumbs/ source for the cover)
+GAMES: dict[str, tuple[str, str]] = {
+    "uno": ("uno.png", "uno.png"),
+    "coup": ("coup.png", "coup.png"),
+    "zap": ("zap.png", "zap.png"),
+    "lorota": ("lorota.png", "lorota.png"),
+    "sabetudo": ("sabe-tudo.png", "sabetudo.png"),
+    "fdp": ("fdp.png", "fdp.png"),
+    "evoce": ("ehvoce.png", "ehvoce.png"),
+    "dilema": ("dilema.png", "dilema.png"),
 }
 
 # key -> (source path relative to gabriel-source/, output .webp relative to ROOT)
 TARGETS: dict[str, tuple[str, str]] = {
     "catalog": ("bg-catalog-room.png", "host/src/shell/catalog-bg.webp"),
     **{
-        f"lobby-{gid}": (f"backgrounds/{src}", f"host/src/games/{gid}/lobby-bg.webp")
-        for gid, src in LOBBY_GAMES.items()
+        f"lobby-{gid}": (f"backgrounds/{lobby}", f"host/src/games/{gid}/lobby-bg.webp")
+        for gid, (lobby, _cover) in GAMES.items()
+    },
+    **{
+        f"cover-{gid}": (f"thumbs/{cover}", f"host/src/games/{gid}/cover.webp")
+        for gid, (_lobby, cover) in GAMES.items()
     },
 }
 
@@ -79,6 +85,11 @@ _LOBBY_NOTE = (
     "the real QR, the room code, the player tiles and a functional start button "
     "into fixed % slots (`.lobby-slot-*`, shell.css). Keep that geometry.\n"
 )
+_COVER_NOTE = (
+    "- 3:2 key art shown in the catalog coverflow (`host/src/games/<id>/"
+    "<Id>Cover.tsx` renders it as an `<img>`). The UI overlays a small vibe chip "
+    "top-left and an optional sticker top-right. Prompt: `tools/cover-art-prompts.md`.\n"
+)
 
 
 def where_for(key: str) -> tuple[str, str, str]:
@@ -89,6 +100,9 @@ def where_for(key: str) -> tuple[str, str, str]:
             "- The wordmark, heading, coverflow reel and start button are drawn "
             "live over this room; nothing is measured against it (`cover` fit).\n",
         )
+    if key.startswith("cover-"):
+        gid = key.removeprefix("cover-")
+        return (f"Catalog cover — {gid}", f"catalog cover for {gid}", _COVER_NOTE)
     gid = key.removeprefix("lobby-")
     return (f"Lobby background — {gid}", f"lobby for {gid}", _LOBBY_NOTE)
 
@@ -99,10 +113,11 @@ def build(key: str) -> None:
     if not src.is_file():
         sys.exit(f"missing source: {src}")
 
+    max_w = COVER_MAX_W if key.startswith("cover-") else MAX_W
     im = Image.open(src).convert("RGB")
-    if im.width > MAX_W:
-        h = round(im.height * MAX_W / im.width)
-        im = im.resize((MAX_W, h), Image.LANCZOS)
+    if im.width > max_w:
+        h = round(im.height * max_w / im.width)
+        im = im.resize((max_w, h), Image.LANCZOS)
 
     out = ROOT / out_rel
     out.parent.mkdir(parents=True, exist_ok=True)
