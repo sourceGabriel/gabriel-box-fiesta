@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { AvatarSpec } from '@party/shared';
-import { DEFAULT_AVATAR, sanitizeAvatar } from '@party/ui';
+import { DEFAULT_AVATAR, isGabsintoName, sanitizeAvatar } from '@party/ui';
 import { useRoomConnection } from './shell/useRoomConnection';
 import { JoinScreen } from './shell/JoinScreen';
 import { WaitingScreen } from './shell/WaitingScreen';
@@ -8,6 +8,15 @@ import { CONTROLLER_GAMES } from './games/registry';
 import './shell/shell.css';
 
 const AVATAR_STORAGE_KEY = 'party:avatar';
+const LEGENDS_STORAGE_KEY = 'party:legends';
+
+const loadLegendsUnlocked = (): boolean => {
+  try {
+    return localStorage.getItem(LEGENDS_STORAGE_KEY) === '1';
+  } catch {
+    return false;
+  }
+};
 
 const loadAvatar = (): AvatarSpec => {
   try {
@@ -27,6 +36,7 @@ function App() {
   const conn = useRoomConnection();
   const [playerName, setPlayerName] = useState('');
   const [avatar, setAvatar] = useState<AvatarSpec>(loadAvatar);
+  const [legendsUnlocked, setLegendsUnlocked] = useState(loadLegendsUnlocked);
 
   useEffect(() => {
     try {
@@ -35,6 +45,17 @@ function App() {
       // ignore storage errors (private mode, quota, disabled)
     }
   }, [avatar]);
+
+  // Typing the secret name once unlocks the hidden "Lendas" portrait row for good.
+  useEffect(() => {
+    if (legendsUnlocked || !isGabsintoName(playerName)) return;
+    setLegendsUnlocked(true);
+    try {
+      localStorage.setItem(LEGENDS_STORAGE_KEY, '1');
+    } catch {
+      // ignore storage errors
+    }
+  }, [playerName, legendsUnlocked]);
 
   const me = conn.roomPlayers.find((player) => player.id === conn.playerId);
   const myName = me?.name ?? (playerName.trim() || 'Você');
@@ -59,6 +80,7 @@ function App() {
         onPlayerNameChange={setPlayerName}
         avatar={avatar}
         onAvatarChange={setAvatar}
+        legendsUnlocked={legendsUnlocked}
         connected={conn.connected}
         onJoin={() => conn.joinOrReconnect({ playerName, avatar })}
       />
@@ -76,6 +98,7 @@ function App() {
         gameTagline={selectedGame?.tagline}
         contentTier={conn.contentTier}
         showContentTier={TIERED_GAMES.has(conn.selectedGameId)}
+        legendsUnlocked={legendsUnlocked}
         onAvatarChange={changeAvatar}
       />
     );

@@ -1,0 +1,175 @@
+#!/usr/bin/env python3
+"""
+Build the "Gabsinto" easter-egg preset pack for @party/ui.
+
+Dev-only, not part of any workspace build. Reads the owner's portrait renders
+from tools/gabsinto-source/ and writes ui/src/avatar-presets/:
+
+  <id>.webp        320x320 square face crop  — used as an <Avatar> preset
+  <id>-full.webp   <=1000px, aspect kept     — used in the "glory moment" splash
+  index.ts         typed url map (explicit imports, no import.meta.glob)
+  CREDITS.md       note on provenance
+
+These are AI renders of the repo owner, used locally only (LAN, no accounts,
+nothing distributed) as a hidden avatar set unlocked by the name "Gabsinto".
+
+Usage:
+  python tools/build-gabsinto.py            # source from tools/gabsinto-source/
+  python tools/build-gabsinto.py --import "C:/path/to/gabriel-source"
+      # copies the 8 source jpegs into tools/gabsinto-source/ first
+
+Requires Pillow (`pip install pillow`).
+"""
+
+from __future__ import annotations
+
+import argparse
+import shutil
+import sys
+from pathlib import Path
+
+try:
+    from PIL import Image, ImageOps
+except ImportError:
+    sys.exit("Pillow is required: pip install pillow")
+
+ROOT = Path(__file__).resolve().parent.parent
+SOURCE_DIR = ROOT / "tools" / "gabsinto-source"
+OUT_DIR = ROOT / "ui" / "src" / "avatar-presets"
+
+FACE_PX = 320          # square face crop, device-pixel size
+FULL_MAX = 1000        # longest edge of the glory-moment image
+FACE_QUALITY = 82
+FULL_QUALITY = 80
+
+# id, source filename, emoji, PT-BR label, (cx, cy, side_frac)
+#   cx/cy  = face centre as a fraction of the full image
+#   side_frac = crop-square side as a fraction of the SHORTER image edge
+MANIFEST: list[tuple[str, str, str, str, tuple[float, float, float]]] = [
+    ("rei",       "WhatsApp Image 2026-09-08 at 10.02.25 PM (1).jpeg", "\U0001F451", "O Rei",       (0.42, 0.36, 0.95)),
+    ("general",   "WhatsApp Image 2026-09-08 at 10.02.24 PM (1).jpeg", "\U0001F396", "O General",   (0.48, 0.22, 0.60)),
+    ("lorde",     "WhatsApp Image 2026-09-08 at 10.02.24 PM.jpeg",     "\U0001F3A9", "O Lorde",     (0.52, 0.30, 0.88)),
+    ("nobre",     "WhatsApp Image 2026-09-08 at 10.02.25 PM.jpeg",     "\U0001F56F", "O Nobre",     (0.52, 0.22, 0.60)),
+    ("executivo", "WhatsApp Image 2026-09-08 at 10.02.26 PM (2).jpeg", "\U0001F4BC", "O Executivo", (0.50, 0.28, 0.74)),
+    ("enigma",    "WhatsApp Image 2026-09-08 at 10.02.26 PM.jpeg",     "\U0001F3B7", "O Enigma",    (0.46, 0.26, 0.66)),
+    ("stand",     "WhatsApp Image 2026-09-08 at 10.02.25 PM (3).jpeg", "\U00002B50", "O Stand",     (0.55, 0.28, 0.50)),
+    ("feiticeiro","WhatsApp Image 2026-09-08 at 10.02.26 PM (1).jpeg", "\U0001F441", "O Feiticeiro",(0.30, 0.135, 0.36)),
+]
+
+
+def do_import(src: str) -> None:
+    src_dir = Path(src).expanduser().resolve()
+    if not src_dir.is_dir():
+        sys.exit(f"--import path is not a directory: {src_dir}")
+    SOURCE_DIR.mkdir(parents=True, exist_ok=True)
+    for _id, fname, *_ in MANIFEST:
+        s = src_dir / fname
+        if not s.is_file():
+            sys.exit(f"missing source file: {s}")
+        shutil.copy2(s, SOURCE_DIR / fname)
+    print(f"copied {len(MANIFEST)} source files into {SOURCE_DIR.relative_to(ROOT)}")
+
+
+def face_crop(im: Image.Image, cx: float, cy: float, side_frac: float) -> Image.Image:
+    w, h = im.size
+    side = int(min(w, h) * side_frac)
+    side = max(16, min(side, w, h))
+    left = int(cx * w - side / 2)
+    top = int(cy * h - side / 2)
+    left = max(0, min(left, w - side))
+    top = max(0, min(top, h - side))
+    box = im.crop((left, top, left + side, top + side))
+    return box.resize((FACE_PX, FACE_PX), Image.LANCZOS)
+
+
+def full_fit(im: Image.Image) -> Image.Image:
+    im = im.copy()
+    im.thumbnail((FULL_MAX, FULL_MAX), Image.LANCZOS)
+    return im
+
+
+def build() -> None:
+    if not SOURCE_DIR.is_dir():
+        sys.exit(f"no source dir — run with --import first ({SOURCE_DIR})")
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    for old in OUT_DIR.glob("*.webp"):
+        old.unlink()
+
+    for _id, fname, _emoji, _label, (cx, cy, sf) in MANIFEST:
+        src = SOURCE_DIR / fname
+        if not src.is_file():
+            sys.exit(f"missing source file: {src} (run --import)")
+        im = ImageOps.exif_transpose(Image.open(src)).convert("RGB")
+        face_crop(im, cx, cy, sf).save(OUT_DIR / f"{_id}.webp", "WEBP", quality=FACE_QUALITY, method=6)
+        full_fit(im).save(OUT_DIR / f"{_id}-full.webp", "WEBP", quality=FULL_QUALITY, method=6)
+        print(f"  {_id:11} <- {fname}")
+
+    write_index()
+    write_credits()
+    total = sum(f.stat().st_size for f in OUT_DIR.glob("*.webp"))
+    print(f"\nwrote {len(MANIFEST) * 2} webp ({total / 1024:.0f} KB) + index.ts + CREDITS.md to {OUT_DIR.relative_to(ROOT)}")
+
+
+def write_index() -> None:
+    lines = [
+        "/**",
+        " * @party/ui \u2014 \"Gabsinto\" easter-egg avatar presets. GENERATED by",
+        " * tools/build-gabsinto.py \u2014 do not edit by hand.",
+        " *",
+        " * AI portrait renders of the repo owner, used locally only. Unlocked in the",
+        " * join screen by typing the name \"Gabsinto\"; see isGabsintoName() in avatar.ts.",
+        " */",
+        "",
+    ]
+    for i, (_id, _f, _e, _l, _c) in enumerate(MANIFEST):
+        lines.append(f"import face_{_id} from './{_id}.webp';")
+        lines.append(f"import full_{_id} from './{_id}-full.webp';")
+    lines.append("")
+    lines.append("export interface AvatarPreset {")
+    lines.append("  /** stable id, stored in AvatarSpec.preset */")
+    lines.append("  id: string;")
+    lines.append("  emoji: string;")
+    lines.append("  label: string;")
+    lines.append("  /** square face crop \u2014 the avatar itself */")
+    lines.append("  face: string;")
+    lines.append("  /** full portrait \u2014 the glory-moment splash */")
+    lines.append("  full: string;")
+    lines.append("}")
+    lines.append("")
+    lines.append("export const AVATAR_PRESETS: readonly AvatarPreset[] = [")
+    for (_id, _f, emoji, label, _c) in MANIFEST:
+        lines.append(
+            f"  {{ id: '{_id}', emoji: '{emoji}', label: {label!r}, face: face_{_id}, full: full_{_id} }},"
+        )
+    lines.append("];")
+    lines.append("")
+    lines.append("export const AVATAR_PRESET_IDS: readonly string[] = AVATAR_PRESETS.map((p) => p.id);")
+    lines.append("")
+    lines.append("const BY_ID = new Map(AVATAR_PRESETS.map((p) => [p.id, p]));")
+    lines.append("export const getAvatarPreset = (id: string | undefined): AvatarPreset | undefined =>")
+    lines.append("  id ? BY_ID.get(id) : undefined;")
+    lines.append("")
+    (OUT_DIR / "index.ts").write_text("\n".join(lines), encoding="utf-8")
+
+
+def write_credits() -> None:
+    body = (
+        "# Gabsinto preset pack\n\n"
+        "AI-generated portrait renders of the repository owner (Gabriel), supplied by\n"
+        "the owner for use as a hidden avatar set in this local-only party-game app.\n\n"
+        "- Not distributed. The whole platform runs on a LAN with no accounts and no\n"
+        "  internet; these files never leave the host machine.\n"
+        "- Unlocked by typing the name \"Gabsinto\" on the join screen.\n"
+        "- Regenerate with `python tools/build-gabsinto.py` (sources in\n"
+        "  `tools/gabsinto-source/`).\n"
+    )
+    (OUT_DIR / "CREDITS.md").write_text(body, encoding="utf-8")
+
+
+if __name__ == "__main__":
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--import", dest="imp", metavar="DIR", help="copy the 8 source jpegs from DIR into tools/gabsinto-source/ then build")
+    args = ap.parse_args()
+    if args.imp:
+        do_import(args.imp)
+    build()

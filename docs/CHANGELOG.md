@@ -635,3 +635,24 @@ The game picker (`host/src/shell/CatalogScreen.tsx`) was a flat 7-card grid. Red
 
 ### §52
 - Zero edits to `core/`, `ws-server.ts`, `shared/`, the mobile app, or either shell's flow machine. Adding a game now also wants a `personality.ts` in its host folder (registry entry gains one field) — still a one-folder job.
+
+## 2026-09-08 — "Gabsinto" easter-egg avatar presets (branch `feature/gabsinto`)
+A hidden portrait avatar set unlocked by typing the name **"Gabsinto"** on the join screen.
+
+- **`AvatarSpec.preset?`** (shared, types-only) — when set to a known id, `<Avatar>` renders that portrait full-bleed (`<img class="ui-avatar-preset">`) and ignores every paperdoll field. `sanitizeAvatar` drops unknown values.
+- **`tools/build-gabsinto.py`** (Pillow, dev-only) — 8 owner-supplied AI portraits in `tools/gabsinto-source/` → `ui/src/avatar-presets/`: `<id>.webp` (320² face crop) + `<id>-full.webp` (≤1000px, reserved for the glory-moment splash) + typed `index.ts` (`AVATAR_PRESETS`, `getAvatarPreset`) + `CREDITS.md`. ~810 KB, committed. Presets: rei / general / lorde / nobre / executivo / enigma / stand / feiticeiro.
+- **`@party/ui`** — `avatar.ts` adds `isGabsintoName()` + `GABSINTO_NAME` and re-exports the preset catalog; `AvatarEditor` gains `presetsUnlocked` → a "🕵️ Lendas" thumbnail row (picking a normal attribute clears the preset). `.ui-avatar-preset` / `.ui-ae-legend*` CSS. New exports on `@party/ui`.
+- **server** — `avatarSchema` (`.strict()`) gains `preset` (optional, ≤24 chars). Structural validation only; the renderer clamps unknown ids.
+- **mobile** — `App.tsx` owns `legendsUnlocked`, persisted in `localStorage['party:legends']`, flipped once `isGabsintoName(name)` matches; threaded to `JoinScreen` + `WaitingScreen`.
+- `.gitignore` += `/gabriel-source/`.
+
+### Validation
+- 140 server tests · 7 `@party/ui` tests · `tsc` server/shared/ui clean · `oxlint` host/mobile clean (established `set-state-in-effect` advisory only) · 5-workspace build green.
+- **Live E2E**: type "Gabsinto" → Lendas row (8) appears → pick "O Rei" → editor preview + waiting-screen avatar become the portrait `<img>` → join a real room → `UPDATE_AVATAR` over the wire → host lobby roster renders the portrait. Picking any normal attribute reverts to the pixel paperdoll. Zero console errors.
+
+### Notes
+- The **glory-moment cameos** (a preset portrait filling the per-game victory overlays) are the next slice — the avatar itself shipped first.
+- Same batch: the owner **lifted the §47 "own visual identity" rule and the synth-only sound rule** — curated permissively-licensed public asset packs (art + per-game sound) are now allowed, bundled, with per-pack credits. `master-prompt.md` is left untouched; the override is recorded in CLAUDE.md + the change log.
+
+### §52
+- Platform-level change (like avatars / reactions): `shared` (1 optional field) + `@party/ui` + `mobile` shell + the protocol schema (1 optional field). No engine, no `core/`, no `ws-server` logic, no host game view. Adding a game is unaffected.

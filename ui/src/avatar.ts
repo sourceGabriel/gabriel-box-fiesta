@@ -5,6 +5,14 @@
  * with the catalog in that script.
  */
 import type { AvatarSpec } from '@party/shared';
+import { AVATAR_PRESET_IDS } from './avatar-presets';
+
+export {
+  AVATAR_PRESETS,
+  AVATAR_PRESET_IDS,
+  getAvatarPreset,
+  type AvatarPreset,
+} from './avatar-presets';
 
 export type AvatarOption = { id: string; label: string };
 export type AvatarColorOption = AvatarOption & { hex: string };
@@ -135,10 +143,19 @@ const has = (list: AvatarOption[], v: unknown): v is string =>
 export const bgHex = (id: string): string =>
   (BG_COLORS.find((o) => o.id === id) ?? BG_COLORS[0]).hex;
 
+/** The secret name that unlocks the preset portrait set on the join screen. */
+export const GABSINTO_NAME = 'gabsinto';
+
+const DIACRITICS = /[̀-ͯ]/g;
+
+/** True if `name` is the Gabsinto unlock word (case / accent / space-insensitive). */
+export const isGabsintoName = (name: string): boolean =>
+  name.normalize('NFD').replace(DIACRITICS, '').trim().toLowerCase() === GABSINTO_NAME;
+
 /** Clamp any untrusted input (wire payload, localStorage) to a valid spec. */
 export function sanitizeAvatar(raw: unknown): AvatarSpec {
   const r = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
-  return {
+  const spec: AvatarSpec = {
     gender: has(GENDERS, r.gender) ? r.gender : DEFAULT_AVATAR.gender,
     skin: has(SKIN_TONES, r.skin) ? r.skin : DEFAULT_AVATAR.skin,
     hair: has(HAIR_STYLES, r.hair) ? r.hair : DEFAULT_AVATAR.hair,
@@ -148,6 +165,10 @@ export function sanitizeAvatar(raw: unknown): AvatarSpec {
     hat: has(HATS, r.hat) ? r.hat : DEFAULT_AVATAR.hat,
     bg: has(BG_COLORS, r.bg) ? r.bg : DEFAULT_AVATAR.bg,
   };
+  if (typeof r.preset === 'string' && AVATAR_PRESET_IDS.includes(r.preset)) {
+    spec.preset = r.preset;
+  }
+  return spec;
 }
 
 /** A random valid avatar. Pass a seeded RNG in tests. */

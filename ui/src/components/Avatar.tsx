@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { AvatarSpec } from '@party/shared';
-import { bgHex, sanitizeAvatar } from '../avatar';
+import { bgHex, getAvatarPreset, sanitizeAvatar } from '../avatar';
 import {
   BODY_URL,
   EYES_URL,
@@ -92,9 +92,11 @@ export function Avatar({
   const a = sanitizeAvatar(spec);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const bg = bgHex(a.bg);
-  const key = `${a.gender}|${a.skin}|${a.hair}|${a.hairColor}|${a.eyes}|${a.shirt}|${a.hat}|${a.bg}`;
+  const preset = getAvatarPreset(a.preset);
+  const key = `${a.preset ?? ''}|${a.gender}|${a.skin}|${a.hair}|${a.hairColor}|${a.eyes}|${a.shirt}|${a.hat}|${a.bg}`;
 
   useEffect(() => {
+    if (preset) return;
     let cancelled = false;
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -137,6 +139,18 @@ export function Avatar({
     // `key` encodes every field of the sanitized spec that affects the paint.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
+
+  if (preset) {
+    return (
+      <img
+        src={preset.face}
+        alt={title ?? preset.label}
+        className={`ui-avatar ui-avatar-preset ${className}`.trim()}
+        style={{ width: size, height: size, background: bg }}
+        draggable={false}
+      />
+    );
+  }
 
   return (
     <canvas

@@ -23,6 +23,7 @@ const avatarSchema = z
     shirt: z.string().min(1).max(24),
     hat: z.string().min(1).max(24),
     bg: z.string().min(1).max(24),
+    preset: z.string().min(1).max(24).optional(),
   })
   .strict();
 

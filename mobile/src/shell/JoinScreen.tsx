@@ -9,6 +9,8 @@ interface JoinScreenProps {
   onPlayerNameChange: (name: string) => void;
   avatar: AvatarSpec;
   onAvatarChange: (avatar: AvatarSpec) => void;
+  /** Whether the hidden "Lendas" portrait row is unlocked. */
+  legendsUnlocked?: boolean;
   connected: boolean;
   onJoin: () => void;
   brandName?: string;
@@ -21,6 +23,7 @@ export function JoinScreen({
   onPlayerNameChange,
   avatar,
   onAvatarChange,
+  legendsUnlocked,
   connected,
   onJoin,
   brandName = 'UNO',
@@ -61,10 +64,19 @@ export function JoinScreen({
 
         <div className="field">
           <span className="field-label">Seu avatar</span>
-          <AvatarEditor value={avatar} onChange={onAvatarChange} name={playerName.trim() || undefined} />
-          <span className="avatar-credit">
-            Bonecos: arte LPC / OpenGameArt (CC-BY-SA · OGA-BY · CC0)
-          </span>
+          <AvatarEditor
+            value={avatar}
+            onChange={onAvatarChange}
+            name={playerName.trim() || undefined}
+            presetsUnlocked={legendsUnlocked}
+          />
+          {legendsUnlocked ? (
+            <span className="avatar-credit">🕵️ Lendas desbloqueadas — role até o fim das opções</span>
+          ) : (
+            <span className="avatar-credit">
+              Bonecos: arte LPC / OpenGameArt (CC-BY-SA · OGA-BY · CC0)
+            </span>
+          )}
         </div>
 
         <Button variant="success" className="join-submit" disabled={!canSubmit} onClick={onJoin}>

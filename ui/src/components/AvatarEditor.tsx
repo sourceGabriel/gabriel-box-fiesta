@@ -1,5 +1,6 @@
 import type { AvatarSpec } from '@party/shared';
 import {
+  AVATAR_PRESETS,
   BG_COLORS,
   EYE_COLORS,
   GENDERS,
@@ -23,14 +24,24 @@ export function AvatarEditor({
   value,
   onChange,
   name,
+  presetsUnlocked = false,
 }: {
   value: AvatarSpec;
   onChange: (next: AvatarSpec) => void;
   /** Optional name shown under the preview. */
   name?: string;
+  /** Show the hidden "Lendas" portrait row (unlocked by the Gabsinto name). */
+  presetsUnlocked?: boolean;
 }) {
   const spec = sanitizeAvatar(value);
-  const set = (patch: Partial<AvatarSpec>): void => onChange({ ...spec, ...patch });
+  // Any normal attribute change drops the preset and returns to the paperdoll.
+  const set = (patch: Partial<AvatarSpec>): void => {
+    const next: AvatarSpec = { ...spec, ...patch };
+    delete next.preset;
+    onChange(next);
+  };
+  const pickPreset = (id: string): void =>
+    onChange({ ...spec, preset: spec.preset === id ? undefined : id });
 
   return (
     <div className="ui-avatar-editor">
@@ -41,6 +52,27 @@ export function AvatarEditor({
           🎲 Surpresa
         </button>
       </div>
+
+      {presetsUnlocked ? (
+        <div className="ui-ae-row ui-ae-legends">
+          <span className="ui-ae-label">🕵️ Lendas</span>
+          <div className="ui-ae-scroll" role="group" aria-label="Lendas">
+            {AVATAR_PRESETS.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                className={`ui-ae-legend ${spec.preset === p.id ? 'is-on' : ''}`}
+                aria-label={p.label}
+                aria-pressed={spec.preset === p.id}
+                title={`${p.emoji} ${p.label}`}
+                onClick={() => pickPreset(p.id)}
+              >
+                <img src={p.face} alt="" draggable={false} />
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       <ChipRow label="Corpo" options={GENDERS} value={spec.gender} onPick={(id) => set({ gender: id })} />
       <SwatchRow label="Cor de pele" options={SKIN_TONES} value={spec.skin} onPick={(id) => set({ skin: id })} />

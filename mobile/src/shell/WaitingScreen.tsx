@@ -17,6 +17,8 @@ interface WaitingScreenProps {
   /** Room content intensity — shown as a tag when the selected game has a leve/pesado split. */
   contentTier?: ContentTier;
   showContentTier?: boolean;
+  /** Whether the hidden "Lendas" portrait row is unlocked. */
+  legendsUnlocked?: boolean;
   /** Persist the new avatar locally and push it to the server (UPDATE_AVATAR). */
   onAvatarChange?: (avatar: AvatarSpec) => void;
 }
@@ -32,6 +34,7 @@ export function WaitingScreen({
   gameTagline,
   contentTier,
   showContentTier,
+  legendsUnlocked,
   onAvatarChange,
 }: WaitingScreenProps) {
   const [editing, setEditing] = useState(false);
@@ -73,7 +76,7 @@ export function WaitingScreen({
 
       {editing ? (
         <section className="waiting-panel waiting-avatar-editor">
-          <AvatarEditor value={draft} onChange={setDraft} />
+          <AvatarEditor value={draft} onChange={setDraft} presetsUnlocked={legendsUnlocked} />
           <div className="waiting-editor-actions">
             <Button variant="ghost" onClick={() => setEditing(false)}>Cancelar</Button>
             <Button variant="success" onClick={save}>Salvar</Button>

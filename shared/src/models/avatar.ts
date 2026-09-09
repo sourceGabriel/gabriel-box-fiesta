@@ -25,4 +25,11 @@ export type AvatarSpec = {
   hat: string;
   /** Background colour id. */
   bg: string;
+  /**
+   * Optional "preset" avatar id — a hidden portrait set (`@party/ui`
+   * `AVATAR_PRESETS`) unlocked in the join screen. When set and known, the
+   * renderer shows that portrait full-bleed and ignores every field above.
+   * Unknown values are dropped at render time.
+   */
+  preset?: string;
 };

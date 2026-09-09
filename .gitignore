@@ -13,3 +13,6 @@ coverage/
 
 # runtime data (task-list helper, reverted feature)
 server/data/
+
+# owner portrait drop folder (sources live in tools/gabsinto-source/)
+/gabriel-source/

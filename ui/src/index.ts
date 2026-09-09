@@ -20,7 +20,13 @@ export {
   sanitizeAvatar,
   randomAvatar,
   bgHex,
+  isGabsintoName,
+  GABSINTO_NAME,
+  AVATAR_PRESETS,
+  AVATAR_PRESET_IDS,
+  getAvatarPreset,
   type AvatarOption,
   type AvatarColorOption,
+  type AvatarPreset,
 } from './avatar';
 export { createSounds, getSounds, type Sounds, type SoundName } from './sound';
