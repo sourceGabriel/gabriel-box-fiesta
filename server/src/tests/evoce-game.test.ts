@@ -180,6 +180,29 @@ describe('EvoceGame — legenda / rabisco / final', () => {
       game.handleAction(drawer.id, { type: 'submitDrawing', drawing: { strokes: [{ color: '#000', width: 8, points: new Array(5000).fill(1) }] } }),
     ).toThrow(/INVALID_ACTION/);
   });
+
+  it('clamps a big-but-valid drawing to the total-points budget instead of rejecting it', () => {
+    const game = mkGame();
+    game.start();
+    playRound(game);
+    playRound(game); // rabisco
+    const targetId = game.getPublicState().targetId;
+    const big = {
+      strokes: Array.from({ length: 200 }, () => ({
+        color: '#000',
+        width: 8,
+        points: new Array(500).fill(0).map((_, i) => (i % 2 ? 500 : 400)),
+      })),
+    };
+    for (const p of P4) {
+      if (p.id === targetId) continue;
+      expect(() => game.handleAction(p.id, { type: 'submitDrawing', drawing: big })).not.toThrow();
+    }
+    const sub = game.getPublicState().submissions.find((s) => s.drawing);
+    const total = sub!.drawing!.strokes.reduce((n, s) => n + s.points.length, 0);
+    expect(total).toBeLessThanOrEqual(12_000); // MAX_TOTAL_POINTS * 2
+    expect(sub!.drawing!.strokes[0].points.every((n) => Number.isInteger(n))).toBe(true);
+  });
 });
 
 describe('EvoceGame — full match, timeouts, pause', () => {

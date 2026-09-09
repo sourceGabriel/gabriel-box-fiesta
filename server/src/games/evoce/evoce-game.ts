@@ -22,6 +22,7 @@ import {
   MAX_CAPTION_LEN,
   MAX_POINTS_PER_STROKE,
   MAX_STROKES,
+  MAX_TOTAL_POINTS,
   PICK_WINNER_BONUS,
   RESULTS_MS,
   ROUND_PLAN,
@@ -50,13 +51,18 @@ type InternalSubmission = {
 
 /** Defensive copy + clamp of a drawing payload (schema already bounds it; this keeps it tidy). */
 function sanitizeDrawing(drawing: EvoceDrawing): EvoceDrawing {
-  return {
-    strokes: drawing.strokes.slice(0, MAX_STROKES).map((s) => ({
-      color: s.color,
-      width: s.width,
-      points: s.points.slice(0, MAX_POINTS_PER_STROKE * 2),
-    })),
-  };
+  let budget = MAX_TOTAL_POINTS * 2;
+  const strokes: EvoceDrawing['strokes'] = [];
+  for (const s of drawing.strokes.slice(0, MAX_STROKES)) {
+    if (budget <= 0) break;
+    const points = s.points
+      .slice(0, Math.min(MAX_POINTS_PER_STROKE * 2, budget))
+      .map((n) => Math.round(Math.max(0, Math.min(1000, n))));
+    if (points.length < 2) continue;
+    budget -= points.length;
+    strokes.push({ color: s.color, width: s.width, points });
+  }
+  return { strokes };
 }
 
 /**

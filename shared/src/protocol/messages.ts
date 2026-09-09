@@ -12,6 +12,7 @@ export type ClientMessageType =
   | 'PAUSE_GAME'
   | 'RESUME_GAME'
   | 'KICK_PLAYER'
+  | 'LEAVE_ROOM'
   | 'SEND_REACTION'
   | 'UPDATE_AVATAR'
   | 'SET_CONTENT_TIER'
@@ -56,6 +57,8 @@ export type ClientMessage =
   | Envelope<'PAUSE_GAME', {}>
   | Envelope<'RESUME_GAME', {}>
   | Envelope<'KICK_PLAYER', { targetPlayerId: string }>
+  /** This player leaves the room for good (phone "back to start"). Server removes them immediately. */
+  | Envelope<'LEAVE_ROOM', {}>
   /** Generic emoji reaction — the server rebroadcasts it to the room as REACTION. */
   | Envelope<'SEND_REACTION', { reaction: string }>
   /** Change your avatar. Accepted only while the room is still `accepting_players` (no game running). */

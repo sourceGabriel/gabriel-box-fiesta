@@ -14,8 +14,29 @@ import type { EvoceDrawing, EvoceStroke } from '@party/shared';
 const SPACE = 1000;
 const COLORS = ['#111827', '#ef4444', '#f59e0b', '#22c55e', '#3b82f6', '#a855f7', '#ffffff'];
 const WIDTHS = [6, 14, 28];
-const MIN_STEP = SPACE / 140; // drop points closer than this to keep strokes light
-const MAX_STROKES = 500;
+const MIN_STEP = SPACE / 110; // drop points closer than this to keep strokes light
+const MAX_STROKES = 240;
+/** Keep the submitted stroke list comfortably under the socket frame cap. */
+const MAX_PAYLOAD_CHARS = 60_000;
+
+/** Decimate points (keeping endpoints) until the serialized drawing fits the wire. */
+function fitDrawing(strokes: EvoceStroke[]): EvoceStroke[] {
+  let out = strokes.slice(0, MAX_STROKES).map((s) => ({
+    color: s.color,
+    width: s.width,
+    points: s.points.map((n) => Math.round(n)),
+  }));
+  for (let pass = 0; pass < 6 && JSON.stringify({ strokes: out }).length > MAX_PAYLOAD_CHARS; pass += 1) {
+    out = out.map((s) => {
+      if (s.points.length <= 6) return s;
+      const kept: number[] = [];
+      for (let i = 0; i < s.points.length - 2; i += 4) kept.push(s.points[i], s.points[i + 1]);
+      kept.push(s.points[s.points.length - 2], s.points[s.points.length - 1]);
+      return { ...s, points: kept };
+    });
+  }
+  return out;
+}
 
 export function DrawingCanvas({
   prompt,
@@ -92,7 +113,10 @@ export function DrawingCanvas({
     const rect = canvas.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * SPACE;
     const y = ((e.clientY - rect.top) / rect.height) * SPACE;
-    return [Math.max(0, Math.min(SPACE, x)), Math.max(0, Math.min(SPACE, y))];
+    return [
+      Math.round(Math.max(0, Math.min(SPACE, x))),
+      Math.round(Math.max(0, Math.min(SPACE, y))),
+    ];
   };
 
   const start = (e: React.PointerEvent) => {
@@ -187,7 +211,7 @@ export function DrawingCanvas({
         type="button"
         className="ui-btn ui-btn--primary ui-draw-send"
         disabled={disabled || submitted || !hasInk}
-        onClick={() => onSubmit({ strokes: strokesRef.current.map((s) => ({ ...s, points: [...s.points] })) })}
+        onClick={() => onSubmit({ strokes: fitDrawing(strokesRef.current) })}
       >
         {submitted ? '✓ enviado' : 'Enviar desenho'}
       </button>

@@ -34,7 +34,9 @@ export const JOKER_COUNT = 2;
 /** Captions are trimmed then hard-clamped. */
 export const MAX_CAPTION_LEN = 100;
 /** Drawing payload guards (a doodle is well under these). */
-export const MAX_STROKES = 500;
-export const MAX_POINTS_PER_STROKE = 512;
+export const MAX_STROKES = 240;
+export const MAX_POINTS_PER_STROKE = 256;
+/** Hard cap on total points (x,y pairs) across a whole drawing — keeps it well under the socket frame cap. */
+export const MAX_TOTAL_POINTS = 6000;
 /** Logical drawing canvas is a COORD_SPACE × COORD_SPACE square. */
 export const COORD_SPACE = 1000;

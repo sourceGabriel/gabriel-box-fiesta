@@ -72,7 +72,9 @@ export class PartyServer {
   private readonly wss = new WebSocketServer({
     server: this.http,
     path: '/ws',
-    maxPayload: 16 * 1024,
+    // Big enough for a full É Você! drawing (a stroke list) or a voting-phase
+    // public state carrying several of them; still bounded against abuse.
+    maxPayload: 128 * 1024,
   });
 
   constructor(
@@ -81,6 +83,9 @@ export class PartyServer {
   ) {
     this.startedPort = port;
     this.wss.on('connection', (socket) => this.onConnection(socket));
+    // A per-socket protocol error (e.g. an oversized frame — WS_ERR_UNSUPPORTED_MESSAGE_LENGTH)
+    // emits 'error' on the socket; without a listener Node crashes the whole process.
+    this.wss.on('error', (error) => logger.warn({ err: (error as Error).message }, 'WebSocket server error'));
     this.timerInterval = setInterval(() => this.tickTimers(), 500);
   }
 
@@ -135,6 +140,17 @@ export class PartyServer {
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown error';
         this.send(socket, 'ERROR', { code: 'BAD_REQUEST', message, recoverable: true });
+      }
+    });
+
+    // Protocol-level socket errors (oversized frame, bad UTF-8, …). `ws` emits
+    // 'error' here and, unhandled, it takes down the process — log and drop.
+    socket.on('error', (error) => {
+      logger.warn({ err: (error as Error).message }, 'WebSocket connection error — closing socket');
+      try {
+        socket.terminate();
+      } catch {
+        // already gone
       }
     });
 
@@ -344,6 +360,23 @@ export class PartyServer {
       this.playerConnections.delete(targetPlayerId);
       this.broadcast('PLAYER_LEFT', { playerId: targetPlayerId });
       this.broadcastRoomState();
+      return;
+    }
+
+    if (message.type === 'LEAVE_ROOM') {
+      // The player is walking away for good (phone "back to start"). Remove them
+      // now instead of waiting out the disconnect grace; forget this socket's identity.
+      if (ctx.playerId) {
+        const leavingId = ctx.playerId;
+        this.clearDisconnectTimer(leavingId);
+        room.kickPlayer(leavingId);
+        this.playerConnections.delete(leavingId);
+        ctx.playerId = undefined;
+        ctx.role = null;
+        this.broadcast('PLAYER_LEFT', { playerId: leavingId });
+        this.broadcastRoomState();
+        this.flushAndPublishState();
+      }
       return;
     }
 
