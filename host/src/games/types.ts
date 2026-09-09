@@ -32,6 +32,8 @@ export interface GamePersonality {
   vibe: string;
   /** Acid PT-BR one-liner shown under the focused card. */
   blurb: string;
+  /** One plain sentence on how the game actually works, shown under the blurb. */
+  how: string;
 }
 
 /** One registered game on the host: its in-game view + its catalog cover art + its personality. */

@@ -5,4 +5,5 @@ export const personality: GamePersonality = {
   accent: '#ff3caf',
   vibe: 'EGO',
   blurb: 'Suas melhores piadas julgadas por quem te conhece demais.',
+  how: 'O celular te dá prompts; responda com a piada mais afiada. A sala vota o vencedor de cada duelo.',
 };

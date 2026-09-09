@@ -280,3 +280,12 @@ The project is currently between the room lifecycle phase and the actual host ga
 - **Coup got sound** (new `coup/sound-map.ts` + `CoupHostView` wiring + "🔊 Som" toggle) — closes the D6 sound half.
 - 140 server tests / 8 ui tests (2 new) / tsc+oxlint / 5-ws build all green. Live: sample fetch+decode+play verified on the host, lazy chunk splits, 0 console errors.
 - All clips Kenney CC0 1.0; `ui/src/sound-assets/CREDITS.md` maps each to its original.
+
+## 2026-09-08 — crash fix + mobile leave/accessibility + catalog how-to (branch `feature/mais-diversao`, off `feature/gabsinto`)
+User report: É Você! drawing → clicking undo/submit a big drawing → `RangeError: Max payload size exceeded` (WS 1009) **crashed the whole server process** (unhandled `'error'` on the ws socket).
+- **Crash fix**: `ws-server.ts` `socket.on('error')` (log + terminate) + `wss.on('error')`; `maxPayload` 16KB→128KB. `DrawingCanvas`: int coords, `fitDrawing()` decimates strokes to <60KB before submit, `MAX_STROKES` 500→240. `evoce` `MAX_POINTS_PER_STROKE` 512→256 + `MAX_TOTAL_POINTS` 6000; `sanitizeDrawing` rounds+clamps+budgets. Test +1 (140→141). Live-verified: 400KB frame closes just that socket, server survives.
+- **Leave room**: new `LEAVE_ROOM` msg (shared + server zod + handler → immediate kick + forget socket identity). `useRoomConnection.leaveRoom()` + "◀ Sair e trocar de sala" on `WaitingScreen` → back to JoinScreen.
+- **Accessibility**: `TextScaleButton` (floating `A＋`, bottom-left) cycles root font-size 100/115/130/145% (rem-based), persists `localStorage['party:textscale']`. Avatars bigger: `PlayerRoster` 30/22→40/32, in-game pills 20→30 (evoce 28→36).
+- **Catalog how-to**: `GamePersonality.how` (one plain mechanics sentence) rendered under the blurb in the coverflow; one line per `personality.ts` (×7).
+- 141 server / 8 ui tests, tsc+oxlint, 5-ws build green.
+- **Deferred (same user message, own slices)**: configurable round/question counts per game; transitional scoreboard scenes + player taunts (roast last, hype leader); Taylor Swift facts in trivia/Lorota banks; per-game background art.

@@ -18,6 +18,8 @@ Local (LAN, no internet, no accounts, in-memory) "Jackbox-style" party-game plat
 - Change history + rationale: `docs/CHANGELOG.md` · Gap vs spec: `docs/repository-gap-review.md` · Short log: `.copilot/logs/changes-log.md`
 
 ## Current state (2026-09-08)
+**Batch on `feature/mais-diversao`** (off `feature/gabsinto`, not committed→ now committed, not merged): **(1) crash fix** — an oversized WS frame (a big É Você! drawing past `maxPayload`) crashed the whole server; now `ws-server` has `socket.on('error')`/`wss.on('error')` handlers, `maxPayload` 16KB→128KB, `DrawingCanvas` sends int coords + `fitDrawing()` decimation, `evoce` `sanitizeDrawing` rounds+clamps+`MAX_TOTAL_POINTS`. **(2) `LEAVE_ROOM`** msg + `useRoomConnection.leaveRoom()` + "◀ Sair e trocar de sala" on `WaitingScreen` (phone back to code entry after a game/disconnect). **(3) accessibility** — `mobile/src/shell/TextScaleButton.tsx` (floating `A＋`, cycles root font-size 100–145%, persists `party:textscale`); bigger avatars (`PlayerRoster` 40/32, in-game pills 30). **(4) `GamePersonality.how`** — a plain mechanics sentence under the acid blurb in the coverflow. **Server tests 141.** Deferred (asked, own slices): configurable round/question counts; transitional scoreboard scenes + player taunts; Taylor Swift facts; per-game background art.
+
 **§47 LIFTED (2026-09-08):** the owner dropped the "own visual identity" rule **and** the synth-only sound rule. Curated **permissively-licensed public asset packs** (art + per-game sound) are now allowed — bundled (no runtime internet), CC0/CC-BY/OGA-BY/MIT-like only, `CREDITS.md` per pack, no heavy deps. `master-prompt.md` stays untouched (historical); the override lives here + `docs/CHANGELOG.md` + `.copilot/logs/changes-log.md` + memory.
 
 **Real sound pack DONE (2026-09-08, branch `feature/gabsinto`):** first use of the lift. `@party/ui` `Sounds` gained `sample(id, opts?)` + `play(spec: SoundSpec)` (`SoundSpec = SoundName | { sample, gain?, rate? }`); clips decode once to `AudioBuffer`, share the master gain + mute. Pack `ui/src/sound-assets/` (24 CC0 Kenney `.ogg`, ~260KB, `CREDITS.md`) built by `tools/build-sound-pack.py` (`--import` from 3 Kenney packs; `tools/sound-source/` gitignored, only the renamed output committed). Loaded via lazy `import()` on first sample → **mobile ships zero audio**, host gets a ~1KB lazy chunk. All 7 `host/src/games/<id>/sound-map.ts` return `SoundSpec` now (casino card sounds, chip/clash for Coup, `ui-*` clips, Music-Jingles stingers for round/game-over/ZAP!/Curinga; synth kept for turn ticks + the UNO call). **Coup got sound** (new `sound-map.ts` + `CoupHostView` wiring + "🔊 Som" toggle — closes the D6 sound half). Next: **per-game art** (backgrounds / covers / icons from CC0 packs; coverflow SVG covers stay as fallback).
@@ -130,7 +132,7 @@ Monorepo, npm workspaces: `server` · `shared` (**types-only, no runtime, no zod
 ## Validation
 `/validate` runs it all and reports one line. Under the hood:
 ```
-npm run -w server test       # must stay green (currently 140)
+npm run -w server test       # must stay green (currently 141)
 npm run -w server lint        # tsc --noEmit
 npm run -w host lint          # oxlint
 npm run -w mobile lint        # oxlint

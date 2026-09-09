@@ -671,3 +671,32 @@ The host sound was synth-only (8 Web-Audio blips). Added a **bundled CC0 clip pa
 
 ### License
 - All 24 clips are **Kenney.nl, CC0 1.0** (public domain). `ui/src/sound-assets/CREDITS.md` lists every clip → original. First use of the §47 lift.
+
+## 2026-09-08 — crash fix + mobile leave/accessibility + catalog how-to (branch `feature/mais-diversao`)
+
+### Fix: server no longer crashes on an oversized WebSocket frame
+An elaborate É Você! drawing serialised past the 16 KB `maxPayload` cap; `ws` then emitted an unhandled `'error'` on the socket and **took down the whole server process** (`WS_ERR_UNSUPPORTED_MESSAGE_LENGTH`).
+- `ws-server.ts` — `socket.on('error', …)` per connection (log + `terminate()`) and `wss.on('error', …)`; `maxPayload` raised 16 KB → 128 KB (a full drawing / a voting-phase public state carrying several).
+- `DrawingCanvas` — points are now integers (`Math.round`), `MIN_STEP` a touch larger, `MAX_STROKES` 500 → 240, and `fitDrawing()` decimates the stroke list (keeping endpoints) until it serialises under 60 KB before submit.
+- `server/src/games/evoce` — `MAX_POINTS_PER_STROKE` 512 → 256, new `MAX_TOTAL_POINTS` (6000 pairs) budget; `sanitizeDrawing` rounds + clamps + enforces the budget instead of trusting the schema. New test: a big-but-valid drawing is clamped, not rejected. **Server tests 140 → 141.**
+
+### Mobile: leave the room / go back to the start
+- New `LEAVE_ROOM` client message (`shared` + server zod + `ws-server` handler — removes the player immediately, forgets the socket identity, broadcasts `PLAYER_LEFT`).
+- `useRoomConnection.leaveRoom()` clears the stored session + local state (socket stays up). `WaitingScreen` gains a "◀ Sair e trocar de sala" button, so after a game ends / a disconnect you can drop back to the code-entry screen and join a different room.
+
+### Accessibility
+- **Text scale** — a floating `A＋` button (bottom-left, `mobile/src/shell/TextScaleButton.tsx`) cycles the whole UI's text 100 % → 115 % → 130 % → 145 % by bumping the root font-size (every mobile size is in rem). Persists per device (`localStorage['party:textscale']`).
+- **Bigger avatars** — `PlayerRoster` mini-avatars 30/22 → 40/32 px; every in-game roster pill avatar 20 → 30 px (28 → 36 in É Você!).
+
+### Catalog: how each game actually works
+- `GamePersonality` gains a `how` field — one plain sentence of real mechanics — shown under the acid blurb on the focused coverflow card. One line added to each of the 7 `personality.ts`.
+
+### Deferred to their own slices (asked in the same message)
+- Configurable round / question counts per game (a lobby control).
+- Transitional scoreboard scenes between rounds + dynamic player taunts (roast the last place, hype the leader).
+- Taylor Swift facts in the trivia / Lorota! banks.
+- Per-game background art (CC0 packs).
+
+### Validation
+- 141 server tests · 8 `@party/ui` tests · `tsc` + `oxlint` clean · 5-workspace build green.
+- Live: a 400 KB frame now closes just that socket (server stays up, logs a warn); a 30 KB frame is accepted; the mobile leave button returns to Join; the text-scale button steps + persists the root font-size; the catalog shows the `how` line.

@@ -436,6 +436,13 @@ ul, ol {
   color: color-mix(in srgb, var(--game-accent) 55%, var(--text));
 }
 
+.cf-how {
+  max-width: 52ch;
+  font-size: clamp(0.8rem, 1.5vmin, 1.05rem);
+  color: var(--muted);
+  margin-top: -0.2rem;
+}
+
 .cf-start {
   border: 0;
   border-radius: 999px;

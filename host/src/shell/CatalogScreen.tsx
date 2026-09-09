@@ -22,6 +22,7 @@ const FALLBACK_PERSONALITY: GamePersonality = {
   accent: '#f59e0b',
   vibe: 'FESTA',
   blurb: 'Chama a galera e senta o dedo.',
+  how: 'Pega o celular, entra na sala e segue o que a TV pedir.',
 };
 
 /** Custom-property style bag — TS's CSSProperties has no `--*` index. */
@@ -168,6 +169,7 @@ export function CatalogScreen({
 
       <div className="cf-hero" key={active?.id}>
         <p className="cf-blurb">{activeP.blurb}</p>
+        <p className="cf-how">{activeP.how}</p>
         {active ? (
           <button type="button" className="cf-start" onClick={() => pick(active.id)}>
             ▶ Iniciar {active.name}
