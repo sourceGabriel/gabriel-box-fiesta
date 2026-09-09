@@ -550,4 +550,11 @@ User report: É Você! drawing → clicking undo/submit a big drawing → `Range
   as they lock; modifier step mandatory; médium's floor-average scoring; guesser
   dials hidden until reveal. Full write-up in
   `~/.claude/plans/dilema-sintonia-rework-2026-09.md`.
-- **Awaiting owner OK to commit.** Tracking docs updated in this batch.
+- **Committed** on `feature/dilema-sintonia-rework`: `8b24c23` (rework) then a
+  review pass `1ace939`..`cee8122` + `bf1ffa1` + `96874e3`. Not merged.
+- **Review pass found + fixed a real bug:** a Dilema pick step could hang if a
+  team's last connected member disconnected mid-step (`maybeLockTeam` checked the
+  proposal before the empty-team case). Plus Sintonia drip-race hardening, dial
+  reset on a new round, several controller UX fixes, and integration tests that
+  drive the new wire verbs. Scripted wire smoke played both games to gameover.
+  **191 server tests.**

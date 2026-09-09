@@ -50,13 +50,35 @@ their own dial**. Researched the official Trial by Trolley rules first.
   Sintonia block updated (no more `teams`). `spectrums.ts` untouched.
 
 ### Validation
-Server 187 tests green, `tsc --noEmit` clean, host/mobile oxlint clean, 5-workspace
+Server 191 tests green, `tsc --noEmit` clean, host/mobile oxlint clean, 5-workspace
 build green. Live smoke (host + 3 phones): Dilema full round — 3 consensus steps
 (incl. a cross-track modifier), Maquinista verdict with no clock, scoring, round 2
 with re-split + rotation. Sintonia round — médium clue (target 93), two guessers
 lock 84/96 → +5/+7, médium +6, multi-needle reveal, cumulative scoreboard, round 2
-médium rotation. 0 console errors. §52 held — no edits to `core/`, `ws-server.ts`,
-`shared/protocol`, or either shell flow.
+médium rotation. Scripted wire smoke ran **both games to gameover** (Dilema ×5
+rounds, Sintonia ×6 rounds — proximity bands, floor-average médium points, médium
+rotation 4/4, monotonic standings, no timer at gameover). 0 console errors.
+§52 held — no edits to `core/`, `ws-server.ts`, `shared/protocol`, or either shell
+flow.
+
+### Review-pass fixes (commits `1ace939`..`cee8122`)
+- **Bug — Dilema round could hang.** If a team's *last* connected member
+  disconnected mid pick-step, `maybeLockTeam` bailed on the null proposal before
+  the empty-team check, so the step never locked. Now an emptied team auto-locks
+  (standing proposal or a random candidate). Regression test added.
+- Sintonia: `setGuess` after a lock / after the phase flips is a silent no-op
+  (the slider drips ~8×/s and races); reveal no longer scores a guesser who left
+  without ever locking (no phantom 50 in the médium's average); the guesser's
+  dial snaps back to centre on a new round; `guessers*Count` counts connected
+  guessers.
+- Dilema: a locked team no longer shows a dead "reabrir" button; the modifier's
+  target shows in the team proposal; picking non-Maquinistas now see the board;
+  clearer pick-phase banners; the Maquinista reports `pendingDecision: 'wait'`
+  during picks.
+- Sintonia dial: taller viewBox so initials / "alvo N" never clip; per-needle
+  "+N" dropped (points are in the scoreboard below).
+- Integration tests now drive `propose` (Dilema) and `setGuess`/`lockGuess`
+  (Sintonia) over the wire.
 
 ## 2026-09-04
 ### Added
