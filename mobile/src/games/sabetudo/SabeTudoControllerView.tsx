@@ -60,6 +60,7 @@ export function SabeTudoControllerView({
           <div className="sabetudo-big">⏸</div>
           <h2>Partida pausada</h2>
           <p className="hint">Aguardando o anfitrião continuar…</p>
+          <button type="button" className="sabetudo-howto-open" onClick={() => setShowHowTo(true)}>? Como jogar</button>
         </section>
       ) : over ? (
         <section className="sabetudo-panel sabetudo-center">

@@ -34,6 +34,14 @@ export interface GamePersonality {
   blurb: string;
   /** One plain sentence on how the game actually works, shown under the blurb. */
   how: string;
+  /** 2–3 punch words for the strip under the game name (e.g. ["Menta", "Cace a verdade"]). */
+  tags?: string[];
+  /** Rough match length, shown as a card stat (e.g. "~10 min"). */
+  duration: string;
+  /** Chaos/intensity label, shown as a card stat (e.g. "Caos alto"). */
+  chaos: string;
+  /** Optional sticky-note stamp on the focused card (e.g. "Todo mundo mente", "18"). */
+  badge?: string;
 }
 
 /** One registered game on the host: its in-game view + its catalog cover art + its personality. */
@@ -43,4 +51,11 @@ export interface HostGameEntry {
   Cover: FC;
   /** Catalog personality — accent + vibe + acid blurb. */
   personality: GamePersonality;
+  /**
+   * Optional full-bleed lobby backdrop (imported `.webp` URL). When set, the
+   * lobby renders in "art mode": the image is letterboxed at 16:9 and the live
+   * bits (QR + code, player tiles, start button) drop into fixed % slots that
+   * match the panel frames painted into the art. Omit for the plain card lobby.
+   */
+  lobbyBg?: string;
 }

@@ -212,6 +212,12 @@ h2 {
   background: rgba(248, 113, 113, 0.1);
 }
 
+.waiting-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+}
 .waiting-edit-avatar {
   align-self: center;
   border: 1px solid var(--line);

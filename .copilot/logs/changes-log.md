@@ -341,3 +341,47 @@ User report: É Você! drawing → clicking undo/submit a big drawing → `Range
   gitignored `host/public/sound-local/` and writes `manifest.json` (6 wired cues +
   15 unmapped extras). Run + verified: 21 clips, host serves `/sound-local/*`,
   `play({cue})` fetches the owner clip. Nothing downloaded is committed.
+
+## 2026-09-09 — catalog + lobby screens over owner art (branch `feature/telas-com-arte`, off `develop`)
+
+- Owner supplied two AI room renders + two target mockups. `gabriel-source/*` (gitignored)
+  renamed to descriptive names (`bg-catalog-room.png`, `bg-lobby-lorota.png`, `mock-*`,
+  `ref-whatsapp-*`); the two targets kept as `mock-catalog-target.png` /
+  `mock-lobby-lorota-target.png`.
+- `tools/build-screen-bg.py` (Pillow, dev-only) bakes `host/src/shell/catalog-bg.webp`
+  (~280KB) + `host/src/games/lorota/lobby-bg.webp` (~215KB) + `*.CREDITS.md` from those
+  sources. `build-attract-bg.py` left as-is for the attract backdrop.
+- **Catalog** (`CatalogScreen.tsx`): the coverflow now sits over `catalog-bg.webp`
+  (`cover` fit, vignette + accent wash — nothing measured against the art, like attract).
+  `BrandMark` "Box Fiesta" + "Escolha um jogo" + acid subtitle on top. Cards gain a
+  `vibe` tab, an optional torn sticky-note `badge`, a `tags` strip ("Menta · Cace a
+  verdade") and a stats row (players · duration · chaos). Green brush `▶ Iniciar` pill,
+  position dots + `n / total`, keyboard hint. `GamePersonality` gains `tags?`, `duration`,
+  `chaos`, `badge?` — filled in all 7 `host/src/games/<id>/personality.ts`.
+- **Lobby** (`LobbyScreen.tsx`): `HostGameEntry` gains optional `lobbyBg` (imported webp).
+  When set → **art mode**: the image is letterboxed at 16:9 (`.lobby-stage`,
+  `container-type: size`) and the live bits drop into fixed % slots tuned to the painted
+  panel frames — QR + `Código da sala` + code + url (left panel), player tiles + empty
+  "aguardando" slots (centre panel), and a real functional start button over the painted
+  one. The "COMO JOGAR?" panel + stats strip + wordmark stay as painted art. Controls that
+  don't fit (trocar de jogo, Rodadas, Conteúdo Leve/Pesado, online count) sit in a slim
+  glass strip pinned to the bottom edge. `cq*` units scale every overlay with the stage.
+  Only `lorota` ships a `lobbyBg`; the other 6 games keep the unchanged plain card lobby.
+- **Mobile**: the "? Como jogar" button (already per-game) is now also shown on the
+  `paused` screen of all 6 games that have a `HowToPlay` (coup/zap/lorota/sabetudo/fdp/
+  evoce); UNO has none, unchanged.
+- §52 held — no edits to `core/`, `ws-server.ts`, `shared/`, or either shell flow.
+  144 server tests, tsc + oxlint clean, 5-workspace build green. Live-verified: catalog
+  over the room art, Lorota lobby with 2 phones joined.
+
+### follow-ups (same branch, after owner review)
+- Owner: "reduce the green fog over the player info/photo" — `.lobby-slot-players li`
+  background `rgba(10,20,18,.55)` → `rgba(6,9,12,.82)` (darker, neutral, more opaque so the
+  painted teal panel shows through less), border accent 30% → 22%, `.lobby-slot` text
+  `#eaf6f2` → `#eef2f6`, players `<h2>` gets a text-shadow.
+- Owner: "once a game is chosen, let players read the instructions while waiting" —
+  `mobile/src/games/registry.ts` adds `CONTROLLER_HOW_TO_PLAY` (id → the game's `HowToPlay`
+  overlay `{ onClose }`; 6 games, UNO has none; the scoped CSS already ships with the
+  statically-imported controller views). `App.tsx` passes it to `WaitingScreen` by
+  `conn.selectedGameId`; `WaitingScreen` gains a "❓ Como jogar" button next to
+  "✏️ Editar avatar" (`.waiting-actions` flex row) that opens the overlay.

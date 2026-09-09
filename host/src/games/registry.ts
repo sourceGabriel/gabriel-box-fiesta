@@ -11,6 +11,7 @@ import { personality as zapPersonality } from './zap/personality';
 import { LorotaHostView } from './lorota/LorotaHostView';
 import { LorotaCover } from './lorota/LorotaCover';
 import { personality as lorotaPersonality } from './lorota/personality';
+import lorotaLobbyBg from './lorota/lobby-bg.webp';
 import { SabeTudoHostView } from './sabetudo/SabeTudoHostView';
 import { SabeTudoCover } from './sabetudo/SabeTudoCover';
 import { personality as sabetudoPersonality } from './sabetudo/personality';
@@ -30,7 +31,12 @@ export const HOST_GAMES: Record<string, HostGameEntry> = {
   uno: { View: UnoHostView, Cover: UnoCover, personality: unoPersonality },
   coup: { View: CoupHostView, Cover: CoupCover, personality: coupPersonality },
   zap: { View: ZapHostView, Cover: ZapCover, personality: zapPersonality },
-  lorota: { View: LorotaHostView, Cover: LorotaCover, personality: lorotaPersonality },
+  lorota: {
+    View: LorotaHostView,
+    Cover: LorotaCover,
+    personality: lorotaPersonality,
+    lobbyBg: lorotaLobbyBg,
+  },
   sabetudo: { View: SabeTudoHostView, Cover: SabeTudoCover, personality: sabetudoPersonality },
   fdp: { View: FdpHostView, Cover: FdpCover, personality: fdpPersonality },
   evoce: { View: EvoceHostView, Cover: EvoceCover, personality: evocePersonality },

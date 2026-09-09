@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type CSSProperties, type FC } from 'r
 import type { GameMeta } from '@party/shared';
 import { BrandMark, getSounds } from '@party/ui';
 import type { GamePersonality } from '../games/types';
+import bgUrl from './catalog-bg.webp';
 
 interface CatalogScreenProps {
   catalog: GameMeta[];
@@ -23,15 +24,19 @@ const FALLBACK_PERSONALITY: GamePersonality = {
   vibe: 'FESTA',
   blurb: 'Chama a galera e senta o dedo.',
   how: 'Pega o celular, entra na sala e segue o que a TV pedir.',
+  duration: '~15 min',
+  chaos: 'Caos garantido',
 };
 
 /** Custom-property style bag — TS's CSSProperties has no `--*` index. */
 const vars = (o: Record<string, string | number>): CSSProperties => o as unknown as CSSProperties;
 
 /**
- * The game picker as a 3-up coverflow: the focused game sits big and centre with
- * its accent glow, the neighbours flank it small and tilted, everything else is
- * parked off-stage. Arrows / ← → rotate the reel, Enter starts the centre game.
+ * The game picker as a 3-up coverflow over the owner-painted room
+ * (`catalog-bg.webp`, `cover` fit — nothing measured against it). The focused
+ * game sits big and centre with its accent glow, the neighbours flank it small
+ * and tilted, everything else is parked off-stage. Arrows / ← → rotate the reel,
+ * Enter starts the centre game.
  */
 export function CatalogScreen({
   catalog,
@@ -103,10 +108,16 @@ export function CatalogScreen({
   };
 
   return (
-    <main className="host-shell catalog-screen" style={vars({ '--game-accent': activeP.accent })}>
+    <main
+      className="host-shell catalog-screen"
+      style={vars({ '--game-accent': activeP.accent, '--catalog-bg': `url(${bgUrl})` })}
+    >
+      <div className="catalog-bg" aria-hidden="true" />
+
       <header className="catalog-head">
-        <BrandMark text={platformName} variant="platform" size="sm" />
+        <BrandMark text={platformName} variant="platform" size="md" />
         <h1>Escolha um jogo</h1>
+        <p className="catalog-sub">Qualquer escolha aqui pode acabar em amizade destruída. ☺</p>
       </header>
 
       <div className="cf-stage">
@@ -143,11 +154,23 @@ export function CatalogScreen({
                   <div className="cf-cover">
                     {Cover ? <Cover /> : <div className="catalog-cover-fallback">{game.name}</div>}
                     <span className="cf-vibe">{p.vibe}</span>
+                    {p.badge ? <span className="cf-badge">{p.badge}</span> : null}
                   </div>
                   <div className="cf-plate">
                     <strong>{game.name}</strong>
-                    <span className="cf-players">
-                      {game.minPlayers}–{game.maxPlayers} jogadores
+                    {p.tags?.length ? (
+                      <span className="cf-tags">{p.tags.join(' · ')}</span>
+                    ) : null}
+                    <span className="cf-stats">
+                      <span>
+                        <b>{game.minPlayers}–{game.maxPlayers}</b> jogadores
+                      </span>
+                      <span>
+                        <b>{p.duration}</b> duração
+                      </span>
+                      <span>
+                        <b>{p.chaos}</b>
+                      </span>
                     </span>
                   </div>
                 </div>
@@ -192,6 +215,11 @@ export function CatalogScreen({
           />
         ))}
       </div>
+      {n > 0 ? (
+        <p className="cf-count">
+          {focus + 1} / {n}
+        </p>
+      ) : null}
 
       <p className="catalog-hint">← → navegar · Enter jogar · Esc voltar</p>
       {lastError ? <p className="error">{lastError}</p> : null}

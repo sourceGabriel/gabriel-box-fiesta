@@ -5,7 +5,7 @@ import { useRoomConnection } from './shell/useRoomConnection';
 import { JoinScreen } from './shell/JoinScreen';
 import { WaitingScreen } from './shell/WaitingScreen';
 import { TextScaleButton } from './shell/TextScaleButton';
-import { CONTROLLER_GAMES } from './games/registry';
+import { CONTROLLER_GAMES, CONTROLLER_HOW_TO_PLAY } from './games/registry';
 import './shell/shell.css';
 
 const AVATAR_STORAGE_KEY = 'party:avatar';
@@ -100,6 +100,7 @@ function App() {
         contentTier={conn.contentTier}
         showContentTier={TIERED_GAMES.has(conn.selectedGameId)}
         legendsUnlocked={legendsUnlocked}
+        howToPlay={CONTROLLER_HOW_TO_PLAY[conn.selectedGameId]}
         onAvatarChange={changeAvatar}
         onLeave={conn.leaveRoom}
       />

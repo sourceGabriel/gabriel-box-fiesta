@@ -6,4 +6,7 @@ export const personality: GamePersonality = {
   vibe: 'AMIZADE',
   blurb: 'Seis rodadas até alguém descobrir que ninguém presta atenção nele.',
   how: 'Perguntas sobre a própria galera: vote em quem combina, escreva legendas e desenhe. 6 rodadas.',
+  tags: ['Vote', 'Legende', 'Desenhe'],
+  duration: '~20 min',
+  chaos: 'Caos afetivo',
 };
