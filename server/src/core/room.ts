@@ -31,6 +31,8 @@ export class Room {
   selectedGameId: string = DEFAULT_GAME_ID;
   /** Content intensity for the text games. Host flips it in the lobby. */
   contentTier: ContentTier = DEFAULT_CONTENT_TIER;
+  /** gameId → chosen match length, for games with `meta.lengthOptions`. Host picks it in the lobby. */
+  readonly matchLengths = new Map<string, number>();
   stateVersion = 0;
 
   private readonly sessionService = new SessionService();
@@ -158,6 +160,29 @@ export class Room {
     this.contentTier = tier;
   }
 
+  /** The resolved match length for a game (host's pick, else the game's default, else undefined). */
+  matchLengthFor(gameId: string): number | undefined {
+    const opts = GAMES[gameId]?.meta.lengthOptions;
+    if (!opts) return undefined;
+    const chosen = this.matchLengths.get(gameId);
+    return chosen && opts.values.includes(chosen) ? chosen : opts.default;
+  }
+
+  /** Owner sets a game's match length. Only valid before a game starts, and only a listed value. */
+  setMatchLength(gameId: string, length: number): void {
+    if (this.state !== 'accepting_players') {
+      throw new Error('GAME_IN_PROGRESS:Cannot change match length after the game started');
+    }
+    const opts = GAMES[gameId]?.meta.lengthOptions;
+    if (!opts) {
+      throw new Error('NOT_ALLOWED:This game has a fixed length');
+    }
+    if (!opts.values.includes(length)) {
+      throw new Error('INVALID_LENGTH:Not an allowed value for this game');
+    }
+    this.matchLengths.set(gameId, length);
+  }
+
   startGame(requestedBy: string | null, gameId: string = this.selectedGameId): void {
     if (!requestedBy) {
       throw new Error('NOT_ALLOWED:Player context required');
@@ -181,6 +206,7 @@ export class Room {
       now: () => Date.now(),
       random: Math.random,
       contentTier: this.contentTier,
+      matchLength: this.matchLengthFor(gameId),
     });
     this.game.start();
     this.state = 'in_game';

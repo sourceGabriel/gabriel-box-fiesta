@@ -75,6 +75,7 @@ export class LorotaGame implements PausableGame, TurnTimedGame {
 
   private started = false;
   private phase: LorotaPhase = 'lying';
+  private readonly totalRounds: number;
   private round = 0;
   private roundKind: LorotaRoundKind = 'normal';
 
@@ -107,6 +108,7 @@ export class LorotaGame implements PausableGame, TurnTimedGame {
     this.random = ctx.random;
     this.contentTier = ctx.contentTier;
     this.roomCode = ctx.roomCode;
+    this.totalRounds = ctx.matchLength && ctx.matchLength > 0 ? ctx.matchLength : TOTAL_ROUNDS;
     this.players = ctx.players.map((p) => ({ id: p.id, name: p.name }));
     for (const p of this.players) {
       this.nameById.set(p.id, p.name);
@@ -126,7 +128,7 @@ export class LorotaGame implements PausableGame, TurnTimedGame {
     );
     this.started = true;
     this.deck = this.shuffled(lorotaQuestions(this.contentTier));
-    this.emit({ type: 'game_started', totalRounds: TOTAL_ROUNDS });
+    this.emit({ type: 'game_started', totalRounds: this.totalRounds });
     this.beginRound(1);
   }
 
@@ -193,7 +195,7 @@ export class LorotaGame implements PausableGame, TurnTimedGame {
         this.closeGuessing();
         break;
       case 'reveal':
-        if (this.round < TOTAL_ROUNDS) {
+        if (this.round < this.totalRounds) {
           this.beginRound(this.round + 1);
         } else {
           this.enterGameover();
@@ -258,7 +260,7 @@ export class LorotaGame implements PausableGame, TurnTimedGame {
 
   private beginRound(round: number): void {
     this.round = round;
-    this.roundKind = round === TOTAL_ROUNDS ? 'final' : 'normal';
+    this.roundKind = round === this.totalRounds ? 'final' : 'normal';
     this.phase = 'lying';
     this.lies.clear();
     this.truthCollision.clear();
@@ -270,7 +272,7 @@ export class LorotaGame implements PausableGame, TurnTimedGame {
     this.question = this.drawQuestion();
 
     this.setTimer(LYING_MS);
-    this.emit({ type: 'round_started', round, totalRounds: TOTAL_ROUNDS, roundKind: this.roundKind });
+    this.emit({ type: 'round_started', round, totalRounds: this.totalRounds, roundKind: this.roundKind });
     this.emit({ type: 'lying_started', round, durationMs: LYING_MS });
   }
 
@@ -456,7 +458,7 @@ export class LorotaGame implements PausableGame, TurnTimedGame {
       phase: this.projectPhase(),
       roomCode: this.roomCode,
       round: this.round,
-      totalRounds: TOTAL_ROUNDS,
+      totalRounds: this.totalRounds,
       roundKind: this.roundKind,
       players: this.players.map((p) => ({
         id: p.id,

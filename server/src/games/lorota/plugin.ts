@@ -11,6 +11,7 @@ export const lorotaPlugin: GamePlugin = {
     tagline: 'Invente uma resposta falsa e ache a verdadeira no meio das mentiras',
     minPlayers: MIN_PLAYERS,
     maxPlayers: MAX_PLAYERS,
+    lengthOptions: { label: 'Rodadas', values: [3, 5, 7], default: 3 },
     capabilities: { rounds: false, turnTimer: true, pause: true },
   },
   create: (ctx) => new LorotaGame(ctx),

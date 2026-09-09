@@ -309,6 +309,19 @@ export class PartyServer {
       return;
     }
 
+    if (message.type === 'SET_MATCH_LENGTH') {
+      this.assertOwner(ctx.playerId, ctx.role);
+      try {
+        room.setMatchLength(message.payload.gameId, message.payload.length);
+      } catch (error) {
+        const [code, msg] = (error as Error).message.split(/:(.*)/s);
+        this.send(socket, 'ERROR', { code: code ?? 'BAD_REQUEST', message: msg ?? 'Cannot change match length', recoverable: true });
+        return;
+      }
+      this.broadcastGameCatalog();
+      return;
+    }
+
     if (message.type === 'START_GAME') {
       this.assertOwner(ctx.playerId, ctx.role);
       room.startGame(ctx.playerId ?? room.ownerPlayerId ?? null, message.payload.gameId);
@@ -425,14 +438,23 @@ export class PartyServer {
     this.flushGameEvents();
   }
 
-  private broadcastGameCatalog(): void {
+  private catalogPayload() {
     const room = this.roomManager.getRoom();
-    this.broadcast('GAME_CATALOG', { games: gameCatalog(), selectedGameId: room.selectedGameId, contentTier: room.contentTier });
+    const games = gameCatalog();
+    const matchLengths: Record<string, number> = {};
+    for (const g of games) {
+      const len = room.matchLengthFor(g.id);
+      if (len !== undefined) matchLengths[g.id] = len;
+    }
+    return { games, selectedGameId: room.selectedGameId, contentTier: room.contentTier, matchLengths };
+  }
+
+  private broadcastGameCatalog(): void {
+    this.broadcast('GAME_CATALOG', this.catalogPayload());
   }
 
   private sendGameCatalog(socket: WebSocket): void {
-    const room = this.roomManager.getRoom();
-    this.send(socket, 'GAME_CATALOG', { games: gameCatalog(), selectedGameId: room.selectedGameId, contentTier: room.contentTier });
+    this.send(socket, 'GAME_CATALOG', this.catalogPayload());
   }
 
   private flushGameEvents(): void {

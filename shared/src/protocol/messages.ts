@@ -16,6 +16,7 @@ export type ClientMessageType =
   | 'SEND_REACTION'
   | 'UPDATE_AVATAR'
   | 'SET_CONTENT_TIER'
+  | 'SET_MATCH_LENGTH'
   | 'PING';
 
 export type ServerMessageType =
@@ -65,12 +66,14 @@ export type ClientMessage =
   | Envelope<'UPDATE_AVATAR', { avatar: AvatarSpec }>
   /** Owner sets the room's content intensity for the text games. Lobby only. */
   | Envelope<'SET_CONTENT_TIER', { tier: ContentTier }>
+  /** Owner sets a game's match length (rounds/questions). Lobby only. */
+  | Envelope<'SET_MATCH_LENGTH', { gameId: string; length: number }>
   | Envelope<'PING', {}>;
 
 export type ServerMessage =
   | Envelope<'ROOM_JOINED', { roomCode: string; role: 'player' | 'host'; playerId?: string; ownerPlayerId: string | null; sessionToken?: string }>
   | Envelope<'ROOM_STATE', { roomCode: string; ownerPlayerId: string | null; joinUrl: string; joinQrDataUrl?: string; players: { id: string; name: string; avatar: AvatarSpec; connected: boolean }[] }>
-  | Envelope<'GAME_CATALOG', { games: GameMeta[]; selectedGameId: string; contentTier: ContentTier }>
+  | Envelope<'GAME_CATALOG', { games: GameMeta[]; selectedGameId: string; contentTier: ContentTier; matchLengths: Record<string, number> }>
   | Envelope<'PLAYER_JOINED', { playerId: string; name: string; avatar: AvatarSpec }>
   | Envelope<'PLAYER_RECONNECTED', { playerId: string }>
   | Envelope<'PLAYER_LEFT', { playerId: string }>

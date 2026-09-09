@@ -10,13 +10,14 @@ const P3 = [...P2, { id: 'p3', name: 'Caio' }];
 
 const mkGame = (
   playerList: { id: string; name: string }[] = P3,
-  opts: { now?: () => number; random?: () => number } = {},
+  opts: { now?: () => number; random?: () => number; matchLength?: number } = {},
 ): SabeTudoGame =>
   new SabeTudoGame({
     players: playerList,
     roomCode: 'ABCD',
     now: opts.now ?? (() => 1000),
     random: opts.random ?? (() => 0),
+    matchLength: opts.matchLength,
   });
 
 /** The correct option index for the current question (reads engine internals, like the Lorota tests). */
@@ -24,6 +25,17 @@ const correctOf = (game: SabeTudoGame): number =>
   (game as unknown as { active: { correctIndex: number } }).active.correctIndex;
 
 const wrongIndex = (correct: number): number => (correct === 0 ? 1 : 0);
+
+describe('SabeTudoGame — match length', () => {
+  it('defaults to TOTAL_ROUNDS when no matchLength is given', () => {
+    expect(mkGame().getPublicState().totalRounds).toBe(TOTAL_ROUNDS);
+  });
+  it('honours a lobby-chosen matchLength', () => {
+    const game = mkGame(P3, { matchLength: 16 });
+    game.start();
+    expect(game.getPublicState().totalRounds).toBe(16);
+  });
+});
 
 describe('SabeTudoGame — setup', () => {
   it('starts round 1 in the question phase with four options visible', () => {

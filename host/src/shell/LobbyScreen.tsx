@@ -15,10 +15,13 @@ interface LobbyScreenProps {
   catalog: GameMeta[];
   selectedGameId: string;
   contentTier: ContentTier;
+  /** gameId → chosen match length (rounds/questions), from GAME_CATALOG. */
+  matchLengths: Record<string, number>;
   onStart: () => void;
   /** Back to the game catalog. */
   onChangeGame: () => void;
   onSetContentTier: (tier: ContentTier) => void;
+  onSetMatchLength: (gameId: string, length: number) => void;
 }
 
 export function LobbyScreen({
@@ -31,9 +34,11 @@ export function LobbyScreen({
   catalog,
   selectedGameId,
   contentTier,
+  matchLengths,
   onStart,
   onChangeGame,
   onSetContentTier,
+  onSetMatchLength,
 }: LobbyScreenProps) {
   const onlineCount = players.filter((p) => p.connected).length;
   const selected = catalog.find((g) => g.id === selectedGameId) ?? catalog[0];
@@ -41,6 +46,9 @@ export function LobbyScreen({
   const maxPlayers = selected?.maxPlayers ?? 8;
   const canStart = onlineCount >= minPlayers && onlineCount <= maxPlayers;
   const showTier = TIERED_GAMES.has(selected?.id ?? '');
+  const lengthOpts = selected?.lengthOptions;
+  const currentLength =
+    (selected && matchLengths[selected.id]) ?? lengthOpts?.default ?? 0;
 
   return (
     <main className="host-shell host-lobby">
@@ -58,6 +66,26 @@ export function LobbyScreen({
             players={players}
           />
         </div>
+
+        {lengthOpts && selected ? (
+          <div className="lobby-tier" role="group" aria-label={lengthOpts.label}>
+            <span className="lobby-tier-label">{lengthOpts.label}</span>
+            <div className="lobby-tier-switch">
+              {lengthOpts.values.map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  className={currentLength === v ? 'is-on' : ''}
+                  aria-pressed={currentLength === v}
+                  disabled={!connected}
+                  onClick={() => onSetMatchLength(selected.id, v)}
+                >
+                  {v}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
 
         {showTier ? (
           <div className="lobby-tier" role="group" aria-label="Intensidade do conteúdo">

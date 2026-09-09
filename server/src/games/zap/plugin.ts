@@ -11,6 +11,7 @@ export const zapPlugin: GamePlugin = {
     tagline: 'Responda o prompt, encare o duelo e roube os votos da sala',
     minPlayers: MIN_PLAYERS,
     maxPlayers: MAX_PLAYERS,
+    lengthOptions: { label: 'Rodadas', values: [3, 5, 7], default: 3 },
     capabilities: { rounds: false, turnTimer: true, pause: true },
   },
   create: (ctx) => new ZapGame(ctx),

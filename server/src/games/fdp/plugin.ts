@@ -12,6 +12,7 @@ export const fdpPlugin: GamePlugin = {
     tagline: 'Complete a frase mais safada e roube os votos da sala (+18)',
     minPlayers: MIN_PLAYERS,
     maxPlayers: MAX_PLAYERS,
+    lengthOptions: { label: 'Rodadas', values: [3, 5, 7], default: 5 },
     capabilities: { rounds: false, turnTimer: true, pause: true },
   },
   create: (ctx) => new FdpGame(ctx),

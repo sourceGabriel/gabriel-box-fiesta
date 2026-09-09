@@ -45,7 +45,7 @@ type ActiveQuestion = {
  * Sabe-Tudo orchestrator — the platform `GameInstance` for a fast multiple-choice
  * trivia match. Self-advancing: every phase (`question` → `reveal`) carries one
  * stored deadline the platform server ticks; `onTurnTimeout()` closes the phase
- * with whatever answers are in. A match is `TOTAL_ROUNDS` questions.
+ * with whatever answers are in. A match is `this.totalRounds` questions.
  */
 export class SabeTudoGame implements PausableGame, TurnTimedGame {
   private readonly now: () => number;
@@ -61,6 +61,7 @@ export class SabeTudoGame implements PausableGame, TurnTimedGame {
 
   private started = false;
   private phase: SabeTudoPhase = 'question';
+  private readonly totalRounds: number;
   private round = 0;
 
   private deck: SabeTudoQuestion[] = [];
@@ -87,6 +88,7 @@ export class SabeTudoGame implements PausableGame, TurnTimedGame {
     this.random = ctx.random;
     this.contentTier = ctx.contentTier;
     this.roomCode = ctx.roomCode;
+    this.totalRounds = ctx.matchLength && ctx.matchLength > 0 ? ctx.matchLength : TOTAL_ROUNDS;
     this.players = ctx.players.map((p) => ({ id: p.id, name: p.name }));
     for (const p of this.players) {
       this.nameById.set(p.id, p.name);
@@ -107,7 +109,7 @@ export class SabeTudoGame implements PausableGame, TurnTimedGame {
     );
     this.started = true;
     this.deck = this.shuffled(sabeTudoQuestions(this.contentTier));
-    this.emit({ type: 'game_started', totalRounds: TOTAL_ROUNDS });
+    this.emit({ type: 'game_started', totalRounds: this.totalRounds });
     this.beginRound(1);
   }
 
@@ -173,7 +175,7 @@ export class SabeTudoGame implements PausableGame, TurnTimedGame {
         this.closeQuestion();
         break;
       case 'reveal':
-        if (this.round < TOTAL_ROUNDS) {
+        if (this.round < this.totalRounds) {
           this.beginRound(this.round + 1);
         } else {
           this.enterGameover();
@@ -222,7 +224,7 @@ export class SabeTudoGame implements PausableGame, TurnTimedGame {
     this.emit({
       type: 'question_started',
       round,
-      totalRounds: TOTAL_ROUNDS,
+      totalRounds: this.totalRounds,
       category: this.active.category,
       durationMs: QUESTION_MS,
     });
@@ -369,7 +371,7 @@ export class SabeTudoGame implements PausableGame, TurnTimedGame {
       phase: this.projectPhase(),
       roomCode: this.roomCode,
       round: this.round,
-      totalRounds: TOTAL_ROUNDS,
+      totalRounds: this.totalRounds,
       players: this.players.map((p) => ({
         id: p.id,
         name: p.name,

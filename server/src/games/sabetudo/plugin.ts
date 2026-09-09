@@ -11,6 +11,7 @@ export const sabeTudoPlugin: GamePlugin = {
     tagline: 'Responda rápido, acerte mais que os outros e dispare no placar',
     minPlayers: MIN_PLAYERS,
     maxPlayers: MAX_PLAYERS,
+    lengthOptions: { label: 'Perguntas', values: [8, 12, 16, 20], default: 12 },
     capabilities: { rounds: false, turnTimer: true, pause: true },
   },
   create: (ctx) => new SabeTudoGame(ctx),

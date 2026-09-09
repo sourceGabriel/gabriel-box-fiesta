@@ -20,6 +20,8 @@ export interface RoomConnection {
   selectedGameId: string;
   /** Room content intensity for the text games (from GAME_CATALOG). */
   contentTier: ContentTier;
+  /** gameId -> chosen match length (rounds/questions), from GAME_CATALOG. */
+  matchLengths: Record<string, number>;
   /** The id of the game currently in progress, or null in the lobby. */
   activeGameId: string | null;
   /** Latest GAME_STATE_PUBLIC payload (opaque here; the game view casts it). */
@@ -46,6 +48,7 @@ export function useRoomConnection(): RoomConnection {
   const [catalog, setCatalog] = useState<GameMeta[]>([]);
   const [selectedGameId, setSelectedGameId] = useState('');
   const [contentTier, setContentTier] = useState<ContentTier>('pesado');
+  const [matchLengths, setMatchLengths] = useState<Record<string, number>>({});
   const [activeGameId, setActiveGameId] = useState<string | null>(null);
   const [publicState, setPublicState] = useState<unknown | null>(null);
   const [events, setEvents] = useState<BufferedEvent[]>([]);
@@ -118,6 +121,7 @@ export function useRoomConnection(): RoomConnection {
             setCatalog(message.payload.games);
             setSelectedGameId(message.payload.selectedGameId);
             setContentTier(message.payload.contentTier);
+            setMatchLengths(message.payload.matchLengths ?? {});
             break;
           case 'GAME_STATE_PUBLIC':
             setPublicState(message.payload.state);
@@ -177,6 +181,7 @@ export function useRoomConnection(): RoomConnection {
     catalog,
     selectedGameId,
     contentTier,
+    matchLengths,
     activeGameId,
     publicState,
     events,

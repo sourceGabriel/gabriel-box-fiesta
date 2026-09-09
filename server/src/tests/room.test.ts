@@ -101,4 +101,24 @@ describe('Room', () => {
 
     expect(() => room.setContentTier('pesado')).toThrow(/GAME_IN_PROGRESS/);
   });
+
+  it('match length: default until set, only listed values, lobby only, reaches the engine', () => {
+    const room = new Room('ABCD');
+    const owner = room.joinPlayer('Alice', undefined, Date.now()).player;
+    room.joinPlayer('Bob', undefined, Date.now());
+    room.joinPlayer('Caio', undefined, Date.now());
+
+    expect(room.matchLengthFor('sabetudo')).toBe(12); // the game's default
+    expect(room.matchLengthFor('uno')).toBeUndefined(); // fixed-length game
+    expect(() => room.setMatchLength('sabetudo', 13)).toThrow(/INVALID_LENGTH/);
+    expect(() => room.setMatchLength('uno', 5)).toThrow(/NOT_ALLOWED/);
+
+    room.setMatchLength('sabetudo', 16);
+    expect(room.matchLengthFor('sabetudo')).toBe(16);
+
+    room.selectGame('sabetudo');
+    room.startGame(owner.id, 'sabetudo');
+    expect((room.game!.getPublicState() as { totalRounds: number }).totalRounds).toBe(16);
+    expect(() => room.setMatchLength('sabetudo', 8)).toThrow(/GAME_IN_PROGRESS/);
+  });
 });

@@ -723,3 +723,13 @@ An elaborate É Você! drawing serialised past the 16 KB `maxPayload` cap; `ws` 
 
 ### Validation
 - 141 server tests · 12 `@party/ui` tests · `tsc` + `oxlint` clean · 5-workspace build green.
+
+## 2026-09-09 — configurable match length (branch `feature/rodadas-e-cenas`)
+The host can now dial how many rounds / questions a game runs, in the lobby.
+
+- `GameMeta.lengthOptions` (`{ label, values[], default }`) — a game opts in by declaring it. `GameContext.matchLength` carries the chosen value to the engine.
+- New `SET_MATCH_LENGTH { gameId, length }` client message (owner-gated, lobby only, value must be in `lengthOptions.values`); `GAME_CATALOG` now carries `matchLengths: Record<gameId, number>`. `Room.matchLengths` + `setMatchLength` + `matchLengthFor`.
+- Engines: Sabe-Tudo (8/12/16/20, default 12), Zap! (3/5/7, default 3), Lorota! (3/5/7, default 3), FDP (3/5/7, default 5) — each replaces the `TOTAL_ROUNDS` constant with a per-instance `this.totalRounds` (`ctx.matchLength ?? TOTAL_ROUNDS`). É Você! keeps its fixed 6-round plan.
+- Host `LobbyScreen`: a segmented picker next to the content-tier toggle, using the selected game's `lengthOptions`.
+- `sabetudo-game.test.ts` +2, `room.test.ts` +1. **Server tests 141 → 144.**
+- `tsc` + `oxlint` clean, 5-workspace build green.

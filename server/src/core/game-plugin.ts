@@ -17,6 +17,11 @@ export interface GameContext {
    * (everything), matching the behaviour before the toggle existed.
    */
   readonly contentTier?: ContentTier;
+  /**
+   * Lobby-chosen match length (rounds / questions) for games that declare
+   * `meta.lengthOptions`. Absent → the game uses its own default.
+   */
+  readonly matchLength?: number;
 }
 
 /**

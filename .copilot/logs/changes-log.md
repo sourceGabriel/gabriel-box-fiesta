@@ -302,3 +302,9 @@ User report: É Você! drawing → clicking undo/submit a big drawing → `Range
 - Taylor Swift content: Sabe-Tudo +12 questions (category "Taylor Swift", leve), Lorota! +7 "fato com lacuna" (leve).
 - 141 server / 12 ui tests, tsc+oxlint, 5-ws build green.
 - Sound polish handed to the owner (separate chat). Still deferred: configurable round/question counts; full transitional scoreboard scene; per-game background art.
+
+## 2026-09-09 — configurable match length (branch `feature/rodadas-e-cenas`, off main @ 12a8341)
+- `GameMeta.lengthOptions {label,values[],default}` + `GameContext.matchLength`. `SET_MATCH_LENGTH {gameId,length}` msg (owner+lobby-gated, value validated against `lengthOptions.values`); `GAME_CATALOG` gains `matchLengths`. `Room.setMatchLength`/`matchLengthFor`/`matchLengths` map.
+- Sabe-Tudo 8/12/16/20 (def 12), Zap!/Lorota! 3/5/7 (def 3), FDP 3/5/7 (def 5): `TOTAL_ROUNDS` const → per-instance `this.totalRounds = ctx.matchLength ?? TOTAL_ROUNDS`. Evoce unchanged (fixed 6-round plan).
+- Host `LobbyScreen` segmented picker (reuses `.lobby-tier*` styles). `useRoomConnection` exposes `matchLengths`; `App` sends `SET_MATCH_LENGTH`.
+- sabetudo-game.test +2, room.test +1 → 144 server tests. tsc+oxlint+build green.

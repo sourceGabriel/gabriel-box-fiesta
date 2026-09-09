@@ -61,6 +61,7 @@ export class FdpGame implements PausableGame, TurnTimedGame {
 
   private started = false;
   private phase: FdpPhase = 'writing';
+  private readonly totalRounds: number;
   private round = 0;
   private roundKind: FdpRoundKind = 'normal';
 
@@ -92,6 +93,7 @@ export class FdpGame implements PausableGame, TurnTimedGame {
     this.random = ctx.random;
     this.contentTier = ctx.contentTier;
     this.roomCode = ctx.roomCode;
+    this.totalRounds = ctx.matchLength && ctx.matchLength > 0 ? ctx.matchLength : TOTAL_ROUNDS;
     this.players = ctx.players.map((p) => ({ id: p.id, name: p.name }));
     for (const p of this.players) {
       this.nameById.set(p.id, p.name);
@@ -111,7 +113,7 @@ export class FdpGame implements PausableGame, TurnTimedGame {
     );
     this.started = true;
     this.deck = this.shuffled(fdpPrompts(this.contentTier));
-    this.emit({ type: 'game_started', totalRounds: TOTAL_ROUNDS });
+    this.emit({ type: 'game_started', totalRounds: this.totalRounds });
     this.beginRound(1);
   }
 
@@ -178,7 +180,7 @@ export class FdpGame implements PausableGame, TurnTimedGame {
         this.closeVoting();
         break;
       case 'roundResults':
-        if (this.round < TOTAL_ROUNDS) {
+        if (this.round < this.totalRounds) {
           this.beginRound(this.round + 1);
         } else {
           this.enterGameover();
@@ -236,7 +238,7 @@ export class FdpGame implements PausableGame, TurnTimedGame {
 
   private beginRound(round: number): void {
     this.round = round;
-    this.roundKind = round === TOTAL_ROUNDS ? 'final' : 'normal';
+    this.roundKind = round === this.totalRounds ? 'final' : 'normal';
     this.phase = 'writing';
     this.submissions.clear();
     this.votes.clear();
@@ -248,7 +250,7 @@ export class FdpGame implements PausableGame, TurnTimedGame {
     this.prompt = this.drawPrompt();
 
     this.setTimer(WRITING_MS);
-    this.emit({ type: 'round_started', round, totalRounds: TOTAL_ROUNDS, roundKind: this.roundKind });
+    this.emit({ type: 'round_started', round, totalRounds: this.totalRounds, roundKind: this.roundKind });
     this.emit({ type: 'writing_started', round, durationMs: WRITING_MS });
   }
 
@@ -453,7 +455,7 @@ export class FdpGame implements PausableGame, TurnTimedGame {
       phase: this.projectPhase(),
       roomCode: this.roomCode,
       round: this.round,
-      totalRounds: TOTAL_ROUNDS,
+      totalRounds: this.totalRounds,
       roundKind: this.roundKind,
       players: this.players.map((p) => ({
         id: p.id,

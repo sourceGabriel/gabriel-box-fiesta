@@ -11,6 +11,19 @@ export interface GameMeta {
   readonly tagline?: string;
   readonly minPlayers: number;
   readonly maxPlayers: number;
+  /**
+   * Lobby-adjustable match length (number of rounds / questions). Omit for a
+   * fixed-length game. The host shows a picker; the chosen value reaches the
+   * engine as `GameContext.matchLength`.
+   */
+  readonly lengthOptions?: {
+    /** What the number counts, for the lobby label — e.g. `'Perguntas'`, `'Rodadas'`. */
+    readonly label: string;
+    /** Selectable values, ascending. */
+    readonly values: readonly number[];
+    /** Used when the host hasn't picked one. Must be in `values`. */
+    readonly default: number;
+  };
   /** Which optional lifecycle features the game engine implements. */
   readonly capabilities: {
     /** Supports multiple rounds / `NEXT_ROUND` and an intermission between them. */
