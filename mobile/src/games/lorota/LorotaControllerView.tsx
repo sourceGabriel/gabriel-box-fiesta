@@ -62,6 +62,7 @@ export function LorotaControllerView({
           <div className="lorota-badge">⏸</div>
           <h2>Partida pausada</h2>
           <p className="hint">Aguardando o anfitrião continuar…</p>
+          <button type="button" className="lorota-howto-open" onClick={() => setShowHowTo(true)}>? Como jogar</button>
         </section>
       ) : over ? (
         <section className="lorota-panel lorota-center">

@@ -62,6 +62,7 @@ export function ZapControllerView({
           <div className="zap-badge">⏸</div>
           <h2>Partida pausada</h2>
           <p className="hint">Aguardando o anfitrião continuar…</p>
+          <button type="button" className="zap-howto-open" onClick={() => setShowHowTo(true)}>? Como jogar</button>
         </section>
       ) : over ? (
         <section className="zap-panel zap-center">

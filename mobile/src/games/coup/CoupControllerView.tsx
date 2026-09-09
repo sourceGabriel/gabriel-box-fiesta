@@ -71,6 +71,9 @@ export function CoupControllerView({ publicState, privateState, playerId, connec
           <div className="coup-badge">⏸</div>
           <h2>Partida pausada</h2>
           <p className="hint">Aguardando o anfitrião continuar…</p>
+          <button type="button" className="coup-howto-open" onClick={() => setShowHowTo(true)}>
+            ? Como jogar
+          </button>
         </section>
       ) : over ? (
         <section className="coup-panel coup-center coup-result">

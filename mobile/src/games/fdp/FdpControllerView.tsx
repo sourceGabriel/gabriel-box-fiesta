@@ -63,6 +63,7 @@ export function FdpControllerView({
           <div className="fdp-big">⏸</div>
           <h2>Partida pausada</h2>
           <p className="hint">Aguardando o anfitrião continuar…</p>
+          <button type="button" className="fdp-howto-open" onClick={() => setShowHowTo(true)}>? Como jogar</button>
         </section>
       ) : over ? (
         <section className="fdp-panel fdp-center">

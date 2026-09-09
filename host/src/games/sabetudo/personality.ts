@@ -6,4 +6,7 @@ export const personality: GamePersonality = {
   vibe: 'SOBERBA',
   blurb: 'Prove com números que você é o único inteligente da sala.',
   how: 'Pergunta com 4 alternativas na TV, resposta no celular. Acerto + velocidade + sequência valem pontos.',
+  tags: ['Sabe', 'Ou chuta'],
+  duration: '~15 min',
+  chaos: 'Climão saudável',
 };

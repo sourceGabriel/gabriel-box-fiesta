@@ -795,3 +795,43 @@ The lobby (the screen players stare at while waiting) now wears the selected gam
   self-contained CRT panel for the live bits (see above). Earlier attempts pinned the overlay
   to the baked TV (aspect-locked stage, then cover-fit math) and broke whenever the art
   changed — the panel approach doesn't.
+
+## 2026-09-09 — Catalog + lobby over owner art (branch `feature/telas-com-arte`)
+### Added
+- `tools/build-screen-bg.py` (Pillow, dev-only) — bakes `host/src/shell/catalog-bg.webp`
+  and `host/src/games/lorota/lobby-bg.webp` (+ `*.CREDITS.md`) from owner renders in the
+  gitignored `gabriel-source/` (renamed there to `bg-catalog-room.png` /
+  `bg-lobby-lorota.png`; the two target mockups kept as `mock-*-target.png`).
+- Catalog screen reskin: the 3-up coverflow now floats over `catalog-bg.webp` (`cover`
+  fit, vignette + accent wash, nothing measured against the art). Cards gain a vibe tab,
+  an optional torn sticky-note badge, a "tags" strip and a players · duration · chaos
+  stat row; green brush `▶ Iniciar` pill; position dots + `n / total`.
+- `GamePersonality` (host, `host/src/games/types.ts`) gains `tags?: string[]`,
+  `duration: string`, `chaos: string`, `badge?: string`; filled in all 7 personality files.
+- `HostGameEntry` gains optional `lobbyBg` (imported webp URL). When present the lobby
+  renders in **art mode**: the image is letterboxed at 16:9 and the live bits (QR + room
+  code, player tiles + empty "aguardando" slots, a functional start button) drop into
+  fixed `%` slots that line up with the panel frames painted into the art. The
+  "COMO JOGAR?" panel, the stats strip and the wordmark stay as painted art. Off-layout
+  controls (trocar de jogo, Rodadas, Conteúdo Leve/Pesado, online count) sit in a slim
+  glass strip pinned to the bottom edge. Container-query units scale every overlay with
+  the stage. Only `lorota` ships a `lobbyBg` for now.
+- Mobile: the per-game "? Como jogar" button is now also shown on the `paused` screen of
+  the 6 games with a `HowToPlay` (coup / zap / lorota / sabetudo / fdp / evoce), and — via
+  a new `CONTROLLER_HOW_TO_PLAY` registry map — on the **waiting screen** once the host has
+  picked a game, so players can read the rules before it starts.
+
+### Changed (after owner review)
+- Lobby art mode: player tiles darkened to a near-opaque neutral (`rgba(6,9,12,.82)`) so the
+  painted teal panel no longer casts a green haze over the avatars/names.
+
+### Unchanged
+- The other 6 games keep the plain card lobby (the art-mode branch is only taken when a
+  `lobbyBg` exists). No protocol / core / `ws-server` / shell-flow / engine changes (§52).
+- 144 server tests, `tsc` + `oxlint` clean, 5-workspace build green.
+
+### Why
+- The owner wants each screen to carry the game-night illustration style, with per-game
+  lobby art (Lorota first). The catalog uses the robust `cover`+overlay approach from the
+  attract screen; the lobby needs rough alignment to painted panels, so it letterboxes at
+  16:9 and positions in `%` — new per-game lobby art must keep that panel geometry.

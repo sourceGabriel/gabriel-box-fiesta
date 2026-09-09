@@ -66,6 +66,7 @@ export function EvoceControllerView({
           <div className="evoce-big">⏸</div>
           <h2>Partida pausada</h2>
           <p className="hint">Aguardando o anfitrião continuar…</p>
+          <button type="button" className="evoce-howto-open" onClick={() => setShowHowTo(true)}>? Como jogar</button>
         </section>
       ) : over ? (
         <section className="evoce-panel evoce-center">

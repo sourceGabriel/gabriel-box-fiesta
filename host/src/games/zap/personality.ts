@@ -6,4 +6,7 @@ export const personality: GamePersonality = {
   vibe: 'EGO',
   blurb: 'Suas melhores piadas julgadas por quem te conhece demais.',
   how: 'O celular te dá prompts; responda com a piada mais afiada. A sala vota o vencedor de cada duelo.',
+  tags: ['Responda', 'Duele', 'Vence'],
+  duration: '~10 min',
+  chaos: 'Zoeira alta',
 };

@@ -28,6 +28,15 @@ function App() {
     () => Object.fromEntries(Object.entries(HOST_GAMES).map(([id, entry]) => [id, entry.personality])),
     [],
   );
+  const lobbyBgs = useMemo<Record<string, string>>(
+    () =>
+      Object.fromEntries(
+        Object.entries(HOST_GAMES)
+          .filter(([, entry]) => entry.lobbyBg)
+          .map(([id, entry]) => [id, entry.lobbyBg as string]),
+      ),
+    [],
+  );
 
   // When a game ends, drop back to that game's lobby (not the attract screen).
   useEffect(() => {
@@ -104,6 +113,7 @@ function App() {
       matchLengths={conn.matchLengths}
       covers={covers}
       personalities={personalities}
+      lobbyBgs={lobbyBgs}
       onStart={() => conn.send('START_GAME', {})}
       onChangeGame={() => setFlow('catalog')}
       onSetContentTier={(tier) => conn.send('SET_CONTENT_TIER', { tier })}

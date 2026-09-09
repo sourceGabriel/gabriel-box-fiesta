@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type FC } from 'react';
 import type { AvatarSpec, ContentTier } from '@party/shared';
 import { Avatar, AvatarEditor, Button, PlayerRoster } from '@party/ui';
 import { MobileHeader } from './MobileHeader';
@@ -19,6 +19,8 @@ interface WaitingScreenProps {
   showContentTier?: boolean;
   /** Whether the hidden "Lendas" portrait row is unlocked. */
   legendsUnlocked?: boolean;
+  /** The selected game's "how to play" overlay, so players can read the rules while waiting. */
+  howToPlay?: FC<{ onClose: () => void }>;
   /** Persist the new avatar locally and push it to the server (UPDATE_AVATAR). */
   onAvatarChange?: (avatar: AvatarSpec) => void;
   /** Leave the room and go back to the code-entry screen. */
@@ -37,10 +39,12 @@ export function WaitingScreen({
   contentTier,
   showContentTier,
   legendsUnlocked,
+  howToPlay: HowToPlay,
   onAvatarChange,
   onLeave,
 }: WaitingScreenProps) {
   const [editing, setEditing] = useState(false);
+  const [showHowTo, setShowHowTo] = useState(false);
   const [draft, setDraft] = useState<AvatarSpec>(avatar);
 
   const openEditor = () => {
@@ -56,6 +60,8 @@ export function WaitingScreen({
     <>
       <MobileHeader roomCode={roomCode} connected={connected} />
 
+      {showHowTo && HowToPlay ? <HowToPlay onClose={() => setShowHowTo(false)} /> : null}
+
       <section className="waiting-panel">
         <Avatar spec={avatar} size={72} className="waiting-avatar" title={myName} />
         <h2>Tudo pronto!</h2>
@@ -67,11 +73,18 @@ export function WaitingScreen({
             {contentTier === 'pesado' ? '🔞 Modo pesado (+18)' : '😇 Modo leve'}
           </p>
         ) : null}
-        {onAvatarChange && !editing ? (
-          <button type="button" className="waiting-edit-avatar" onClick={openEditor}>
-            ✏️ Editar avatar
-          </button>
-        ) : null}
+        <div className="waiting-actions">
+          {onAvatarChange && !editing ? (
+            <button type="button" className="waiting-edit-avatar" onClick={openEditor}>
+              ✏️ Editar avatar
+            </button>
+          ) : null}
+          {HowToPlay && !editing ? (
+            <button type="button" className="waiting-edit-avatar" onClick={() => setShowHowTo(true)}>
+              ❓ Como jogar
+            </button>
+          ) : null}
+        </div>
         <p className="hint dots">
           Aguardando o anfitrião iniciar<span>.</span><span>.</span><span>.</span>
         </p>

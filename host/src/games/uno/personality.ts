@@ -6,4 +6,7 @@ export const personality: GamePersonality = {
   vibe: 'RAIVA',
   blurb: 'O +4 existe pra você descobrir quem realmente te ama.',
   how: 'Combine cor ou número, solte cartas de ação e grite UNO na penúltima carta.',
+  tags: ['Combine', 'Ataque', 'UNO!'],
+  duration: '~15 min',
+  chaos: 'Caos médio',
 };
