@@ -445,3 +445,12 @@ User report: É Você! drawing → clicking undo/submit a big drawing → `Range
   back to the catalog (mirrors `CatalogScreen`); `tools/cover-art-prompts.md` — the
   prompt + per-game table for regenerating the catalog coverflow thumbnails (not
   wired yet — waits on the renders).
+
+## 2026-09-09 — merge to develop
+- `feature/dilema` → `develop` (`--no-ff`, `f8fb257`) — game #8.
+- `feature/dilema-melhorias` → `develop` (`--no-ff`, `bd3edf7`) — attract poster +
+  lobby art mode ×8 + fog/Esc fixes + README/LICENSE/CONTRIBUTING + prompt docs.
+- `develop` pushed (`c2e7daf..bd3edf7`). Post-merge: 167 server tests, `tsc` +
+  `oxlint` clean, 5-workspace build green. All local feature branches deleted;
+  10 fully-merged remote branches pending prune (`git push origin --delete`).
+  `main` unchanged at `4bc1551` — owner promotes manually.
