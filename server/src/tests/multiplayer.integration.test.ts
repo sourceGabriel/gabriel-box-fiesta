@@ -1007,6 +1007,73 @@ describe('multiplayer integration', () => {
     for (const ws of phones) ws.close();
   });
 
+  it('runs Sintonia: SELECT_GAME + START_GAME, médium + two teams, clue advances to guessing', async () => {
+    server = new PartyServer(0);
+    await server.start();
+    const roomCode = server.getRoomCode();
+    const port = server.getPort();
+
+    const host = await connect(port);
+    host.send(makeMessage('JOIN_ROOM', { roomCode, playerName: 'HOST', role: 'host' }));
+    await waitForMessage(host, 'ROOM_JOINED');
+
+    const reselected = waitForMessageWhere(
+      host,
+      'GAME_CATALOG',
+      (m) => m.payload.selectedGameId === 'sintonia',
+    );
+    host.send(makeMessage('SELECT_GAME', { gameId: 'sintonia' }));
+    await reselected;
+
+    const phones = [] as Awaited<ReturnType<typeof connect>>[];
+    for (const name of ['Ana', 'Bia', 'Caio']) {
+      const ws = await connect(port);
+      ws.send(makeMessage('JOIN_ROOM', { roomCode, playerName: name, role: 'player' }));
+      await waitForMessage(ws, 'ROOM_JOINED');
+      phones.push(ws);
+    }
+
+    const firstPublic = waitForMessage(host, 'GAME_STATE_PUBLIC');
+    const started = waitForMessage(host, 'GAME_STARTED');
+    host.send(makeMessage('START_GAME', { gameId: 'sintonia' }));
+    expect((await started).payload.gameId).toBe('sintonia');
+
+    const pub = (await firstPublic).payload.state as {
+      phase: string;
+      mediumId: string;
+      teams: { memberIds: string[] }[];
+    };
+    expect(pub.phase).toBe('cluing');
+    expect(pub.mediumId).toBeTruthy();
+    expect([...pub.teams[0].memberIds, ...pub.teams[1].memberIds]).toHaveLength(3);
+
+    const privs = await Promise.all(phones.map((ws) => waitForMessage(ws, 'PLAYER_STATE_PRIVATE')));
+    const mediumPriv = privs.find((p) => (p.payload.state as { role: string }).role === 'medium');
+    expect(mediumPriv).toBeTruthy();
+    expect((mediumPriv!.payload.state as { target: number | null }).target).not.toBeNull();
+
+    const guessingReached = waitForMessageWhere(
+      host,
+      'GAME_STATE_PUBLIC',
+      (m) => (m.payload.state as { phase: string }).phase === 'guessing',
+    );
+    const mediumIdx = privs.findIndex(
+      (p) => (p.payload.state as { playerId: string }).playerId === pub.mediumId,
+    );
+    phones[mediumIdx].send(
+      makeMessage('GAME_ACTION', { action: { type: 'submitClue', clue: 'perto do meio' } }),
+    );
+    const guessing = (await guessingReached).payload.state as { clue: string | null };
+    expect(guessing.clue).toBe('perto do meio');
+
+    const actionError = waitForMessage(phones[0], 'ERROR');
+    phones[0].send(makeMessage('GAME_ACTION', { action: { type: 'garbage' } }));
+    expect((await actionError).payload.message).toMatch(/INVALID_ACTION/i);
+
+    host.close();
+    for (const ws of phones) ws.close();
+  });
+
   it('rebroadcasts emoji reactions to the whole room and rejects oversized ones', async () => {
     server = new PartyServer(0);
     await server.start();

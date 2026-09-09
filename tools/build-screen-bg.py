@@ -55,6 +55,7 @@ GAMES: dict[str, tuple[str, str]] = {
     "fdp": ("fdp.png", "fdp.png"),
     "evoce": ("ehvoce.png", "ehvoce.png"),
     "dilema": ("dilema.png", "dilema.png"),
+    "sintonia": ("sintonia.png", "sintonia.png"),
 }
 
 # key -> (source path relative to gabriel-source/, output .webp relative to ROOT)

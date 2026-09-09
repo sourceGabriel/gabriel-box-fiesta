@@ -88,9 +88,11 @@ uma área central 16:9 com margem de ~8% para permitir recorte.
 | `fdp` | `#fb7185` | FDP — FOI DE PROPÓSITO | Leia a frase incompleta / Complete com a resposta mais podre / Voto anônimo elege a pior | 3–8 jogadores · ~20 min · Sem limite (+18) | COMEÇAR FDP |
 | `evoce` | `#c4b5fd` | É VOCÊ! | Perguntas sobre a galera / Vote, legende e desenhe / 6 rodadas, placar no fim | 3–8 jogadores · ~20 min · Caos afetivo | COMEÇAR É VOCÊ! |
 | `dilema` | `#f97316` | DILEMA NOS TRILHOS | Um Maquinista é sorteado / Encha seu trilho de inocentes, o do rival de culpados / A alavanca decide — trilho poupado pontua | 3–10 jogadores · ~15 min · Consciência pesada | COMEÇAR DILEMA |
+| `sintonia` | `#2dd4bf` | SINTONIA | O médium vê um alvo escondido num espectro / Ele dá uma dica curta, o time gira o dial / O outro time aposta o lado — perto do alvo pontua | 3–8 jogadores · ~12 min · Discussão acalorada | COMEÇAR SINTONIA |
 
 Source-file names (`gabriel-source/backgrounds/`): `uno.png`, `coup.png`,
-`zap.png`, `lorota.png`, `sabe-tudo.png`, `fdp.png`, `ehvoce.png`, `dilema.png`.
+`zap.png`, `lorota.png`, `sabe-tudo.png`, `fdp.png`, `ehvoce.png`, `dilema.png`,
+`sintonia.png`.
 
 ### Known imperfections in the current set
 - `dilema.png` wordmark reads "TRIILHOS" (double i).

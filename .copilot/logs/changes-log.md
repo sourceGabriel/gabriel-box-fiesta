@@ -475,3 +475,37 @@ User report: É Você! drawing → clicking undo/submit a big drawing → `Range
   `.waiting-panel`/`.players-panel` frosted. Dropped the unused `brandName` prop.
 - Shell + `@party/ui` only. 167 server tests, tsc + oxlint, 5-ws build green; live on a
   phone viewport (default + accordion open + sticky footer while scrolling).
+
+## 2026-09-09 — game #9 "Sintonia" (branch `feature/sintonia`)
+- *Wavelength*-inspired team game (clean-room). `gameId "sintonia"`, teal `#2dd4bf`,
+  tiered, teams re-split per round, médium rotates by join order, score by team,
+  rounds 4/6/8 (default 6), minPlayers 3 / max 8.
+- Loop `cluing → guessing → reveal` self-advancing (one deadline/phase). Clue ≤ 60
+  chars, digits rejected, no clue = round skipped. Bands ±6/±14/±22 → 4/3/2 pts;
+  other team +1 for the right side-call.
+- `shared/{models,games}/sintonia` + `server/src/games/sintonia/*` (spectrums bank
+  ~66 PT-BR leve/pesado, pure `pairing.ts`) + `host/src/games/sintonia/*`
+  (`SintoniaDial` = pure-SVG gauge) + `mobile/src/games/sintonia/*` + 1 line in each
+  of the 3 registries + `TIERED_GAMES` (host + mobile). `sintonia-game.test.ts` (18)
+  + 1 integration → **167 → 186 server tests**. §52 held.
+- Owner key art landed: `build-screen-bg.py` `GAMES` dict + `sintonia`; `cover.webp`
+  (q70) + `lobby-bg.webp` from `gabriel-source/{thumbs,backgrounds}/sintonia.png`;
+  `SintoniaCover` = `<img class="game-cover">`; `HOST_GAMES.sintonia` gained `lobbyBg`
+  → lobby in art mode like the other 8. Prompt lines in `tools/{cover-art,lobby-bg}-prompts.md`.
+- Live smoke: host + 3 phones, catalog cover + art-mode lobby + full 4-round match
+  incl. skip path + VictorySplash, 0 console errors. tsc + oxlint + 5-ws build green.
+
+## 2026-09-09 — `<VictorySplash>` glory cameo (branch `feature/glory-cameo`)
+- New `@party/ui` component: winner's portrait (Gabsinto `-full.webp` preset) or
+  pixel `<Avatar>` at 220px, framed with accent glow + CSS confetti, reduced-motion
+  guarded. Wired into all 9 host `gameover` overlays. No wire/server change.
+
+## 2026-09-09 — lobby / covers finishing touches (branch `feature/lobby-acabamento`)
+- `.lobby-slot-start:disabled` opaque + `justify-content: center` (label was
+  top-pinned by the parent flex); `.lobby-slot-code` raised + `.lobby-qr-url`
+  shrunk (URL fits the painted box); `build-screen-bg.py` `COVER_QUALITY = 70`
+  (8 pre-existing covers' rebuild pending — owner; the sintonia cover was baked at
+  q70 in the game #9 batch); `.game-cover-svg` → `.game-cover`; mobile `.join`
+  `margin-block: auto` to kill the JoinScreen gap. Plain-card lobby kept as the
+  documented fallback (all 9 games ship art → only renders on an empty catalog).
+- Also: pruned 10 merged remote branches (`git push origin --delete`).

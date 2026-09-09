@@ -8,6 +8,7 @@ import { sabeTudoPlugin } from './sabetudo/plugin';
 import { fdpPlugin } from './fdp/plugin';
 import { evocePlugin } from './evoce/plugin';
 import { dilemaPlugin } from './dilema/plugin';
+import { sintoniaPlugin } from './sintonia/plugin';
 
 /**
  * The platform's game catalog. Adding a game = one import + one entry here.
@@ -22,6 +23,7 @@ export const GAMES: Readonly<Record<string, GamePlugin>> = {
   [fdpPlugin.meta.id]: fdpPlugin,
   [evocePlugin.meta.id]: evocePlugin,
   [dilemaPlugin.meta.id]: dilemaPlugin,
+  [sintoniaPlugin.meta.id]: sintoniaPlugin,
 };
 
 export const DEFAULT_GAME_ID = unoPlugin.meta.id;
