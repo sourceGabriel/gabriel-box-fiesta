@@ -51,6 +51,7 @@ reais; texto além do nome do jogo; marca d'água; barra de UI.
 | `fdp` | `#fb7185` | FDP | uma carta de papel com uma tarja preta de censura no meio, respingos de tinta, um "18" pequeno de neon num canto interno |
 | `evoce` | `#c4b5fd` | É VOCÊ! | uma mão apontando o dedo para frente, três polaroids de rostos genéricos (silhuetas) presas atrás com fita |
 | `dilema` | `#f97316` | DILEMA NOS TRILHOS | um bonde/trólebus visto de frente descendo um trilho que se bifurca em Y, uma alavanca grande em primeiro plano |
+| `sintonia` | `#2dd4bf` | SINTONIA | um medidor/dial de rádio vintage com uma agulha grande apontando pro alto e ondas sonoras concêntricas saindo dele, um mostrador curvo com marcas de escala |
 
 Baked output: `host/src/games/<id>/cover.webp` via a `cover-<id>` key in
-`tools/build-screen-bg.py` (to be added when the renders land).
+`tools/build-screen-bg.py` (`GAMES` dict — all 9 games wired).

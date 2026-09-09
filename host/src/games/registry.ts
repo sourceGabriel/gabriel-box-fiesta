@@ -31,6 +31,10 @@ import { DilemaHostView } from './dilema/DilemaHostView';
 import { DilemaCover } from './dilema/DilemaCover';
 import { personality as dilemaPersonality } from './dilema/personality';
 import dilemaLobbyBg from './dilema/lobby-bg.webp';
+import { SintoniaHostView } from './sintonia/SintoniaHostView';
+import { SintoniaCover } from './sintonia/SintoniaCover';
+import { personality as sintoniaPersonality } from './sintonia/personality';
+import sintoniaLobbyBg from './sintonia/lobby-bg.webp';
 
 /**
  * Maps a game id (from the server's GAME_CATALOG / the started game) to its host
@@ -60,5 +64,11 @@ export const HOST_GAMES: Record<string, HostGameEntry> = {
     Cover: DilemaCover,
     personality: dilemaPersonality,
     lobbyBg: dilemaLobbyBg,
+  },
+  sintonia: {
+    View: SintoniaHostView,
+    Cover: SintoniaCover,
+    personality: sintoniaPersonality,
+    lobbyBg: sintoniaLobbyBg,
   },
 };

@@ -997,3 +997,87 @@ The lobby (the screen players stare at while waiting) now wears the selected gam
 - Shell + `@party/ui` only (§52 untouched). 167 server tests, `tsc` + `oxlint`
   clean, 5-workspace build green; live-verified on a phone viewport (default,
   accordion open, and the sticky footer holding while scrolling).
+
+## 2026-09-09 — game #9 "Sintonia" (branch `feature/sintonia`)
+### Added
+- **Sintonia** — game #9, *Wavelength*-inspired (clean-room; the hidden-dial
+  mechanic only, all PT-BR text original). `gameId: "sintonia"`, BrandMark
+  "Sintonia", accent teal `#2dd4bf`, vibe `TELEPATIA`. **Team game**, scored by
+  team; `minPlayers 3`, `maxPlayers 8`, **tiered** (leve/pesado spectrum bank),
+  rounds `[4, 6, 8]` default `6`.
+- Loop (self-advancing off one deadline, like Dilema/FDP): `cluing` (45s — teams
+  re-split, a **médium** rotates by join order, sees a hidden `target` ∈ [4,96]
+  and types ONE clue ≤ 60 chars, digits rejected) → `guessing` (40s — the médium's
+  team drags a 0–100 dial; the other team bets `left`/`right` of where it lands)
+  → `reveal` (9s — bands ±6/±14/±22 → 4/3/2 pts for the active team, +1 for the
+  other team's right side-call; a médium who never clued = round skipped, nobody
+  scores) → next round → `gameover`.
+- Whole game = `shared/{models,games}/sintonia` + `server/src/games/sintonia/`
+  (`constants`, `spectrums.ts` ~66 PT-BR pairs leve/pesado, `pairing.ts` pure
+  round planner, `sintonia-game.ts` `implements PausableGame, TurnTimedGame`,
+  `action-schema.ts`, `plugin.ts`) + `host/src/games/sintonia/` (`SintoniaHostView`,
+  `SintoniaDial` — pure-SVG semicircular gauge sampled as polylines, `SintoniaCover`
+  inline SVG, `describeEvent`, `sound-map`, `personality`, css) +
+  `mobile/src/games/sintonia/` (`SintoniaControllerView` role-driven —
+  medium / dial-slider / side-bet / idle, `HowToPlay`, css) + **1 line in each of
+  the 3 registries** + `sintonia` in `TIERED_GAMES` (host `LobbyScreen` +
+  `mobile/App.tsx`). `sintonia-game.test.ts` (18) + 1 integration case →
+  **167 → 186 server tests**.
+- **Owner key art landed** — `tools/build-screen-bg.py` `GAMES` dict gained
+  `sintonia`; `cover-sintonia` → `host/src/games/sintonia/cover.webp` (3:2, q70,
+  ~105 KB) and `lobby-sintonia` → `lobby-bg.webp` (1672×941, ~287 KB) baked from
+  `gabriel-source/{thumbs,backgrounds}/sintonia.png`. `SintoniaCover` is now a
+  3-line `<img class="game-cover">`; `HOST_GAMES.sintonia` gained `lobbyBg` → the
+  lobby renders in **art mode** like the other 8. Prompt lines are in
+  `tools/{cover-art,lobby-bg}-prompts.md`.
+### Unchanged
+- §52 held — zero edits to `core/`, `ws-server.ts`, `shared/protocol`, either
+  shell flow, or existing engines. `tsc` + `oxlint` clean, 5-workspace build green.
+- Live smoke: host + 3 phones, full 4-round match — all phases, all roles, team
+  re-split + médium rotation, the skip path, band + side-bet scoring, gameover +
+  VictorySplash, 0 console errors.
+
+## 2026-09-09 — glory-moment cameo `<VictorySplash>` (branch `feature/glory-cameo`)
+### Added
+- **`@party/ui` `<VictorySplash>`** — the winner's face, big, for a `gameover`
+  overlay. A "Gabsinto" preset winner gets their full portrait
+  (`ui/src/avatar-presets/<id>-full.webp`) full-bleed in an accent-glow frame with
+  CSS confetti; otherwise their pixel `<Avatar>` blown up to 220 px. Props
+  `{ winner: { name, avatar? }, subtitle?, accent? }`. `prefers-reduced-motion`
+  kills the confetti + glow pulse. Styles appended to `ui/src/components.css`.
+- Wired into all **9** host `gameover` overlays (uno, coup, zap, lorota, sabetudo,
+  fdp, evoce, dilema, sintonia) — each passes its winner + accent; the round-over
+  (non-gameover) headings in UNO stay as-is, and tie states (Sintonia empate) keep
+  the plain `<h2>`.
+### Unchanged
+- Platform-level, like reactions/avatars — no wire/server change (the winner is
+  already in each game's public state). `tsc` + `oxlint` clean, build green;
+  186 server tests unaffected. Live-verified in Sintonia's gameover.
+
+## 2026-09-09 — lobby / covers finishing touches (branch `feature/lobby-acabamento`)
+### Changed
+- `.lobby-slot-start:disabled` is now **opaque** (`#0b0e12` + hairline border)
+  instead of translucent `rgba(10,13,17,.78)` — the painted "COMEÇAR X" no longer
+  bleeds through in art mode.
+- `.lobby-slot-code` raised to `top: 57.3%` (was 58.5) and `.lobby-qr-url`
+  shrunk to `1.3cqh` (was 1.5) — the `192.168.x.x:5174/join/CODE` line now sits
+  inside the painted dark box.
+- `.lobby-slot-start` gets `justify-content: center` — the parent `.lobby-slot`
+  pins content to the top, which left the button label floating above the pill
+  (obvious once the disabled bg went opaque).
+- `tools/build-screen-bg.py` gained `COVER_QUALITY = 70` for the `cover-<id>`
+  branch (was the global 82) — ~40 % off the 8 cover webps. **Rebuild pending**
+  (needs the gitignored `gabriel-source/thumbs/*`; owner reruns
+  `build-screen-bg.py cover-<id>` ×8).
+- CSS class `.game-cover-svg` → `.game-cover` (the 8 real covers are `<img>` now,
+  not SVG) across the 9 `<Id>Cover.tsx` + `shell.css` (2 rules).
+- `mobile/src/shell/shell.css` — `.join` gets `margin-block: auto` and the sticky
+  `.join-cta-bar` drops its `margin: auto` top, so the name+avatar block is
+  centred in the free space instead of leaving a dark gap above the footer.
+### Notes
+- The `LobbyScreen` plain-card branch is **kept as the documented fallback**
+  (owner's call) — the comment now says so. All 9 games ship a `lobbyBg`, so it
+  only renders when `selected` is undefined (empty catalog).
+- Still owner-only: regen `dilema.png` ("TRIILHOS" typo), `fdp.png`/`evoce.png`
+  accents; re-render the 8 pre-existing covers at q70 (the `sintonia` cover was
+  already baked at q70 in the game #9 batch).
