@@ -333,6 +333,103 @@
   .round-taunt { animation: none; }
 }
 
+/* ---------- RoundScoreboard (the between-rounds scene) ---------- */
+.ui-scoreboard {
+  width: min(760px, 100%);
+  margin: 0.5rem auto 0;
+  display: grid;
+  gap: 0.5rem;
+}
+.ui-scoreboard-title {
+  text-align: center;
+  font-size: clamp(0.75rem, 1.6vmin, 1rem);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+}
+.ui-scoreboard-rows {
+  display: grid;
+  gap: 0.4rem;
+}
+.ui-scoreboard-row {
+  display: grid;
+  grid-template-columns: 2.2rem auto 1fr auto auto;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel-2, #1d2634);
+  animation: ui-scoreboard-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--i, 0) * 90ms);
+}
+.ui-scoreboard-row.is-leader {
+  border-color: var(--accent, #f59e0b);
+  box-shadow: 0 0 0 1px var(--accent, #f59e0b);
+}
+.ui-scoreboard-row.is-last {
+  opacity: 0.72;
+}
+.ui-scoreboard-rank {
+  font-size: 1.1rem;
+  font-weight: 800;
+  text-align: center;
+}
+.ui-scoreboard-avatar { border-radius: 8px; }
+.ui-scoreboard-name {
+  font-weight: 700;
+  font-size: clamp(0.95rem, 1.9vmin, 1.25rem);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ui-scoreboard-streak { font-size: 0.85rem; font-weight: 700; }
+.ui-scoreboard-bar-wrap {
+  grid-column: 3 / 4;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+  min-width: 40px;
+}
+.ui-scoreboard-bar {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent, #f59e0b) 55%, transparent), var(--accent, #f59e0b));
+  transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.ui-scoreboard-delta {
+  font-weight: 800;
+  color: var(--good, #22c55e);
+  font-size: 0.9rem;
+  animation: ui-scoreboard-pop 0.5s ease both;
+  animation-delay: calc(var(--i, 0) * 90ms + 0.3s);
+}
+.ui-scoreboard-score {
+  font-weight: 900;
+  font-size: clamp(1rem, 2.1vmin, 1.4rem);
+  min-width: 3ch;
+  text-align: right;
+}
+.ui-scoreboard-taunt { margin-top: 0.3rem; }
+
+@keyframes ui-scoreboard-in {
+  from { opacity: 0; transform: translateX(-14px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes ui-scoreboard-pop {
+  0% { opacity: 0; transform: scale(0.6); }
+  60% { transform: scale(1.25); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-scoreboard-row,
+  .ui-scoreboard-delta { animation: none; }
+  .ui-scoreboard-bar { transition: none; }
+}
+
 /* Preset ("Lendas") portraits are real photos — no nearest-neighbour scaling. */
 .ui-avatar-preset {
   image-rendering: auto;

@@ -308,3 +308,8 @@ User report: É Você! drawing → clicking undo/submit a big drawing → `Range
 - Sabe-Tudo 8/12/16/20 (def 12), Zap!/Lorota! 3/5/7 (def 3), FDP 3/5/7 (def 5): `TOTAL_ROUNDS` const → per-instance `this.totalRounds = ctx.matchLength ?? TOTAL_ROUNDS`. Evoce unchanged (fixed 6-round plan).
 - Host `LobbyScreen` segmented picker (reuses `.lobby-tier*` styles). `useRoomConnection` exposes `matchLengths`; `App` sends `SET_MATCH_LENGTH`.
 - sabetudo-game.test +2, room.test +1 → 144 server tests. tsc+oxlint+build green.
+
+## 2026-09-09 — between-rounds scoreboard scene (branch `feature/rodadas-e-cenas`)
+- `@party/ui` `<RoundScoreboard>` (+ `ScoreRow` type): big animated host leaderboard — ranked rows w/ medals, score bars scaled to leader, "+N" delta pop, streak flames, `roundTaunt` underneath, staggered entrance, reduced-motion guard. `.ui-scoreboard*` CSS.
+- Wired into results/reveal of Sabe-Tudo, Zap!, FDP, Lorota!, É Você! (replaced the standalone taunt `<p>`). Title = "Rodada X de Y" / "Última Chance" / "Final FDP" / "Lorota Final".
+- tsc+oxlint+build green. Needs a live smoke through a full round (component is JSX+CSS, unit path covered by roundTaunt tests).

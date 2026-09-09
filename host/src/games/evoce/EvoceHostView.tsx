@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { EvoceGameEvent, EvocePublicState, EvoceSubmission } from '@party/shared';
-import { Avatar, BrandMark, Button, DrawingView, getSounds, Overlay, roundTaunt, Timer } from '@party/ui';
+import { Avatar, BrandMark, Button, DrawingView, getSounds, Overlay, RoundScoreboard, roundTaunt, Timer } from '@party/ui';
 import type { HostGameViewProps } from '../types';
 import { describeEvent } from './describeEvent';
 import { soundForEvent } from './sound-map';
@@ -238,10 +238,14 @@ export function EvoceHostView({ publicState, events, players, connected, reactio
             </div>
           ) : null}
 
-          {inResults && !over ? (() => {
-            const taunt = roundTaunt(standings, pub.round);
-            return taunt ? <p className="round-taunt">{taunt}</p> : null;
-          })() : null}
+          {inResults && !over ? (
+            <RoundScoreboard
+              title={`Rodada ${pub.round} de ${pub.totalRounds}`}
+              standings={standings}
+              taunt={roundTaunt(standings, pub.round)}
+              avatarFor={avatarOf}
+            />
+          ) : null}
         </section>
 
         <aside className="evoce-side">

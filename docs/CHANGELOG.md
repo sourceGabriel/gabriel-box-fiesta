@@ -733,3 +733,8 @@ The host can now dial how many rounds / questions a game runs, in the lobby.
 - Host `LobbyScreen`: a segmented picker next to the content-tier toggle, using the selected game's `lengthOptions`.
 - `sabetudo-game.test.ts` +2, `room.test.ts` +1. **Server tests 141 → 144.**
 - `tsc` + `oxlint` clean, 5-workspace build green.
+
+## 2026-09-09 — the between-rounds scoreboard scene (branch `feature/rodadas-e-cenas`)
+- `@party/ui` `<RoundScoreboard>` — a big animated leaderboard for the host TV: ranked rows (medals for the top 3), score bars that scale to the leader, a "+N this round" chip that pops in, streak flames, and the `roundTaunt` line underneath. Staggered row entrance, `prefers-reduced-motion` aware. `.ui-scoreboard*` styles in `components.css`.
+- Wired into the results/reveal phase of Sabe-Tudo, Zap!, FDP, Lorota!, É Você! (replaces the plain taunt line added earlier). Title reads "Rodada X de Y" (or "Última Chance" / "Final FDP" / "Lorota Final" on the last round).
+- `tsc` + `oxlint` + build green; 144 server / 12 ui tests.

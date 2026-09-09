@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { LorotaGameEvent, LorotaOption, LorotaPublicState } from '@party/shared';
-import { Avatar, BrandMark, Button, getSounds, Overlay, roundTaunt, Timer } from '@party/ui';
+import { Avatar, BrandMark, Button, getSounds, Overlay, RoundScoreboard, roundTaunt, Timer } from '@party/ui';
 import type { HostGameViewProps } from '../types';
 import { describeEvent } from './describeEvent';
 import { soundForEvent } from './sound-map';
@@ -196,10 +196,14 @@ export function LorotaHostView({ publicState, events, players, connected, reacti
             </div>
           ) : null}
 
-          {inReveal && !over ? (() => {
-            const taunt = roundTaunt(standings, pub.round);
-            return taunt ? <p className="round-taunt">{taunt}</p> : null;
-          })() : null}
+          {inReveal && !over ? (
+            <RoundScoreboard
+              title={isFinal ? 'Lorota Final' : `Rodada ${pub.round} de ${pub.totalRounds}`}
+              standings={standings}
+              taunt={roundTaunt(standings, pub.round)}
+              avatarFor={avatarOf}
+            />
+          ) : null}
         </section>
 
         <aside className="lorota-side">
