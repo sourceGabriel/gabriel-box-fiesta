@@ -557,4 +557,4 @@ User report: É Você! drawing → clicking undo/submit a big drawing → `Range
   proposal before the empty-team case). Plus Sintonia drip-race hardening, dial
   reset on a new round, several controller UX fixes, and integration tests that
   drive the new wire verbs. Scripted wire smoke played both games to gameover.
-  **191 server tests.**
+  **193 server tests.**

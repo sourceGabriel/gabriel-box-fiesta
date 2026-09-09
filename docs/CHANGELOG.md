@@ -50,7 +50,7 @@ their own dial**. Researched the official Trial by Trolley rules first.
   Sintonia block updated (no more `teams`). `spectrums.ts` untouched.
 
 ### Validation
-Server 191 tests green, `tsc --noEmit` clean, host/mobile oxlint clean, 5-workspace
+Server 193 tests green, `tsc --noEmit` clean, host/mobile oxlint clean, 5-workspace
 build green. Live smoke (host + 3 phones): Dilema full round — 3 consensus steps
 (incl. a cross-track modifier), Maquinista verdict with no clock, scoring, round 2
 with re-split + rotation. Sintonia round — médium clue (target 93), two guessers
