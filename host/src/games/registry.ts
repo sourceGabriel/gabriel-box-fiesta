@@ -21,6 +21,9 @@ import { personality as fdpPersonality } from './fdp/personality';
 import { EvoceHostView } from './evoce/EvoceHostView';
 import { EvoceCover } from './evoce/EvoceCover';
 import { personality as evocePersonality } from './evoce/personality';
+import { DilemaHostView } from './dilema/DilemaHostView';
+import { DilemaCover } from './dilema/DilemaCover';
+import { personality as dilemaPersonality } from './dilema/personality';
 
 /**
  * Maps a game id (from the server's GAME_CATALOG / the started game) to its host
@@ -40,4 +43,5 @@ export const HOST_GAMES: Record<string, HostGameEntry> = {
   sabetudo: { View: SabeTudoHostView, Cover: SabeTudoCover, personality: sabetudoPersonality },
   fdp: { View: FdpHostView, Cover: FdpCover, personality: fdpPersonality },
   evoce: { View: EvoceHostView, Cover: EvoceCover, personality: evocePersonality },
+  dilema: { View: DilemaHostView, Cover: DilemaCover, personality: dilemaPersonality },
 };

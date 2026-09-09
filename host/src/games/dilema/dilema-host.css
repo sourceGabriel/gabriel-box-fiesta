@@ -1,0 +1,275 @@
+/* Dilema nos Trilhos — host/TV view. Loaded only when Dilema is active.
+   All rules scoped under .dilema-host so they can't collide with other games. */
+
+.dilema-host {
+  --dil-orange: #f97316;
+  --dil-amber: #fbbf24;
+  --dil-red: #ef4444;
+  --dil-green: #34d399;
+  position: relative;
+}
+
+.dil-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: clamp(0.5rem, 1.5vmin, 1rem) clamp(0.75rem, 2vmin, 1.5rem);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+}
+.dil-brand { display: flex; align-items: baseline; gap: 0.9rem; min-width: 0; }
+.dil-brand-sub { color: var(--muted); font-size: clamp(0.85rem, 1.6vmin, 1.15rem); white-space: nowrap; }
+.dil-conductor {
+  font-size: clamp(0.85rem, 1.7vmin, 1.2rem);
+  color: var(--dil-amber);
+  white-space: nowrap;
+}
+.dil-conductor strong { color: var(--text); }
+.dil-conn-pill {
+  font-size: 0.7em; text-transform: uppercase; letter-spacing: 0.04em;
+  padding: 0.2em 0.7em; border-radius: 999px;
+  background: rgba(251, 191, 36, 0.16); color: var(--dil-amber); border: 1px solid rgba(251, 191, 36, 0.4);
+}
+
+.dil-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(240px, 24vw, 380px);
+  gap: clamp(0.5rem, 1.5vmin, 1.25rem);
+}
+.dil-stage {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--panel);
+  padding: clamp(0.75rem, 2.4vmin, 1.75rem);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.6rem, 1.6vmin, 1.1rem);
+  overflow-y: auto;
+}
+
+.dil-eyebrow {
+  color: var(--muted);
+  font-size: clamp(0.85rem, 1.7vmin, 1.15rem);
+  text-align: center;
+  margin: 0;
+}
+.dil-eyebrow strong { color: var(--text); }
+.dil-assign { color: var(--dil-amber); }
+.dil-verdict { color: var(--dil-orange); font-weight: 700; }
+.dil-result-line { color: var(--dil-green); font-weight: 700; }
+
+/* ── the two tracks ── */
+.dil-tracks {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: clamp(0.5rem, 1.6vmin, 1.25rem);
+  align-items: start;
+}
+.dil-fork {
+  align-self: center;
+  font-size: clamp(1.6rem, 4vmin, 2.6rem);
+  opacity: 0.85;
+}
+
+.dil-track {
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.02);
+  padding: clamp(0.5rem, 1.4vmin, 1rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  position: relative;
+  transition: border-color 0.3s, opacity 0.3s, transform 0.3s;
+}
+.dil-track.is-live { border-color: rgba(249, 115, 22, 0.5); }
+.dil-track.is-killed { border-color: var(--dil-red); opacity: 0.55; }
+.dil-track.is-killed .dil-card-text { text-decoration: line-through; }
+.dil-track.is-spared { border-color: var(--dil-green); box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.15); }
+
+.dil-track-head { display: flex; flex-direction: column; gap: 0.35rem; }
+.dil-track-head h3 {
+  margin: 0;
+  font-size: clamp(0.95rem, 2vmin, 1.3rem);
+}
+.dil-track-team {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+.dil-track-team li {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: clamp(0.75rem, 1.5vmin, 1rem);
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 999px;
+  padding: 0.1rem 0.55rem 0.1rem 0.1rem;
+}
+.dil-track-team .dil-empty { color: var(--muted); padding: 0.1rem 0.55rem; }
+
+.dil-track-cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.dil-card {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  background: var(--panel-2, rgba(0, 0, 0, 0.25));
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--muted);
+  border-radius: 10px;
+  padding: 0.4rem 0.6rem;
+  font-size: clamp(0.8rem, 1.6vmin, 1.05rem);
+  animation: dil-card-in 0.25s ease both;
+}
+@keyframes dil-card-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+.dil-card.is-innocent { border-left-color: var(--dil-green); }
+.dil-card.is-guilty { border-left-color: var(--dil-red); }
+.dil-card.is-modifier { border-left-color: var(--dil-amber); }
+.dil-card-icon { font-size: 1.1em; line-height: 1.2; }
+.dil-card-body { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+.dil-card-text { color: var(--text); }
+.dil-card-author { color: var(--muted); font-size: 0.8em; }
+.dil-card-mods { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.15rem; }
+.dil-mod-chip {
+  font-size: 0.78em;
+  background: rgba(251, 191, 36, 0.14);
+  color: var(--dil-amber);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  border-radius: 999px;
+  padding: 0.05rem 0.5rem;
+}
+
+.dil-track-stamp {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-8deg);
+  font-size: clamp(1rem, 2.6vmin, 1.7rem);
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: var(--dil-red);
+  background: rgba(11, 15, 23, 0.82);
+  border: 3px solid var(--dil-red);
+  border-radius: 10px;
+  padding: 0.25rem 0.9rem;
+  pointer-events: none;
+}
+.dil-track-stamp.is-good { color: var(--dil-green); border-color: var(--dil-green); }
+
+/* ── side panel ── */
+.dil-side {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--panel);
+  padding: clamp(0.6rem, 1.8vmin, 1.2rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  min-height: 0;
+}
+.dil-side-head { display: flex; align-items: center; justify-content: space-between; }
+.dil-side-head h2 { margin: 0; font-size: clamp(1rem, 2vmin, 1.35rem); }
+
+.dil-standings, .dil-final-standings {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.dil-standings li, .dil-final-standings li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.5rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  font-size: clamp(0.8rem, 1.5vmin, 1.05rem);
+}
+.dil-standings li.is-conductor { background: rgba(251, 191, 36, 0.1); }
+.dil-rank { color: var(--muted); font-variant-numeric: tabular-nums; min-width: 1.8em; }
+.dil-standings-name, .dil-final-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dil-standings-delta { color: var(--dil-green); font-weight: 700; }
+.dil-standings-score, .dil-final-score { color: var(--dil-amber); font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.dil-feed {
+  list-style: none;
+  margin: 0;
+  padding: 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: clamp(0.72rem, 1.4vmin, 0.95rem);
+  color: var(--muted);
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.dil-side-actions { display: flex; gap: 0.5rem; }
+.dil-side-actions > * { flex: 1; }
+.dil-sound-toggle {
+  appearance: none;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  border-radius: 8px;
+  padding: 0.35rem 0.6rem;
+  font: inherit;
+  font-size: 0.85em;
+  cursor: pointer;
+}
+.dil-sound-toggle[aria-pressed='true'] { color: var(--dil-amber); border-color: rgba(251, 191, 36, 0.4); }
+
+.dil-result-actions { display: flex; gap: 0.75rem; justify-content: center; margin-top: 1rem; }
+
+/* ── reactions ── */
+.dil-reactions {
+  position: absolute;
+  top: 4.5rem;
+  right: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  z-index: 5;
+  pointer-events: none;
+}
+.dil-reaction-bubble {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(11, 15, 23, 0.8);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.15rem 0.6rem;
+  animation: dil-card-in 0.2s ease both;
+}
+.dil-reaction-emoji { font-size: 1.1rem; }
+.dil-reaction-who { font-size: 0.75rem; color: var(--muted); }
+
+@media (prefers-reduced-motion: reduce) {
+  .dil-card, .dil-reaction-bubble { animation: none; }
+  .dil-track { transition: none; }
+}

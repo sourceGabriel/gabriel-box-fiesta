@@ -835,3 +835,44 @@ The lobby (the screen players stare at while waiting) now wears the selected gam
   lobby art (Lorota first). The catalog uses the robust `cover`+overlay approach from the
   attract screen; the lobby needs rough alignment to painted panels, so it letterboxes at
   16:9 and positions in `%` — new per-game lobby art must keep that panel geometry.
+
+## 2026-09-09 — Dilema nos Trilhos — game #8 (branch `feature/dilema`, off `develop`)
+### Added
+- **Game #8 "Dilema nos Trilhos"** (`gameId: "dilema"`) — a trolley-problem debate game
+  inspired by *Trial by Trolley* (clean-room; the mechanic is the trolley problem, all
+  text is original PT-BR). §47 own name.
+- Loop of a round (self-advancing off one server-ticked deadline, like FDP/Lorota):
+  `assigning` (4s — a Maquinista is picked, rotating by join order; the rest are
+  **re-split** into Trilho Esquerdo / Direito each round; one seed innocent per track) →
+  `playing` (75s — every non-Maquinista holds a 5-card hand and plays freely: `innocent`
+  on their OWN track, `guilty` on the ENEMY track, `modifier` stapled onto a specific
+  base card on either track; "✅ Pronto" to stop early) → `verdict` (30s — the Maquinista
+  picks which track the trolley runs over; timeout = coin flip) → `roundResults` (8.5s).
+- **No points economy** — the score *is* the number of rounds a player's track was
+  spared. The game crowns whoever was spared most. `standings` carry `spared` + a
+  per-round `roundDelta` so the shell's between-rounds scoreboard scene still works.
+- `minPlayers 3`, `maxPlayers 10`, lobby-configurable rounds (`lengthOptions` 3/5/7,
+  default 5), Leve/Pesado content tiers.
+- Whole game = `shared/{models,games}/dilema` + `server/src/games/dilema/`
+  (`constants`, `cards.ts` — original PT-BR innocent/guilty/modifier banks split
+  leve/pesado with the standard guardrail header, `pairing.ts` pure round planner,
+  `dilema-game.ts` `implements PausableGame, TurnTimedGame`, `action-schema.ts`,
+  `plugin.ts`) + `host/src/games/dilema/` (`DilemaHostView`, `DilemaCover`,
+  `describeEvent`, `sound-map.ts`, `personality.ts`, `dilema-host.css`) +
+  `mobile/src/games/dilema/` (`DilemaControllerView` — hand + track/target picker,
+  Maquinista lever, mini read-only tracks; `HowToPlay`; `dilema-controller.css`) +
+  **one line in each of the 3 registries** + `dilema` added to the `TIERED_GAMES` set in
+  `host/src/shell/LobbyScreen.tsx` and `mobile/src/App.tsx` (same as every tiered game).
+- `dilema-game.test.ts` (19) + a multiplayer integration path (1). **Server tests
+  144 → 164.**
+
+### Unchanged (§52)
+- Zero edits to `core/`, `ws-server.ts`, `shared/protocol`, or either shell **flow**.
+- `tsc` + `oxlint` clean, 5-workspace build green. Live smoke: host TV + 3 phones, full
+  round 1 (assign → play innocent/guilty/modifier → pass → timeout → verdict → results
+  with ATROPELADO/POUPADO stamps + scoreboard) into round 2 (re-division + Maquinista
+  rotation); 0 console errors.
+
+### Why
+- Next game on the roadmap after É Você!. Same §52 mould as the 7 prior games; the one
+  new idea (teams) lives entirely inside the game module.

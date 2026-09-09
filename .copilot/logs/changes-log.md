@@ -385,3 +385,31 @@ User report: É Você! drawing → clicking undo/submit a big drawing → `Range
   statically-imported controller views). `App.tsx` passes it to `WaitingScreen` by
   `conn.selectedGameId`; `WaitingScreen` gains a "❓ Como jogar" button next to
   "✏️ Editar avatar" (`.waiting-actions` flex row) that opens the overlay.
+
+## 2026-09-09 — Dilema nos Trilhos (game #8, branch `feature/dilema`, off `develop`, not merged)
+
+- Trolley-problem debate game inspired by *Trial by Trolley* (clean-room; mechanic only,
+  all PT-BR text original). §47 own name — `gameId: "dilema"`, `meta.name` "Dilema nos
+  Trilhos", BrandMark "Dilema".
+- Round (self-advancing, one server-ticked deadline): `assigning` (4s — Maquinista picked
+  by join-order rotation; the rest re-split into left/right each round; one seed innocent
+  per track) → `playing` (75s — 5-card hand, play freely: innocent→own track,
+  guilty→enemy, modifier→stapled to a specific base card either side; "Pronto" to stop) →
+  `verdict` (30s — Maquinista picks the track to run over; timeout = coin flip) →
+  `roundResults` (8.5s).
+- Scoreless: score = rounds your track was spared. `standings` carry `spared` +
+  `roundDelta` so `RoundScoreboard` still works. `minPlayers 3`, `maxPlayers 10`, rounds
+  3/5/7 (default 5), Leve/Pesado tiers.
+- Files: `shared/src/models/dilema.ts` + `shared/src/games/dilema/events.ts` (+ 2 index
+  lines); `server/src/games/dilema/{constants,cards,pairing,dilema-game,action-schema,
+  plugin}.ts` + 1 line in `GAMES`; `host/src/games/dilema/{DilemaHostView,DilemaCover,
+  describeEvent,sound-map,personality,dilema-host.css}` + registry entry;
+  `mobile/src/games/dilema/{DilemaControllerView,HowToPlay,dilema-controller.css}` + 2
+  registry entries; `dilema` added to `TIERED_GAMES` in `host/src/shell/LobbyScreen.tsx`
+  + `mobile/src/App.tsx`.
+- `dilema-game.test.ts` (19) + integration (1). Server tests 144 → 164. tsc + oxlint
+  clean, 5-workspace build green. Live smoke (host + 3 phones): full round 1 with
+  innocent/guilty/modifier plays, modifier target picker, pass, playing timeout →
+  verdict → results (ATROPELADO/POUPADO stamps + scoreboard) → round 2 re-division +
+  Maquinista rotation; 0 console errors.
+- §52 held — no edits to `core/`, `ws-server.ts`, `shared/protocol`, or either shell flow.

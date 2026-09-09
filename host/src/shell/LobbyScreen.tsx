@@ -5,7 +5,7 @@ import type { GamePersonality } from '../games/types';
 import type { ShellPlayer } from './useRoomConnection';
 
 /** Games whose prompt/question bank has a `leve`/`pesado` split. */
-const TIERED_GAMES = new Set(['zap', 'lorota', 'sabetudo', 'fdp', 'evoce']);
+const TIERED_GAMES = new Set(['zap', 'lorota', 'sabetudo', 'fdp', 'evoce', 'dilema']);
 
 /** Only render QR images we generated ourselves (base64 PNG data URI). */
 const SAFE_QR_PREFIX = 'data:image/png;base64,';
