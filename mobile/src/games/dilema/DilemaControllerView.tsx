@@ -250,12 +250,15 @@ export function DilemaControllerView({
             </section>
           ) : null}
 
-          {/* ── spectate ── */}
+          {/* ── the board — everyone sees it during picks / verdict / results ── */}
           {(pub.phase === 'assigning' ||
-            (inPicks && isConductor) ||
+            inPicks ||
             (pub.phase === 'verdict' && !isConductor) ||
             pub.phase === 'roundResults') ? (
-            <section className="dil-panel">{renderMiniTracks()}</section>
+            <section className="dil-panel">
+              {inPicks ? <p className="hint">Nos trilhos até agora:</p> : null}
+              {renderMiniTracks()}
+            </section>
           ) : null}
 
           {/* ── standings ── */}
