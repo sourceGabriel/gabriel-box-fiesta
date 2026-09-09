@@ -14,13 +14,6 @@ import type { ContentTier } from '@party/shared';
  *
  * `___` marks where the player's answer drops in; a prompt with no `___` is a
  * straight question. The engine shuffles the resulting list per match.
- *
- * Guardrails (do not cross, even in `pesado`): never a protected group (raça,
- * religião, orientação, deficiência) as the punchline; never about a real private
- * person; nothing sexual involving minors; no graphic sex about a named real
- * person; no real specific atrocity with real victims (Mariana/Brumadinho, 9/11,
- * real named killers); nothing written to defame a real named business. The
- * group's own inside jokes about real venues go in this file by hand.
  */
 
 export const FDP_PROMPTS_LEVE: readonly string[] = [
