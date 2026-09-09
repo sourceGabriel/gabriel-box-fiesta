@@ -36,6 +36,8 @@ export interface RoomConnection {
   send: Send;
   /** Join the room (or silently resume an existing session for this name). */
   joinOrReconnect: (identity: { playerName: string; avatar: AvatarSpec }) => void;
+  /** Drop this player's session and go back to the code-entry screen (socket stays up). */
+  leaveRoom: () => void;
 }
 
 export function useRoomConnection(): RoomConnection {
@@ -225,6 +227,23 @@ export function useRoomConnection(): RoomConnection {
     })));
   };
 
+  const leaveRoom = (): void => {
+    try {
+      socketRef.current?.send(JSON.stringify(makeMessage('LEAVE_ROOM', {})));
+    } catch {
+      // socket may be down — the session is cleared locally anyway
+    }
+    clearStoredSession(activeSessionKeyRef.current, roomCodeRef.current);
+    activeSessionKeyRef.current = null;
+    pendingSessionStorageKeyRef.current = null;
+    setPlayerId(null);
+    setActiveGameId(null);
+    setPublicState(null);
+    setPrivateState(null);
+    setRoomPlayers([]);
+    setError('');
+  };
+
   return {
     roomCode,
     setRoomCode,
@@ -241,5 +260,6 @@ export function useRoomConnection(): RoomConnection {
     reactions,
     send,
     joinOrReconnect,
+    leaveRoom,
   };
 }

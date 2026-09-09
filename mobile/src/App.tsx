@@ -4,6 +4,7 @@ import { DEFAULT_AVATAR, isGabsintoName, sanitizeAvatar } from '@party/ui';
 import { useRoomConnection } from './shell/useRoomConnection';
 import { JoinScreen } from './shell/JoinScreen';
 import { WaitingScreen } from './shell/WaitingScreen';
+import { TextScaleButton } from './shell/TextScaleButton';
 import { CONTROLLER_GAMES } from './games/registry';
 import './shell/shell.css';
 
@@ -100,6 +101,7 @@ function App() {
         showContentTier={TIERED_GAMES.has(conn.selectedGameId)}
         legendsUnlocked={legendsUnlocked}
         onAvatarChange={changeAvatar}
+        onLeave={conn.leaveRoom}
       />
     );
   } else {
@@ -121,6 +123,7 @@ function App() {
     <main className="mobile-layout">
       {screen}
       {conn.error ? <p className="error">{conn.error}</p> : null}
+      <TextScaleButton />
     </main>
   );
 }

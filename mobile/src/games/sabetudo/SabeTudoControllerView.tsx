@@ -129,7 +129,7 @@ export function SabeTudoControllerView({
                 .map((p) => (
                   <li key={p.id} className={p.id === playerId ? 'is-me' : ''}>
                     <span className="sabetudo-roster-who">
-                      {avatarOf(p.id) ? <Avatar spec={avatarOf(p.id)!} size={20} /> : null}
+                      {avatarOf(p.id) ? <Avatar spec={avatarOf(p.id)!} size={30} /> : null}
                       {p.name}
                       {p.id === playerId ? ' (você)' : ''}
                     </span>

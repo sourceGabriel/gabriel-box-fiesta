@@ -119,7 +119,7 @@ export function UnoControllerView({ publicState, privateState, playerId, connect
                 key={player.id}
                 className={`player-pill ${player.id === playerId ? 'is-me' : ''} ${player.id === pub.currentPlayerId ? 'is-turn' : ''}`}
               >
-                {avatarOf(player.id) ? <Avatar spec={avatarOf(player.id)!} size={20} /> : null}
+                {avatarOf(player.id) ? <Avatar spec={avatarOf(player.id)!} size={30} /> : null}
                 <span>{player.name}</span>
                 <small>{player.handCount}</small>
               </div>

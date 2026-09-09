@@ -248,7 +248,7 @@ export function CoupControllerView({ publicState, privateState, playerId, connec
               {pub.players.map((p) => (
                 <li key={p.id} className={`${p.id === pub.currentPlayerId ? 'is-turn' : ''} ${p.isAlive ? '' : 'is-out'}`}>
                   <span className="coup-roster-who">
-                    {avatarOf(p.id) ? <Avatar spec={avatarOf(p.id)!} size={20} /> : null}
+                    {avatarOf(p.id) ? <Avatar spec={avatarOf(p.id)!} size={30} /> : null}
                     {p.name}{p.id === playerId ? ' (você)' : ''}
                   </span>
                   <span className="coup-roster-meta">

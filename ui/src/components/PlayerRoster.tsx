@@ -20,7 +20,7 @@ export function PlayerRoster({
   meId?: string;
   layout?: 'list' | 'pills';
 }) {
-  const avatarSize = layout === 'list' ? 30 : 22;
+  const avatarSize = layout === 'list' ? 40 : 32;
   return (
     <div className={`ui-roster ui-roster--${layout}`}>
       {title ? <h2 className="ui-roster-title">{title}</h2> : null}

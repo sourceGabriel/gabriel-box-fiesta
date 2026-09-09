@@ -97,7 +97,7 @@ export function EvoceControllerView({
                       disabled={locked}
                       onClick={() => act({ type: 'votePlayer', targetId: p.id })}
                     >
-                      {avatarOf(p.id) ? <Avatar spec={avatarOf(p.id)!} size={28} /> : null}
+                      {avatarOf(p.id) ? <Avatar spec={avatarOf(p.id)!} size={36} /> : null}
                       <span>{p.name}{p.id === playerId ? ' (você)' : ''}</span>
                       {chosen ? <span className="evoce-check">✓</span> : null}
                     </button>
@@ -218,7 +218,7 @@ export function EvoceControllerView({
               {[...pub.players].sort((a, b) => b.score - a.score).map((p) => (
                 <li key={p.id} className={p.id === playerId ? 'is-me' : ''}>
                   <span className="evoce-roster-who">
-                    {avatarOf(p.id) ? <Avatar spec={avatarOf(p.id)!} size={20} /> : null}
+                    {avatarOf(p.id) ? <Avatar spec={avatarOf(p.id)!} size={30} /> : null}
                     {p.name}{p.id === playerId ? ' (você)' : ''}
                     <span className="evoce-jk">{'🃏'.repeat(p.jokersLeft)}</span>
                   </span>

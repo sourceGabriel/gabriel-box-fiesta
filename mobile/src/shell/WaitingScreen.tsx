@@ -21,6 +21,8 @@ interface WaitingScreenProps {
   legendsUnlocked?: boolean;
   /** Persist the new avatar locally and push it to the server (UPDATE_AVATAR). */
   onAvatarChange?: (avatar: AvatarSpec) => void;
+  /** Leave the room and go back to the code-entry screen. */
+  onLeave?: () => void;
 }
 
 export function WaitingScreen({
@@ -36,6 +38,7 @@ export function WaitingScreen({
   showContentTier,
   legendsUnlocked,
   onAvatarChange,
+  onLeave,
 }: WaitingScreenProps) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<AvatarSpec>(avatar);
@@ -72,6 +75,11 @@ export function WaitingScreen({
         <p className="hint dots">
           Aguardando o anfitrião iniciar<span>.</span><span>.</span><span>.</span>
         </p>
+        {onLeave && !editing ? (
+          <button type="button" className="waiting-leave" onClick={onLeave}>
+            ◀ Sair e trocar de sala
+          </button>
+        ) : null}
       </section>
 
       {editing ? (
