@@ -83,7 +83,9 @@ ul, ol {
   width: 100%;
   height: 100%;
 }
-.host-lobby::after {
+/* the wash behind the plain card — sinks the blurred cover-art backdrop.
+   Art mode paints its own room, so it opts out (see `.lobby-stage-bg::after`). */
+.host-lobby:not(.lobby-art)::after {
   content: '';
   position: absolute;
   inset: 0;
@@ -220,7 +222,7 @@ ul, ol {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(120% 90% at 50% 45%, transparent 55%, rgba(3, 5, 8, 0.4));
+  background: radial-gradient(125% 95% at 50% 45%, transparent 62%, rgba(3, 5, 8, 0.28));
 }
 
 .lobby-slot {
@@ -233,36 +235,49 @@ ul, ol {
   color: #eef2f6;
 }
 
-/* left painted panel — "ENTRE PELO SEU CELULAR" */
+/* Slot geometry below is measured against the owner's lobby renders (all 8 share
+   it — one prompt, `tools/lobby-bg-prompts.md`). % are of the 1672x941 stage. */
+
+/* the real QR, over the painted white square in the "ENTRE PELO SEU CELULAR" panel */
 .lobby-slot-qr {
-  left: 12.4%;
-  top: 33.5%;
-  width: 15.2%;
-  height: 34%;
-  gap: 1.4cqh;
+  left: 14.4%;
+  top: 36.8%;
+  width: 11.5%;
+  height: 20.6%;
+  align-items: stretch;
 }
 .lobby-slot-qr img,
 .lobby-qr-skeleton {
-  width: 11cqw;
-  max-width: 62%;
-  aspect-ratio: 1;
-  border-radius: 1cqw;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 0.5cqw;
   background: #fff;
-  padding: 0.7cqw;
-  box-shadow: 0 0.6rem 1.6rem rgba(0, 0, 0, 0.45);
+  padding: 0.55cqw;
+  box-shadow: 0 0.5rem 1.4rem rgba(0, 0, 0, 0.4);
 }
 .lobby-qr-skeleton {
   opacity: 0.3;
+}
+
+/* the room code, over the painted dark box below the QR */
+.lobby-slot-code {
+  left: 12%;
+  top: 58.5%;
+  width: 16%;
+  height: 9%;
+  gap: 0.3cqh;
+  justify-content: center;
 }
 .lobby-qr-label {
   text-transform: uppercase;
   letter-spacing: 0.24em;
   text-indent: 0.24em;
-  font-size: 1.4cqh;
-  color: #a9ded1;
+  font-size: 1.3cqh;
+  color: color-mix(in srgb, var(--game-accent) 28%, #cfe7df);
 }
 .lobby-qr-code {
-  font-size: 4.4cqh;
+  font-size: 3.6cqh;
   font-weight: 900;
   letter-spacing: 0.14em;
   text-indent: 0.14em;
@@ -271,7 +286,7 @@ ul, ol {
   text-shadow: 0 0 1.4cqh color-mix(in srgb, var(--game-accent) 45%, transparent);
 }
 .lobby-qr-url {
-  font-size: 1.7cqh;
+  font-size: 1.5cqh;
   font-weight: 800;
   color: #ff2f86;
   background: rgba(255, 255, 255, 0.96);
@@ -283,66 +298,66 @@ ul, ol {
   white-space: nowrap;
 }
 
-/* centre painted panel — the players box */
+/* the roster, inside the painted centre frame */
 .lobby-slot-players {
-  left: 29.5%;
-  top: 34%;
-  width: 35.6%;
-  height: 35%;
-  gap: 1.6cqh;
-  justify-content: center;
+  left: 30%;
+  top: 28.5%;
+  width: 41%;
+  height: 42%;
+  gap: 1.4cqh;
 }
 .lobby-slot-players h2 {
-  font-size: 2.4cqh;
+  font-size: 2.1cqh;
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: #f1f5f9;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
 }
 .lobby-slot-players h2 span {
   color: color-mix(in srgb, var(--game-accent) 55%, #fff);
 }
 .lobby-slot-players ul {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1cqh 1.2cqw;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.9cqh 0.9cqw;
   width: 100%;
 }
 .lobby-slot-players li {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5cqh;
-  padding: 0.8cqh 0.4cqw;
+  justify-content: center;
+  gap: 0.4cqh;
+  padding: 0.7cqh 0.3cqw;
   border-radius: 1cqh;
-  background: rgba(6, 9, 12, 0.82);
-  border: 1px solid color-mix(in srgb, var(--game-accent) 22%, transparent);
+  background: rgba(5, 8, 11, 0.86);
+  border: 1px solid color-mix(in srgb, var(--game-accent) 26%, transparent);
 }
 .lobby-slot-players li.is-empty {
-  background: rgba(6, 9, 12, 0.5);
+  background: rgba(5, 8, 11, 0.5);
   border-style: dashed;
-  border-color: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.13);
 }
 .lobby-slot-players li.is-off {
   opacity: 0.5;
 }
 .lobby-slot-players li .ui-avatar {
-  border-radius: 8px;
+  border-radius: 7px;
 }
 .lobby-tile-plus {
-  width: 58px;
-  height: 58px;
+  width: 40px;
+  height: 40px;
   display: grid;
   place-items: center;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.06);
-  font-size: 1.7rem;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 1.2rem;
   font-weight: 800;
-  color: #9fb2ad;
+  color: #8fa39d;
 }
 .lobby-tile-name {
-  font-size: 1.85cqh;
+  font-size: 1.6cqh;
   font-weight: 700;
   max-width: 100%;
   overflow: hidden;
@@ -350,31 +365,29 @@ ul, ol {
   white-space: nowrap;
 }
 .lobby-slot-players li.is-empty .lobby-tile-name {
-  color: #7d8f8a;
+  color: #6f807b;
   font-weight: 500;
   text-transform: lowercase;
   letter-spacing: 0.02em;
 }
 
-/* over the painted "COMEÇAR" button */
+/* the functional start button, over the painted "COMEÇAR" pill */
 .lobby-slot-start {
-  left: 36.8%;
-  top: 73.4%;
-  width: 25.4%;
-  height: 8.4%;
+  left: 37.5%;
+  top: 74%;
+  width: 25%;
+  height: 8%;
   border: 0;
-  border-radius: 1.2cqh 1.8cqh 1.2cqh 2cqh;
+  border-radius: 999px;
   background: var(--game-accent);
-  color: #08231b;
+  color: #0c0904;
   font: inherit;
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  font-size: 2.5cqh;
+  font-size: 2.3cqh;
   cursor: pointer;
-  box-shadow:
-    0 1.4cqh 3.4cqh color-mix(in srgb, var(--game-accent) 45%, transparent),
-    0 0 0 0.3cqh color-mix(in srgb, var(--game-accent) 55%, #000) inset;
+  box-shadow: 0 1.2cqh 3cqh color-mix(in srgb, var(--game-accent) 42%, transparent);
   transition: transform 0.14s ease, filter 0.14s ease;
   animation: lobby-start-pulse 2.4s ease-in-out infinite;
 }
@@ -384,10 +397,12 @@ ul, ol {
 }
 .lobby-slot-start:disabled {
   cursor: default;
-  filter: grayscale(0.55) brightness(0.72);
-  box-shadow: 0 0 0 0.3cqh rgba(0, 0, 0, 0.4) inset;
+  background: rgba(10, 13, 17, 0.78);
+  color: #9aa4a1;
+  box-shadow: none;
   animation: none;
-  font-size: 1.9cqh;
+  font-size: 1.7cqh;
+  backdrop-filter: blur(2px);
 }
 
 @keyframes lobby-start-pulse {
@@ -474,9 +489,10 @@ ul, ol {
 }
 
 /* ---------- Attract ---------- */
-/* The owner-painted room (attract-bg.webp) fills the viewport with `cover` and
-   drifts with the mouse. The live bits sit in a self-contained CRT-styled panel
-   floated over the scene — no measuring, so any background image just works. */
+/* Pure presentation: an owner-painted poster (wordmark + tagline baked in) fills
+   the viewport with `cover` and drifts a little with the mouse. The only live
+   element is the "toque para começar" sticker — no room code / QR / phone count
+   (those belong to the lobby). Nothing is measured against the art. */
 .attract {
   position: relative;
   width: 100vw;
@@ -486,8 +502,8 @@ ul, ol {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: clamp(1rem, 3.5vmin, 2.25rem);
+  justify-content: flex-end;
+  padding-bottom: clamp(1.5rem, 6vmin, 4rem);
   background: #0a0710;
   color: #fff;
 }
@@ -508,106 +524,20 @@ ul, ol {
   background-position: center;
 }
 
-/* pull focus toward the centre where the panel sits */
+/* Portrait / tall screens get the portrait poster. */
+@media (orientation: portrait) {
+  .attract-bg {
+    background-image: var(--attract-bg-portrait);
+    background-position: left center;
+  }
+}
+
+/* Just enough edge falloff to seat the sticker — the poster art stays readable. */
 .attract-scene::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(65% 55% at 50% 48%, rgba(3, 5, 8, 0.62), rgba(3, 5, 8, 0.32) 65%, transparent);
-}
-
-.attract-panel {
-  position: relative;
-  z-index: 1;
-  width: min(84vw, 25rem);
-  display: grid;
-  justify-items: center;
-  gap: clamp(0.4rem, 1.5vmin, 0.9rem);
-  padding: clamp(1.1rem, 3.6vmin, 2.2rem) clamp(1.1rem, 3.8vmin, 2.4rem);
-  text-align: center;
-  border-radius: clamp(16px, 2.2vmin, 28px);
-  color: #eef6f3;
-  background:
-    radial-gradient(140% 100% at 50% -10%, rgba(120, 225, 205, 0.1), transparent 55%),
-    rgba(10, 14, 18, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 1.6rem 4.5rem rgba(0, 0, 0, 0.55),
-    0 0 5rem rgba(80, 200, 180, 0.1);
-  backdrop-filter: blur(10px) saturate(1.1);
-  overflow: hidden;
-}
-
-.attract-screen-fx {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.1) 0 1px, transparent 1px 3px);
-  opacity: 0.6;
-  animation: attract-flicker 5s steps(1) infinite;
-}
-
-@keyframes attract-flicker {
-  0%, 94%, 100% { opacity: 0.5; }
-  95% { opacity: 0.35; }
-  97% { opacity: 0.7; }
-}
-
-.attract-sala {
-  text-transform: uppercase;
-  letter-spacing: 0.38em;
-  text-indent: 0.38em;
-  font-size: clamp(0.62rem, 1.3vmin, 0.9rem);
-  color: #bfe8de;
-}
-
-.attract-code {
-  font-size: clamp(1.5rem, 4.6vmin, 2.8rem);
-  font-weight: 900;
-  letter-spacing: 0.16em;
-  text-indent: 0.16em;
-  line-height: 1;
-  color: #fbfdfc;
-  text-shadow: 0 0 1.4vmin rgba(120, 240, 210, 0.35);
-}
-
-.attract-online {
-  font-size: clamp(0.72rem, 1.5vmin, 1rem);
-  color: #bcd8d1;
-}
-
-.attract-join {
-  display: grid;
-  justify-items: center;
-  gap: clamp(0.3rem, 1.1vmin, 0.65rem);
-  margin-top: clamp(0.2rem, 1vmin, 0.6rem);
-}
-
-.attract-join img,
-.attract-qr-skeleton {
-  width: clamp(150px, 26vmin, 280px);
-  height: clamp(150px, 26vmin, 280px);
-  border-radius: 12px;
-  background: #fff;
-  padding: clamp(6px, 1vmin, 12px);
-  box-shadow: 0 0.6rem 1.6rem rgba(0, 0, 0, 0.4);
-}
-
-.attract-qr-skeleton { opacity: 0.25; }
-
-.attract-join-url {
-  max-width: 100%;
-  font-size: clamp(0.72rem, 1.5vmin, 1rem);
-  font-weight: 800;
-  letter-spacing: 0.01em;
-  color: #ff2f86;
-  background: rgba(255, 255, 255, 0.96);
-  padding: 0.2em 0.7em;
-  border-radius: 7px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  background: linear-gradient(to top, rgba(3, 5, 8, 0.55), transparent 32%);
 }
 
 .attract-cta {
@@ -1005,7 +935,6 @@ ul, ol {
 
 @media (prefers-reduced-motion: reduce) {
   .attract-scene { transition: none; }
-  .attract-screen-fx,
   .attract-cta { animation: none; }
   .cf-card { transition: opacity 0.2s ease; }
   .cf-card.is-center .cf-frame { animation: none; }

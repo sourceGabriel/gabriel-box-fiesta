@@ -1,4 +1,4 @@
-import type { CSSProperties, FC } from 'react';
+import { useEffect, type CSSProperties, type FC } from 'react';
 import type { ContentTier, GameMeta } from '@party/shared';
 import { Avatar, BrandMark, Button, PlayerRoster, QrPanel } from '@party/ui';
 import type { GamePersonality } from '../games/types';
@@ -53,6 +53,18 @@ export function LobbyScreen({
   onSetContentTier,
   onSetMatchLength,
 }: LobbyScreenProps) {
+  // Esc goes back to the game catalog (same as "Trocar de jogo").
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onChangeGame();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onChangeGame]);
+
   const onlineCount = players.filter((p) => p.connected).length;
   const selected = catalog.find((g) => g.id === selectedGameId) ?? catalog[0];
   const minPlayers = selected?.minPlayers ?? 2;
@@ -130,6 +142,9 @@ export function LobbyScreen({
 
           <div className="lobby-slot lobby-slot-qr">
             {qr ? <img src={qr} alt="QR code da sala" /> : <div className="lobby-qr-skeleton" aria-hidden="true" />}
+          </div>
+
+          <div className="lobby-slot lobby-slot-code">
             <span className="lobby-qr-label">Código da sala</span>
             <strong className="lobby-qr-code">{roomCode || '····'}</strong>
             <span className="lobby-qr-url">{joinLabel || 'boxfiesta'}</span>
@@ -153,7 +168,7 @@ export function LobbyScreen({
                 return (
                   <li key={p.id} className={p.connected ? '' : 'is-off'}>
                     {p.avatar ? (
-                      <Avatar spec={p.avatar} size={58} />
+                      <Avatar spec={p.avatar} size={40} />
                     ) : (
                       <span className="lobby-tile-plus">{p.name.slice(0, 1).toUpperCase()}</span>
                     )}

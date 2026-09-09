@@ -76,6 +76,15 @@ npm run dev
 
 `npm run dev` sobe os três processos:
 
+```bash
+npm run -w server dev
+```
+```bash
+npm run -w host dev
+```
+```bash
+npm run -w mobile dev
+```
 | Processo | Porta | O quê |
 |---|---|---|
 | **server** | `3001` | servidor autoritativo (WebSocket + estado em memória) |

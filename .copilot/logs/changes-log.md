@@ -413,3 +413,30 @@ User report: É Você! drawing → clicking undo/submit a big drawing → `Range
   verdict → results (ATROPELADO/POUPADO stamps + scoreboard) → round 2 re-division +
   Maquinista rotation; 0 console errors.
 - §52 held — no edits to `core/`, `ws-server.ts`, `shared/protocol`, or either shell flow.
+
+## 2026-09-09 — attract screen = pure poster (branch `feature/dilema-melhorias`)
+- Attract/start screen stripped to pure presentation: an owner poster (wordmark + tagline
+  baked in) fills the viewport with `cover` + mouse parallax; only the yellow "toque para
+  começar" sticker is live. Room code / QR / phone count removed from attract — lobby only.
+- `tools/build-attract-bg.py` bakes two variants from `gabriel-source/mock-poster-{wide,
+  portrait}.png` → `host/src/shell/attract-bg.webp` + `attract-bg-portrait.webp`; a
+  `@media (orientation: portrait)` rule swaps posters.
+- `AttractScreen` props → just `onStart`; `App.tsx` drops the join/room props + unused
+  `onlineCount`. Removed `.attract-panel`/CRT-fx/`.attract-join*` CSS + `attract-flicker`.
+- Shell-only (§52 untouched). 167 server tests, tsc + oxlint clean, 5-workspace build
+  green; live-verified on the host in landscape + portrait, lobby still shows the QR + code.
+
+## 2026-09-09 — lobby "art mode" for all 8 games (branch `feature/dilema-melhorias`)
+- Every game gets `host/src/games/<id>/lobby-bg.webp` — one owner-generated painted room
+  each (wordmark, "ENTRE PELO SEU CELULAR" panel + blank QR square, empty centre frame,
+  "COMO JOGAR?" 3-step panel, painted "COMEÇAR X" pill, stats strip). All 8 from one
+  prompt → pixel-identical panel geometry. Sources `gabriel-source/backgrounds/*.png`.
+- `tools/build-screen-bg.py`: `lobby-lorota` key → `lobby-<id>` for all 8. New
+  `tools/lobby-bg-prompts.md` (master prompt + per-game table + measured coords).
+- `host/src/games/registry.ts`: `lobbyBg` on all 8 `HOST_GAMES` entries.
+- `LobbyScreen` art-mode: QR slot split into `.lobby-slot-qr` (QR image) +
+  `.lobby-slot-code` (code + url); avatars 40px. `shell.css` `.lobby-slot-*` retuned to
+  the measured geometry, 5-col roster grid, pill start button, softer vignette.
+- Shell + tooling only (§52 untouched). 167 server tests, tsc + oxlint, 5-ws build green.
+  Live: the 4 live slots measured in the DOM land exactly on the painted panels; all 8
+  `lobbyBg` imports resolve. Regen-only nits: dilema "TRIILHOS", fdp≈zap pink.
