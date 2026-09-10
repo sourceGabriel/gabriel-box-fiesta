@@ -9,6 +9,7 @@
   margin: 0.6rem 0.75rem;
 }
 .dil-center { text-align: center; display: flex; flex-direction: column; gap: 0.5rem; align-items: center; }
+.dil-gameover { gap: 0.7rem; }
 .dil-big { font-size: 3rem; }
 
 .dil-banner {

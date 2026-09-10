@@ -6,7 +6,7 @@ import type {
   DilemaStep,
   DilemaTrack,
 } from '@party/shared';
-import { Avatar } from '@party/ui';
+import { Avatar, VictorySplash } from '@party/ui';
 import { MobileHeader } from '../../shell/MobileHeader';
 import type { ControllerGameViewProps } from '../types';
 import { HowToPlay } from './HowToPlay';
@@ -154,15 +154,24 @@ export function DilemaControllerView({
           <button type="button" className="dil-howto-open" onClick={() => setShowHowTo(true)}>? Como jogar</button>
         </section>
       ) : over ? (
-        <section className="dil-panel dil-center">
-          <h2>
-            {!pub.winnerId
-              ? '🤝 Empate!'
-              : pub.winnerId === playerId
-                ? '🏆 Você foi o mais poupado!'
-                : `🏆 ${nameOf(pub.winnerId)} foi o mais poupado`}
-          </h2>
-          {myRank ? <p className="hint">Você terminou em {myRank}º — poupado {myStanding?.spared ?? 0}×</p> : null}
+        <section className="dil-panel dil-center dil-gameover">
+          {!pub.winnerId ? (
+            <h2>🤝 Empate!</h2>
+          ) : (
+            <VictorySplash
+              winner={{
+                name: pub.winnerId === playerId ? 'Você' : nameOf(pub.winnerId),
+                avatar: avatarOf(pub.winnerId),
+              }}
+              subtitle={pub.winnerId === playerId ? 'o mais poupado!' : 'o mais poupado'}
+              accent="#f97316"
+            />
+          )}
+          {myRank ? (
+            <p className="hint">
+              Você terminou em <strong>{myRank}º</strong> — poupado {myStanding?.spared ?? 0}×
+            </p>
+          ) : null}
           <p className="hint">Aguarde o anfitrião iniciar uma nova partida.</p>
         </section>
       ) : (
