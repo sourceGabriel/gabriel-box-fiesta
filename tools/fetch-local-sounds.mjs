@@ -32,6 +32,7 @@ const CUES = {
   'meme.gameover':    { page: '/en/instant/bem-amigos-terminou-73810/',             file: 'gameover-bem-amigos.mp3' },
   'meme.betrayal':    { page: '/en/instant/maldito-traidor-17987/',                 file: 'betrayal-maldito-traidor.mp3' },
   'meme.elimination': { page: '/en/instant/b-a-n-i-d-o-34138/',                     file: 'elimination-banido.mp3' },
+  'meme.crash':       { page: '/en/instant/pum-impacto-54019/',                     file: 'crash-pum-impacto.mp3' },
 };
 
 /** Downloaded for convenience, not mapped. Point a cue at one in manifest.json to use it. */

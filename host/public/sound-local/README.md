@@ -44,9 +44,13 @@ host page.
 | `meme.roundStart` | a new round / question begins (Zap!, Lorota!, Sabe-Tudo, FDP, É Você!) | "HEE HEE LEVANTA POBRE" · "São Paulo! Rádio Globo SP!" · MJ "hee-hee" |
 | `meme.reveal` | answers / duel / vote results are revealed (Zap!, Coup, Lorota!, Sabe-Tudo, FDP, É Você!) | "uepa!" (Ratinho) · "Oh No No No" |
 | `meme.win` | someone wins the match (UNO, Coup) / a ZAP! sweep | "POU ESTOURADO" · "ROJÃO" · "PUM IMPACTO" |
-| `meme.gameover` | the game-over screen (Zap!, Lorota!, Sabe-Tudo, FDP, É Você!) | "Bem amigos, terminou!" (Galvão) |
+| `meme.gameover` | the game-over screen (Zap!, Lorota!, Sabe-Tudo, FDP, É Você!, Dilema, Sintonia) | "Bem amigos, terminou!" (Galvão) |
+| `meme.crash` | the trolley squashes a track in Dilema nos Trilhos (`verdict_cast`) | "pum impacto" |
 | `meme.betrayal` | a Coup challenge is thrown | "Maldito Traidor" |
 | `meme.elimination` | a player loses their last influence in Coup | "B-A-N-I-D-O" · "Tuco: GET OUT" |
+
+`meme.roundStart` also fires for Dilema + Sintonia round starts, and `meme.reveal`
+for the Dilema verdict window and Sintonia reveals.
 
 **Reserved** — listed in `manifest.example.json` for intent, not triggered yet:
 `meme.loser`, `meme.correct`, `meme.timeout`, `meme.afk`, `meme.fooled`, `meme.deadLobby`.

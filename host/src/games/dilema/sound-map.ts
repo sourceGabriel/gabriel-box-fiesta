@@ -21,7 +21,8 @@ export function soundForEvent(event: DilemaGameEvent): SoundSpec | null {
     case 'verdict_started':
       return { cue: 'meme.reveal', fallback: { sample: 'ui-question' } };
     case 'verdict_cast':
-      return { sample: 'chip-clash' };
+      // the trolley squashes a track — the money moment
+      return { cue: 'meme.crash', fallback: { sample: 'chip-clash' } };
     case 'round_finished':
       return { sample: 'stinger-round' };
     case 'game_finished':
