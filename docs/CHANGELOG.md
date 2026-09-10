@@ -135,6 +135,55 @@ stack — these two fixes weren't about Ticket to ABC and don't deserve to be
 stuck on a dead branch. Now merged into `develop` together with Fase 10 (see
 the entry above).
 
+## 2026-09-10 — Host-TV "show" layer, Phase 0 + 1 MVP (branch `feature/host-stage-spike`, off `develop`)
+
+The host TV stops being a 70/30 dashboard and becomes a *stage* that interprets
+`state + ordered events` into scenes, moments and broadcast graphics. Direction
+validated with GPT + Copilot; full plan + prompt in
+`~/.claude/plans/host-ui-evolution.md`. §52 held — the "show" is opt-in per game
+and adding a game still gets it for free with defaults.
+
+- **Spike (`d204f6f`)** — `<HostStage>` + `<Moment reveal/callout>` +
+  `useMomentQueue` + the Anton display face (OFL, ~19 KB latin woff2) + a TV type
+  scale (`--tv-body`…`--tv-climax`), wired into Zap!'s answering/voting/results.
+  Live-smoked → go.
+- **Framework (`3813fe3`)** — `@party/ui`:
+  - `<HostStage theme scene intensity>` — full-bleed themed container, a HUD that
+    recedes at `high` / hides at `climax`, scene cross-fade. `HostTheme` =
+    accent + secondary, display font, background (midnight/ember/noir/table),
+    texture, `MotionStyle` (punchy/tense/playful/tactile/ceremonial → `MOTION`
+    easings).
+  - `PerformanceModeProvider` / `usePerformanceMode` (`high|balanced|safe`) — the
+    ambient drift, backdrop blur and every `<Moment>` choreography have a `safe`
+    tier; `prefers-reduced-motion` collapses to fade + hold.
+  - `<Moment>` gains `victory` (wraps `VictorySplash`) beside `reveal` / `callout`.
+  - `<Broadcast>` + `useStageDirector` — one hook owns the moment queue AND the
+    lower-third stream, with the interruption table: `ambient` dropped while a
+    moment is up or in a dramatic scene, `critical` replaces, `important` queues.
+    Per game, `describeEvent` → `broadcastFor(event) → { tier, graphic, eyebrow,
+    title, playerId }`.
+  - host `App` wraps everything in `<PerformanceModeProvider>` (persisted
+    `party:perfmode`, default balanced).
+- **Zap! migrated (`3813fe3`)** — `theme.ts` (pink / punchy), scenes
+  `thinking → reaction → reveal → victory`, the 30% sidebar + text feed gone
+  (bottom contestant strip instead), gameover is a full-bleed victory scene.
+  Live-smoked on the TV: the reveal moment (headline wipe + accent rule), the
+  "ZAP!" callout, the "PLACAR" broadcast lower-third and the victory scene.
+- **Coup migrated (`0c14994`)** — `theme.ts` (noir / tense), the poker table as a
+  custom `table` scene, moments on `challenge_made` ("DESAFIO!"),
+  `challenge_resolved` ("A carta era…"), `player_eliminated`; `game_over` → a
+  victory scene.
+- **Owner controls → the owner's phone (`360a802`)** — mobile `useRoomConnection`
+  tracks `ownerPlayerId` (`ROOM_JOINED` / `ROOM_STATE` / `OWNER_CHANGED` — the
+  host-lease + auto-transfer already existed server-side). `<HostControlsBar>` —
+  a sticky strip shown only to the owner mid-game: Pausar / Retomar (paused read
+  generically from `publicState.phase === 'paused'`) + Encerrar (confirm step).
+  Zap! + Coup drop their mid-game TV buttons; the corner cluster keeps only the
+  end-of-game "Nova partida" / "Encerrar" + the sound toggle.
+- Build + tsc + oxlint green; **193 server tests** (host-only work). Next:
+  Phase 1.5 (`<ContestantStrip>`, Spotlight/Countdown moments, perf toggle UI),
+  then the Texto/Festa + Blefe archetypes, then the board games.
+
 ## 2026-09-10 — Sintonia UX + Dilema trolley crash (branch `feature/sintonia-gauge-and-trolley`, off `a626757`)
 
 Follow-ups the owner asked for after seeing the Sintonia gameover screens.

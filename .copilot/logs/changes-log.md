@@ -646,3 +646,16 @@ User report: É Você! drawing → clicking undo/submit a big drawing → `Range
   straight to a short reveal (mirrors the existing mid-phase handler). +1 test.
 - Recovered by cherry-pick from the since-abandoned `feature/ticketabc-abc-map`
   stack, now merged into `develop` together with Fase 10 (see above).
+## 2026-09-10 — Host-TV "show" layer: Phase 0 spike + Phase 1 MVP (branch `feature/host-stage-spike`)
+- Direction validated with GPT + Copilot; plan/prompt in `~/.claude/plans/host-ui-evolution.md`.
+- Spike `d204f6f`: `<HostStage>` + `<Moment reveal/callout>` + `useMomentQueue` +
+  Anton (OFL woff2) + `--tv-*` type scale, on Zap!'s play scenes. Live-smoke → go.
+- Framework `3813fe3`: `@party/ui` `<HostStage theme scene intensity>` (HostTheme
+  + MOTION), `PerformanceModeProvider` (high/balanced/safe), `<Moment>` +victory,
+  `<Broadcast>` + `useStageDirector` (moment queue + lower-thirds + interruption
+  table). `describeEvent` → `broadcastFor(event)`. host App wraps in the provider.
+- Zap! `3813fe3` + Coup `0c14994` fully migrated (pink/punchy; noir/tense + a
+  custom `table` scene). Sidebars + text feeds gone.
+- Owner controls `360a802`: mobile tracks `ownerPlayerId`; `<HostControlsBar>`
+  (Pausar/Encerrar) for the owner only, mid-game. TV keeps only end-of-game buttons.
+- Build + tsc + oxlint green; 193 server tests (host-only). §52 held.
