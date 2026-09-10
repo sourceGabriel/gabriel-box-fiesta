@@ -287,6 +287,14 @@ export class SintoniaGame implements PausableGame, TurnTimedGame {
       totalRounds: this.totalRounds,
       mediumId: this.mediumId,
     });
+
+    // The médium is already gone at round start — don't make the room sit through
+    // the whole cluing backstop, skip straight to a (short) reveal.
+    if (this.mediumId && !(this.connected.get(this.mediumId) ?? true)) {
+      this.roundSkipped = true;
+      this.emit({ type: 'clue_skipped', round: this.round });
+      this.enterReveal();
+    }
   }
 
   private beginGuessing(): void {
