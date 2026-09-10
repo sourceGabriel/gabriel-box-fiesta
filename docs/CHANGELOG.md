@@ -1,5 +1,34 @@
 # Changelog
 
+## 2026-09-10 — Playability review: games 6–10 (branch `feature/ticketabc-abc-map`, recovered onto `feature/games-6-10-review`)
+
+A bug/UX sweep of FDP (#6), É Você! (#7), Dilema (#8), Sintonia (#9) and Fase 10
+(#10) — engines, the Fase 10 solver, both surfaces. FDP / É Você! / Dilema came
+up clean (Dilema's timerless pick/verdict phases can wait on an AFK player, but
+that's the owner-approved design from the spec §30 revision, and every disconnect
+path resolves). Two fixes landed:
+
+- **`fix(ws)`** — the `GAME_ACTION` handler passed a thrown engine rejection
+  (`CODE:friendly message`) to the phone verbatim, so a rejected move showed as
+  `PHASE_INCOMPLETE:Essas cartas não fecham a fase` / `NOT_YOUR_TURN:…` with the
+  code prefix. It now splits the code off like the avatar / content-tier /
+  match-length handlers already do, so the mobile error line reads clean. 9
+  integration assertions moved from a `payload.message` regex to `payload.code`.
+- **`fix(sintonia)`** — the mid-phase médium-disconnect handler already
+  short-circuits a round, but a médium who was *already* offline when their round
+  began still made the whole room sit through the ~45s cluing backstop.
+  `beginRound` now skips straight to a short reveal in that case. +1 test.
+
+194 server tests, tsc + oxlint + 5-workspace build green. Recovered by cherry-pick
+from the since-abandoned `feature/ticketabc-abc-map` stack — these two fixes
+weren't about Ticket to ABC and don't deserve to be stuck on a dead branch.
+Original entry recorded 11 assertions / 245 tests because that branch also carried
+the (now-parked) Ticket to ABC + Fase 10 work; the numbers above are this branch's.
+
+<!-- The rest of the games 6–10 review's own changelog entries (docs(spec) below,
+     plus the Ticket to ABC / Fase 10 batches) stayed on `feature/ticketabc-abc-map`
+     — not cherry-picked here, that game is on hold. -->
+
 ## 2026-09-10 — Sintonia UX + Dilema trolley crash (branch `feature/sintonia-gauge-and-trolley`, off `a626757`)
 
 Follow-ups the owner asked for after seeing the Sintonia gameover screens.

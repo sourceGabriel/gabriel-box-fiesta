@@ -575,3 +575,32 @@ User report: É Você! drawing → clicking undo/submit a big drawing → `Range
     doomed track, flash + 💥 + jolt, stamps pop in). reduced-motion-safe.
 - **193 server tests, tsc + oxlint, 5-ws build green.** Live-smoked on a real
   phone tab. §52 held.
+
+## 2026-09-10 — master-prompt spec revision pass (owner-approved, docs only)
+- Owner asked which `master-prompt.md` sections still constrain the project
+  negatively. Added inline "Revisado pelo dono em 2026-09-10" notes to **§§9, 30,
+  36, 41, 53, 54** (original text kept, note appended — same as the §47 retirement).
+- §9 player caps are per-game; §30 turn timers are per-game not mandatory; §36 the
+  animation→next-state handshake was never built and must not be (server pushes on
+  its own cadence, host animates non-blocking); §41 a single-file JSON snapshot is
+  OK for crash recovery (still no DB/Redis); §53 MVP marked delivered; §54
+  spectators/late-join reopened as an idea, bots stay descoped.
+- Also reverted a 1-line corruption in `CLAUDE.md` (mangled §47 sentence) to the
+  committed text. No code, no tests touched. CLAUDE.md + CHANGELOG +
+  repository-gap-review updated in the same pass.
+
+## 2026-09-10 — Playability review: games 6–10 (branch `feature/ticketabc-abc-map`, recovered onto `feature/games-6-10-review`)
+- Reviewed FDP, É Você!, Dilema, Sintonia, Fase 10 (engines + solver + controllers
+  + host views) for bugs, softlocks, and UX gaps. FDP / É Você! / Dilema came up
+  clean; Dilema's timerless pick/verdict "hang if a player is AFK" is the owner's
+  documented design (spec §30) and disconnect paths are covered.
+- fix(ws): the GAME_ACTION handler let a thrown engine rejection reach the phone
+  verbatim, so players saw `PHASE_INCOMPLETE:…` / `NOT_YOUR_TURN:…` with the code
+  prefix. Now split like the other handlers → the mobile error line shows just
+  the friendly half. 9 integration assertions moved from `payload.message`
+  regex to `payload.code` (this branch doesn't carry Dilema/Sintonia's 2 later ones).
+- fix(sintonia): a médium who was already offline when their round began still
+  made the room wait the full ~45s cluing backstop; `beginRound` now skips
+  straight to a short reveal (mirrors the existing mid-phase handler). +1 test.
+- 194 server tests (245 on the original branch, which also carried the
+  since-abandoned Ticket to ABC + Fase 10 work), tsc + oxlint + 5-ws build green.
