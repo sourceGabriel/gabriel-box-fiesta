@@ -260,3 +260,50 @@
 @media (prefers-reduced-motion: reduce) {
   .coup-reaction-bubble { animation: none; }
 }
+
+/* ─── host-stage migration: the table lives inside <HostStage> ─── */
+.ui-stage .coup-table {
+  border: 0;
+  background: radial-gradient(55% 50% at 50% 38%, rgba(226, 177, 60, 0.1), transparent 72%);
+  padding: 0;
+  overflow: visible;
+  width: min(96vw, 1200px);
+  gap: clamp(1rem, 3vmin, 2rem);
+}
+.ui-stage .coup-banner { font-size: var(--tv-secondary); }
+.ui-stage .coup-seat-name { font-size: var(--tv-body); }
+.ui-stage .coup-coins { font-size: var(--tv-body); }
+
+.coup-brand { display: flex; flex-direction: column; gap: 0.2rem; min-width: 0; }
+.coup-brand-sub { color: var(--muted); font-size: var(--tv-body); white-space: nowrap; }
+.coup-conn-pill {
+  align-self: flex-start;
+  font-size: 0.8em;
+  padding: 0.15em 0.7em;
+  border-radius: 999px;
+  background: rgba(226, 177, 60, 0.16);
+  color: #f0c95a;
+}
+
+.coup-gameover-scene { display: flex; flex-direction: column; align-items: center; gap: clamp(0.8rem, 2.4vmin, 2rem); }
+
+.coup-op-cluster {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 40;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  opacity: 0.35;
+  transition: opacity 0.2s ease;
+}
+.coup-op-cluster:hover { opacity: 1; }
+.coup-sound-toggle {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.4rem 0.6rem;
+  color: var(--text);
+  cursor: pointer;
+}

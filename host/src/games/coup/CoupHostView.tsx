@@ -1,11 +1,27 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CoupGameEvent, CoupPublicState } from '@party/shared';
-import { Avatar, BrandMark, Button, getSounds, Overlay, Timer, VictorySplash } from '@party/ui';
+import {
+  Avatar,
+  BrandMark,
+  Broadcast,
+  Button,
+  getSounds,
+  HostStage,
+  Moment,
+  Overlay,
+  Timer,
+  useStageDirector,
+  VictorySplash,
+  type HostScene,
+} from '@party/ui';
 import type { HostGameViewProps } from '../types';
 import { ACTION_LABEL, CHARACTER_META, getCoupCardArt, getCoupCardBackArt } from './coupCards';
-import { describeEvent } from './describeEvent';
+import { broadcastFor } from './describeEvent';
 import { soundForEvent } from './sound-map';
+import { coupTheme } from './theme';
 import './coup-host.css';
+
+const ACCENT = coupTheme.accent;
 
 const charLabel = (c: keyof typeof CHARACTER_META | null | undefined): string =>
   c ? (CHARACTER_META[c]?.label ?? c) : '';
@@ -29,8 +45,6 @@ function InfluenceCard({ character, revealed }: { character: keyof typeof CHARAC
 
 export function CoupHostView({ publicState, events, players, connected, reactions, send }: HostGameViewProps) {
   const pub = publicState as CoupPublicState;
-  const seenSeqRef = useRef(0);
-  const [feed, setFeed] = useState<{ seq: number; text: string }[]>([]);
   const sounds = useMemo(() => getSounds(), []);
   const [soundOn, setSoundOn] = useState(() => sounds.isEnabled());
 
@@ -46,37 +60,71 @@ export function CoupHostView({ publicState, events, players, connected, reaction
     return (id: string) => map.get(id);
   }, [players]);
 
-  // Append newly-arrived events to the feed (keep last 9).
-  useEffect(() => {
-    if (events.length === 0) {
-      seenSeqRef.current = 0;
-      setFeed([]);
-      return;
-    }
-    const lastSeq = events[events.length - 1].seq;
-    if (lastSeq <= seenSeqRef.current) return;
-    const freshRaw = events.filter((e) => e.seq > seenSeqRef.current);
-    seenSeqRef.current = lastSeq;
-
-    // Sound follows the raw events (ignores reduced-motion).
-    for (const { event } of freshRaw) {
-      const spec = soundForEvent(event as CoupGameEvent);
-      if (spec) sounds.play(spec);
-    }
-
-    const fresh = freshRaw
-      .map((e) => ({ seq: e.seq, text: describeEvent(e.event as CoupGameEvent, nameOf) }))
-      .filter((l): l is { seq: number; text: string } => l.text !== null);
-    if (fresh.length > 0) {
-      setFeed((cur) => [...cur, ...fresh].slice(-9));
-    }
-  }, [events, nameOf, sounds]);
-
   const paused = pub.phase === 'paused';
   const over = pub.phase === 'game_over';
+  const scene: HostScene = over ? 'victory' : 'table';
+
+  const stage = useStageDirector({
+    events,
+    scene,
+    broadcastFor: (e) => broadcastFor(e as CoupGameEvent, nameOf),
+    nameFor: nameOf,
+    avatarFor: avatarOf,
+  });
+  const { enqueueMoment } = stage;
+
+  // sound + moments follow the raw event stream
+  const seenSeq = useRef(0);
+  useEffect(() => {
+    if (events.length === 0) { seenSeq.current = 0; return; }
+    const last = events[events.length - 1].seq;
+    if (last <= seenSeq.current) return;
+    for (const { seq, event } of events) {
+      if (seq <= seenSeq.current) continue;
+      const ev = event as CoupGameEvent;
+      const spec = soundForEvent(ev);
+      if (spec) sounds.play(spec);
+
+      if (ev.type === 'challenge_made') {
+        enqueueMoment({
+          id: `s${seq}`,
+          priority: 20,
+          moment: {
+            type: 'callout',
+            title: 'DESAFIO!',
+            subtitle: `${nameOf(ev.challengerId)} → ${nameOf(ev.challengedId)}`,
+            variant: 'danger',
+            accent: coupTheme.accentSecondary,
+          },
+        });
+      } else if (ev.type === 'challenge_resolved') {
+        enqueueMoment({
+          id: `s${seq}`,
+          priority: 15,
+          moment: {
+            type: 'reveal',
+            eyebrow: 'A carta era',
+            title: charLabel(ev.character),
+            subtitle: ev.challengedHeldCard
+              ? `${nameOf(ev.challengedId)} dizia a verdade`
+              : `${nameOf(ev.challengedId)} blefou`,
+            variant: ev.challengedHeldCard ? 'success' : 'danger',
+            accent: ev.challengedHeldCard ? undefined : coupTheme.accentSecondary,
+          },
+        });
+      } else if (ev.type === 'player_eliminated') {
+        enqueueMoment({
+          id: `s${seq}`,
+          priority: 30,
+          moment: { type: 'callout', title: `${nameOf(ev.playerId)}`, subtitle: 'fora do jogo', variant: 'danger', accent: coupTheme.accentSecondary },
+        });
+      }
+    }
+    seenSeq.current = last;
+  }, [events, sounds, nameOf, enqueueMoment]);
+
   const timerSeconds = pub.timer ? Math.max(0, Math.ceil(pub.timer.remainingMs / 1000)) : null;
   const winnerName = pub.winnerId ? nameOf(pub.winnerId) : '—';
-
   const currentName = pub.currentPlayerId ? nameOf(pub.currentPlayerId) : '—';
   const pa = pub.pendingAction;
   const actionLabel = pa ? (ACTION_LABEL[pa.type] ?? pa.type) : '';
@@ -112,13 +160,11 @@ export function CoupHostView({ publicState, events, players, connected, reaction
   }
 
   const kick = (playerId: string) => {
-    if (window.confirm('Expulsar este jogador da sala?')) {
-      send('KICK_PLAYER', { targetPlayerId: playerId });
-    }
+    if (window.confirm('Expulsar este jogador da sala?')) send('KICK_PLAYER', { targetPlayerId: playerId });
   };
 
   return (
-    <main className="host-shell host-game coup-host">
+    <>
       <div className="coup-reactions" aria-hidden="true">
         {reactions.slice(-6).map((r) => (
           <div key={r.key} className="coup-reaction-bubble">
@@ -128,120 +174,92 @@ export function CoupHostView({ publicState, events, players, connected, reaction
         ))}
       </div>
 
+      <HostStage
+        scene={scene}
+        theme={coupTheme}
+        intensity={over ? 'climax' : 'normal'}
+        hud={
+          <>
+            <div className="coup-brand">
+              <BrandMark text="Coup" size="md" />
+              <span className="coup-brand-sub">Sala {pub.roomCode} · Turno {pub.turnNumber}</span>
+              {!connected ? <span className="coup-conn-pill">reconectando…</span> : null}
+            </div>
+            <Timer seconds={timerSeconds} />
+          </>
+        }
+      >
+        {over ? (
+          <div className="coup-gameover-scene">
+            <VictorySplash
+              winner={{ name: winnerName, avatar: pub.winnerId ? avatarOf(pub.winnerId) : undefined }}
+              subtitle="o último de pé"
+              accent={ACCENT}
+            />
+          </div>
+        ) : (
+          <section className="coup-table">
+            <p className="coup-banner">{banner}</p>
+            <div className="coup-meta-row">
+              <span className="meta-chip">Baralho: {pub.deckCount}</span>
+              <span className="meta-chip">Tesouro: {pub.treasury}</span>
+            </div>
+
+            <ul className="coup-seats">
+              {pub.players.map((p) => {
+                const hidden = p.influenceCount - p.revealedCharacters.length;
+                return (
+                  <li
+                    key={p.id}
+                    className={`coup-seat ${p.id === pub.currentPlayerId ? 'is-turn' : ''} ${p.isAlive ? '' : 'is-out'}`}
+                  >
+                    <div className="coup-seat-head">
+                      <span className={`conn-dot ${p.connected ? 'on' : 'off'}`} aria-hidden="true" />
+                      {avatarOf(p.id) ? <Avatar spec={avatarOf(p.id)!} size={26} className="coup-seat-avatar" /> : null}
+                      <span className="coup-seat-name">{p.name}</span>
+                      <span className="coup-coins">💰 {p.coins}</span>
+                      <button type="button" className="kick-button" aria-label={`Expulsar ${p.name}`} onClick={() => kick(p.id)}>
+                        ✕
+                      </button>
+                    </div>
+                    <div className="coup-hand">
+                      {p.revealedCharacters.map((c, i) => (
+                        <InfluenceCard key={`r${i}`} character={c} revealed />
+                      ))}
+                      {Array.from({ length: Math.max(0, hidden) }, (_, i) => (
+                        <InfluenceCard key={`h${i}`} character={null} revealed={false} />
+                      ))}
+                    </div>
+                    {!p.isAlive ? <span className="coup-out-tag">eliminado</span> : null}
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
+      </HostStage>
+
+      {stage.moment ? <Moment key={stage.momentId} {...stage.moment} /> : null}
+      {stage.broadcast ? <Broadcast key={stage.broadcast.id} item={stage.broadcast} /> : null}
+
       {paused ? (
         <Overlay label="Partida pausada">
           <p className="eyebrow">Partida pausada</p>
           <h2>⏸ Aguardando o anfitrião</h2>
-          <div className="result-actions">
-            <Button variant="primary" onClick={() => send('RESUME_GAME', {})}>Continuar</Button>
-            <Button variant="danger" onClick={() => send('END_GAME', {})}>Encerrar</Button>
-          </div>
         </Overlay>
       ) : null}
 
-      {over ? (
-        <Overlay label="Fim da partida">
-          <p className="eyebrow">Fim da partida</p>
-          <VictorySplash
-            winner={{ name: winnerName, avatar: pub.winnerId ? avatarOf(pub.winnerId) : undefined }}
-            subtitle="último de pé"
-            accent="#e0b13c"
-          />
-          <div className="result-actions">
-            <Button variant="primary" onClick={() => send('START_GAME', {})}>Nova partida</Button>
-            <Button variant="danger" onClick={() => send('END_GAME', {})}>Encerrar</Button>
-          </div>
-        </Overlay>
-      ) : null}
-
-      {!over && pub.lastReveal ? (
-        <div className="coup-reveal" role="status">
-          {pub.lastReveal.challengedHeldCard ? '✅' : '❌'}{' '}
-          {nameOf(pub.lastReveal.challengerId)} desafiou {nameOf(pub.lastReveal.challengedId)} —{' '}
-          {charLabel(pub.lastReveal.character)}{' '}
-          {pub.lastReveal.challengedHeldCard ? 'era verdade' : 'era blefe'}
-        </div>
-      ) : null}
-
-      <header className="host-topbar">
-        <div className="brand">
-          <BrandMark text="Coup" size="md" />
-          <span className="brand-sub">Sala {pub.roomCode} · Turno {pub.turnNumber}</span>
-          {!connected ? <span className="conn-pill">reconectando…</span> : null}
-        </div>
-        <Timer seconds={timerSeconds} />
-      </header>
-
-      <div className="host-body coup-body">
-        <section className="coup-table">
-          <p className="coup-banner">{banner}</p>
-          <div className="coup-meta-row">
-            <span className="meta-chip">Baralho: {pub.deckCount}</span>
-            <span className="meta-chip">Tesouro: {pub.treasury}</span>
-          </div>
-
-          <ul className="coup-seats">
-            {pub.players.map((p) => {
-              const hidden = p.influenceCount - p.revealedCharacters.length;
-              return (
-                <li
-                  key={p.id}
-                  className={`coup-seat ${p.id === pub.currentPlayerId ? 'is-turn' : ''} ${p.isAlive ? '' : 'is-out'}`}
-                >
-                  <div className="coup-seat-head">
-                    <span className={`conn-dot ${p.connected ? 'on' : 'off'}`} aria-hidden="true" />
-                    {avatarOf(p.id) ? <Avatar spec={avatarOf(p.id)!} size={26} className="coup-seat-avatar" /> : null}
-                    <span className="coup-seat-name">{p.name}</span>
-                    <span className="coup-coins">💰 {p.coins}</span>
-                    <button
-                      type="button"
-                      className="kick-button"
-                      aria-label={`Expulsar ${p.name}`}
-                      onClick={() => kick(p.id)}
-                    >
-                      ✕
-                    </button>
-                  </div>
-                  <div className="coup-hand">
-                    {p.revealedCharacters.map((c, i) => (
-                      <InfluenceCard key={`r${i}`} character={c} revealed />
-                    ))}
-                    {Array.from({ length: Math.max(0, hidden) }, (_, i) => (
-                      <InfluenceCard key={`h${i}`} character={null} revealed={false} />
-                    ))}
-                  </div>
-                  {!p.isAlive ? <span className="coup-out-tag">eliminado</span> : null}
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-
-        <aside className="side-zone coup-side">
-          <div className="side-head">
-            <h2>Mesa</h2>
-            <span className="status-chip">{connected ? 'ao vivo' : 'offline'}</span>
-          </div>
-          {feed.length > 0 ? (
-            <ul className="event-feed" aria-live="polite">
-              {feed.map((line) => (
-                <li key={line.seq}>{line.text}</li>
-              ))}
-            </ul>
-          ) : (
-            <p className="hint">Aguardando a primeira jogada…</p>
-          )}
-          <div className="side-actions">
-            <Button variant="ghost" onClick={() => send(paused ? 'RESUME_GAME' : 'PAUSE_GAME', {})}>
-              {paused ? '▶ Continuar' : '⏸ Pausar'}
-            </Button>
-            <Button variant="ghost" aria-pressed={soundOn} onClick={() => setSoundOn(sounds.toggle())}>
-              {soundOn ? '🔊 Som ligado' : '🔇 Som desligado'}
-            </Button>
-            <Button variant="danger" onClick={() => send('END_GAME', {})}>Encerrar partida</Button>
-          </div>
-        </aside>
+      <div className="coup-op-cluster">
+        {over ? (
+          <Button variant="primary" onClick={() => send('START_GAME', {})}>Nova partida</Button>
+        ) : (
+          <Button variant="ghost" onClick={() => send(paused ? 'RESUME_GAME' : 'PAUSE_GAME', {})}>{paused ? '▶' : '⏸'}</Button>
+        )}
+        <Button variant="danger" onClick={() => send('END_GAME', {})}>Encerrar</Button>
+        <button type="button" className="coup-sound-toggle" aria-pressed={soundOn} onClick={() => setSoundOn(sounds.toggle())}>
+          {soundOn ? '🔊' : '🔇'}
+        </button>
       </div>
-    </main>
+    </>
   );
 }
