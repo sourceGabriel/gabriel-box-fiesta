@@ -322,6 +322,10 @@ O jogador também poderá inserir manualmente o código.
 
 Entre 2 e 8 jogadores.
 
+> **Revisado pelo dono em 2026-09-10.** "2–8" era o range do MVP de UNO. Hoje
+> cada jogo declara o próprio `minPlayers`/`maxPlayers` no plugin (Coup e Dilema
+> já vão a 10). Não trate 8 como teto da plataforma.
+
 Inicialmente não haverá contas.
 
 O jogador informa apenas:
@@ -777,6 +781,13 @@ O servidor é responsável pelo timer.
 
 Nunca confiar no relógio do celular.
 
+> **Revisado pelo dono em 2026-09-10.** Timer de turno **não é obrigatório** — é
+> decisão de cada jogo. O Dilema roda os passos de escolha e o veredito **sem
+> deadline** de propósito (couch play — o pessoal debate em voz alta). Quando um
+> jogo tem timer, o servidor continua sendo a única autoridade dele
+> (`getTimer()` / `onTurnTimeout()`); um jogo sem timer só precisa garantir que
+> nunca trava esperando quem saiu (ex.: time esvaziado auto-trava).
+
 ---
 
 # 31. SINCRONIZAÇÃO
@@ -986,6 +997,14 @@ A autoridade continua sendo o servidor.
 
 Não deixar a animação controlar a lógica do jogo.
 
+> **Revisado pelo dono em 2026-09-10.** O handshake desta seção (host termina a
+> animação → só então pede/recebe o próximo estado) **não foi implementado e não
+> deve ser**: acopla o loop de tick do servidor ao estado de animação do cliente
+> e quebra com reconexão / múltiplos clientes. Modelo real: o servidor empurra o
+> estado autoritativo no ritmo dele (deadlines que ele mesmo ticka) e o host
+> anima **por cima**, sem bloquear, com CSS + `prefers-reduced-motion`. Do texto
+> acima só vale a última linha — a animação nunca controla a lógica.
+
 ---
 
 # 37. COMPUTADOR / REDE LOCAL
@@ -1075,6 +1094,13 @@ Se o servidor reiniciar:
 * não é necessário persistir o jogo inicialmente.
 
 A arquitetura deve permitir adicionar persistência posteriormente.
+
+> **Revisado pelo dono em 2026-09-10.** "Sem banco, em memória" continua valendo.
+> Mas um **snapshot em arquivo único** (um JSON no disco reescrito a cada
+> transição de estado e relido no boot) **não conta como banco** e cabe no
+> "permitir persistência posteriormente" — vale como seguro barato: hoje um
+> crash / restart do servidor no meio da festa perde a partida e as sessões.
+> Nada de Redis / SQLite / processo à parte.
 
 ---
 
@@ -1454,6 +1480,11 @@ Consideraremos o MVP funcional quando for possível:
 
 Tudo deve funcionar sem internet, utilizando somente a rede local.
 
+> **Revisado pelo dono em 2026-09-10.** MVP **entregue e validado** — os 19 itens
+> acima passam, Fases 1–12 concluídas, 9 jogos no catálogo. As listas de "não
+> fazer no MVP" (§1, §54) agora se leem como "restrição atual da plataforma", não
+> como "ainda não chegou a hora".
+
 ---
 
 # 54. O QUE NÃO FAZER AGORA
@@ -1477,6 +1508,14 @@ Não implementar inicialmente:
 * sistema social.
 
 Esses recursos podem ser considerados futuramente.
+
+> **Revisado pelo dono em 2026-09-10.** Dois itens mudaram de status:
+> **espectadores / late-join** saíram de "descartado" e voltaram para **em
+> aberto** — com 9+ pessoas na sala e jogos que eliminam cedo (Coup) ou deixam
+> gente de fora do round, quem não joga fica sem tela nenhuma; é o buraco mais
+> real para festa grande. **Bots continuam descartados de vez** (não é "depois" —
+> decisão do dono 2026-09-07). O resto da lista segue valendo como restrição
+> atual.
 
 ---
 
