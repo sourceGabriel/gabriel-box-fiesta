@@ -9,6 +9,7 @@ import { FdpControllerView } from './fdp/FdpControllerView';
 import { EvoceControllerView } from './evoce/EvoceControllerView';
 import { DilemaControllerView } from './dilema/DilemaControllerView';
 import { SintoniaControllerView } from './sintonia/SintoniaControllerView';
+import { Fase10ControllerView } from './fase10/Fase10ControllerView';
 import { HowToPlay as CoupHowToPlay } from './coup/HowToPlay';
 import { HowToPlay as ZapHowToPlay } from './zap/HowToPlay';
 import { HowToPlay as LorotaHowToPlay } from './lorota/HowToPlay';
@@ -17,6 +18,7 @@ import { HowToPlay as FdpHowToPlay } from './fdp/HowToPlay';
 import { HowToPlay as EvoceHowToPlay } from './evoce/HowToPlay';
 import { HowToPlay as DilemaHowToPlay } from './dilema/HowToPlay';
 import { HowToPlay as SintoniaHowToPlay } from './sintonia/HowToPlay';
+import { HowToPlay as Fase10HowToPlay } from './fase10/HowToPlay';
 
 /**
  * Maps a game id (from GAME_CATALOG / the started game) to its phone-controller view.
@@ -32,6 +34,7 @@ export const CONTROLLER_GAMES: Record<string, ControllerGameView> = {
   evoce: EvoceControllerView,
   dilema: DilemaControllerView,
   sintonia: SintoniaControllerView,
+  fase10: Fase10ControllerView,
 };
 
 /**
@@ -48,4 +51,5 @@ export const CONTROLLER_HOW_TO_PLAY: Record<string, FC<{ onClose: () => void }>>
   evoce: EvoceHowToPlay,
   dilema: DilemaHowToPlay,
   sintonia: SintoniaHowToPlay,
+  fase10: Fase10HowToPlay,
 };

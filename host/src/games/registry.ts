@@ -35,6 +35,10 @@ import { SintoniaHostView } from './sintonia/SintoniaHostView';
 import { SintoniaCover } from './sintonia/SintoniaCover';
 import { personality as sintoniaPersonality } from './sintonia/personality';
 import sintoniaLobbyBg from './sintonia/lobby-bg.webp';
+import { Fase10HostView } from './fase10/Fase10HostView';
+import { Fase10Cover } from './fase10/Fase10Cover';
+import { personality as fase10Personality } from './fase10/personality';
+import fase10LobbyBg from './fase10/lobby-bg.webp';
 
 /**
  * Maps a game id (from the server's GAME_CATALOG / the started game) to its host
@@ -70,5 +74,11 @@ export const HOST_GAMES: Record<string, HostGameEntry> = {
     Cover: SintoniaCover,
     personality: sintoniaPersonality,
     lobbyBg: sintoniaLobbyBg,
+  },
+  fase10: {
+    View: Fase10HostView,
+    Cover: Fase10Cover,
+    personality: fase10Personality,
+    lobbyBg: fase10LobbyBg,
   },
 };

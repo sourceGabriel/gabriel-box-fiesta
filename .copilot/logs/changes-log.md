@@ -575,3 +575,52 @@ User report: É Você! drawing → clicking undo/submit a big drawing → `Range
     doomed track, flash + 💥 + jolt, stamps pop in). reduced-motion-safe.
 - **193 server tests, tsc + oxlint, 5-ws build green.** Live-smoked on a real
   phone tab. §52 held.
+
+## 2026-09-10 — master-prompt spec revision pass (owner-approved, docs only)
+- Owner asked which `master-prompt.md` sections still constrain the project
+  negatively. Added inline "Revisado pelo dono em 2026-09-10" notes to **§§9, 30,
+  36, 41, 53, 54** (original text kept, note appended — same as the §47 retirement).
+- §9 player caps are per-game; §30 turn timers are per-game not mandatory; §36 the
+  animation→next-state handshake was never built and must not be (server pushes on
+  its own cadence, host animates non-blocking); §41 a single-file JSON snapshot is
+  OK for crash recovery (still no DB/Redis); §53 MVP marked delivered; §54
+  spectators/late-join reopened as an idea, bots stay descoped.
+- Also reverted a 1-line corruption in `CLAUDE.md` (mangled §47 sentence) to the
+  committed text. No code, no tests touched. CLAUDE.md + CHANGELOG +
+  repository-gap-review updated in the same pass.
+
+## 2026-09-10 — Fase 10, game #10 (branch `feature/fase10`)
+- Clean-room reimplementation of Mattel *Phase 10* (contract rummy, 10 phases).
+  Turn-based like UNO. §52 held (no `core/`/`ws-server`/shell/`shared/protocol` edits).
+- Shared: `models/fase10.ts` + `games/fase10/events.ts` + 2 re-exports. `FASE10_PHASES`
+  = the 10 specs as functional data (own labels).
+- Engine `server/src/games/fase10/`: `constants`, `cards` (108), `solver.ts` (pure —
+  `solvePhase` backtracking + `hitInto`), `fase10-game.ts` (`PausableGame, RoundedGame,
+  TurnTimedGame`; 45s turn deadline; deal → openTurn(skip-consume) → draw/lay/hit/discard
+  → settleHand → handOver / gameOver on target-phase finish, ties by fewest points),
+  `action-schema.ts` (draw/layPhase/hit/discard), `plugin.ts` + 1 line in `GAMES`.
+  Test seam `new Fase10Game(ctx, { deck })`.
+- Host `host/src/games/fase10/` (`Fase10HostView` + `Fase10Cover` + `describeEvent` +
+  `sound-map` + `personality` + css) + 1 `HOST_GAMES` entry.
+- Mobile `mobile/src/games/fase10/` (`Fase10ControllerView` — auto-validation lay UX,
+  hit mode, skip-target picker + `HowToPlay` + css) + 1 line in `CONTROLLER_GAMES`
+  and `CONTROLLER_HOW_TO_PLAY`.
+- Lobby lever `meta.lengthOptions` "Fases para vencer" [5,7,10] default 7 (read
+  generically, no registry list). Not tiered. Name kept literal "Fase 10".
+- Art: `build-screen-bg.py` `GAMES` += `fase10`; `cover.webp` + `lobby-bg.webp` baked.
+- `fase10-game.test.ts` (26) + 1 integration path. **Server tests 193 → 220.**
+  tsc + oxlint clean, 5-ws build green. Live-smoked: catalog + art lobby + picker,
+  host + 2 phones, draw (pile/discard), lay via UI (solver + wilds), hit a wild,
+  Pula with target → skip, pause/resume, 0 console errors.
+
+### 2026-09-10 — Fase 10 follow-up polish (owner asked)
+- "As 10 fases" viewer: phone button + host "📋 Fases" button → overlay of all 10
+  phases, current highlighted (host also shows who sits where). Reads `pub.phaseSpecs`.
+- Host board redesign: felt board with a 3-card stacked deck + count badge, large
+  discard card (gradient faces, "10" back emblem), turn banner between them.
+- Host card animations: fly-card layer (`card_drawn` deck→row, `card_discarded`
+  row→discard, `phase_laid` row glow); single-in-flight, reduced-motion-guarded.
+- Host UI-scale button: floating ⤢, cycles 100/115/130/150 % via CSS `zoom` on the
+  view root (localStorage-persisted); ≥130 % stacks the side panel below the board.
+- host/mobile lint + 5-ws build green, 220 server tests. Live-verified: board +
+  deck + discard render bigger, UI-scale + stacking, host + phone phase overlays.

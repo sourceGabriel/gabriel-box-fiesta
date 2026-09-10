@@ -1129,6 +1129,66 @@ describe('multiplayer integration', () => {
     for (const ws of phones) ws.close();
   });
 
+  it('runs Fase 10: SELECT_GAME + START_GAME, deals 10 private cards, draw/discard advances the turn', async () => {
+    server = new PartyServer(0);
+    await server.start();
+    const roomCode = server.getRoomCode();
+    const port = server.getPort();
+
+    const host = await connect(port);
+    const catalogPromise = waitForMessage(host, 'GAME_CATALOG');
+    host.send(makeMessage('JOIN_ROOM', { roomCode, playerName: 'HOST', role: 'host' }));
+    await waitForMessage(host, 'ROOM_JOINED');
+    expect((await catalogPromise).payload.games.map((g) => g.id)).toEqual(
+      expect.arrayContaining(['uno', 'coup', 'zap', 'lorota', 'sabetudo', 'fdp', 'evoce', 'dilema', 'sintonia', 'fase10']),
+    );
+
+    const reselected = waitForMessageWhere(host, 'GAME_CATALOG', (m) => m.payload.selectedGameId === 'fase10');
+    host.send(makeMessage('SELECT_GAME', { gameId: 'fase10' }));
+    await reselected;
+
+    const phones = [] as Awaited<ReturnType<typeof connect>>[];
+    const ids: string[] = [];
+    for (const name of ['Ana', 'Bia']) {
+      const ws = await connect(port);
+      ws.send(makeMessage('JOIN_ROOM', { roomCode, playerName: name, role: 'player' }));
+      ids.push((await waitForMessage(ws, 'ROOM_JOINED')).payload.playerId!);
+      phones.push(ws);
+    }
+
+    const firstPublic = waitForMessage(host, 'GAME_STATE_PUBLIC');
+    const started = waitForMessage(host, 'GAME_STARTED');
+    host.send(makeMessage('START_GAME', { gameId: 'fase10' }));
+    expect((await started).payload.gameId).toBe('fase10');
+
+    const pub0 = (await firstPublic).payload.state as {
+      phase: string;
+      currentPlayerId: string;
+      players: { handCount: number; phaseIndex: number }[];
+      turn: number;
+    };
+    expect(pub0.phase).toBe('turn');
+    expect(pub0.players.every((p) => p.handCount === 10 && p.phaseIndex === 1)).toBe(true);
+
+    const privs = await Promise.all(phones.map((ws) => waitForMessage(ws, 'PLAYER_STATE_PRIVATE')));
+    for (const p of privs) expect((p.payload.state as { hand: unknown[] }).hand).toHaveLength(10);
+
+    const currentIdx = pub0.currentPlayerId === ids[0] ? 0 : 1;
+    const curWs = phones[currentIdx];
+    const curPriv = privs[currentIdx].payload.state as { hand: { id: string }[] };
+    const advanced = waitForMessageWhere(host, 'GAME_STATE_PUBLIC', (m) => (m.payload.state as { turn: number }).turn > pub0.turn);
+    curWs.send(makeMessage('GAME_ACTION', { action: { type: 'draw', source: 'pile' } }));
+    curWs.send(makeMessage('GAME_ACTION', { action: { type: 'discard', cardId: curPriv.hand[0].id } }));
+    expect((await advanced).payload.state).toBeTruthy();
+
+    const actionError = waitForMessage(phones[0], 'ERROR');
+    phones[0].send(makeMessage('GAME_ACTION', { action: { type: 'garbage' } }));
+    expect((await actionError).payload.message).toMatch(/INVALID_ACTION/i);
+
+    host.close();
+    for (const ws of phones) ws.close();
+  });
+
   it('rebroadcasts emoji reactions to the whole room and rejects oversized ones', async () => {
     server = new PartyServer(0);
     await server.start();

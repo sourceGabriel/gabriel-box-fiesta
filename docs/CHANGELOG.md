@@ -1,5 +1,104 @@
 # Changelog
 
+## 2026-09-10 — Fase 10, game #10 (branch `feature/fase10`)
+
+A clean-room reimplementation of Mattel's *Phase 10* (contract rummy — 10 numbered
+phases of sets, runs and one colour phase). The catalog's tenth game and the
+closest in shape to UNO: turn-based, draw one / discard one, hand management, a
+"Pula" (skip) card. §52 held — zero edits to `core/`, `ws-server.ts`, either shell
+or `shared/protocol`; adding it was one plugin + `server/src/games/fase10/` + one
+line in each of the 3 registries + host/controller views. **Server tests 193 → 220**
+(26 unit + 1 integration). `tsc --noEmit` clean, host/mobile oxlint clean, 5-workspace
+build green. Live-smoked: catalog + art-mode lobby with the "Fases para vencer"
+5/7/10 picker, host + 2 phones, both players drew (pile + discard), laid phase 1
+through the real UI (solver + wilds), hit a wild onto a laid set, discarded a Pula
+targeting an opponent (→ skipped), pause/resume on both surfaces, 0 console errors.
+
+**Decisions (owner, 2026-09-09):** name kept literal **"Fase 10"** (`gameId: 'fase10'`,
+`BrandMark` "Fase 10" — same posture as "UNO"; trademark note in `plugin.ts`).
+Not a text game → no Leve/Pesado. Lobby lever `meta.lengthOptions` = **"Fases para
+vencer" [5, 7, 10], default 7** (read generically by `LobbyScreen`, no registry list).
+Phone UX = **auto-validation**: tap the cards, the server fits them to your phase and
+says yes/no. Full classic rules — lay the phase, hits, Pula, Curinga, penalty scoring.
+
+- **Contract** (`shared/`, types-only): `models/fase10.ts` (`Fase10Card`, `Fase10GroupReq`,
+  `Fase10LaidGroup`, `Fase10PublicState`, `Fase10PrivatePlayerState`, `FASE10_PHASES` —
+  the 10 specs as functional data, our own labels) + `games/fase10/events.ts` +
+  2 re-exports in `shared/src/index.ts`.
+- **Engine** `server/src/games/fase10/`: `constants` · `cards` (108-card deck: 96
+  numbers 1–12 ×2/colour, 8 wilds, 4 skips) · `phases` folded into the shared const ·
+  `solver.ts` (pure — `solvePhase` backtracks a card multiset into a phase's groups
+  with wilds filling gaps/ends and ≥1 natural per group; `hitInto` extends a laid
+  set/run/colour) · `fase10-game.ts` (`implements PausableGame, RoundedGame,
+  TurnTimedGame`; one 45 s turn deadline the server ticks; `dealHand` → `openTurn`
+  consumes skips → draw/lay/hit/discard → `settleHand` scores hands & advances
+  layers → `handOver` or `gameOver` when a finisher clears the target phase, ties
+  break on fewest points) · `action-schema.ts` (zod: `draw`/`layPhase`/`hit`/`discard`)
+  · `plugin.ts` + 1 line in `GAMES`. Test seam: `new Fase10Game(ctx, { deck })`.
+- **Host** `host/src/games/fase10/`: `Fase10HostView` (piles + turn banner + laid
+  groups per player + roster with a phase badge / "montou" / "pulado" tag + hand
+  count + score + event feed + pause/end + sound toggle; `handOver` and `gameOver`
+  overlays, `<VictorySplash>` on game over) · `Fase10Cover` (owner key art) ·
+  `describeEvent` · `sound-map` (meme cues + CC0 fallbacks) · `personality`
+  (accent `#a855f7`, vibe "ESCADA") · scoped `fase10-host.css` · +1 `HOST_GAMES` entry.
+- **Mobile** `mobile/src/games/fase10/`: `Fase10ControllerView` (draw buttons →
+  selectable hand → "Baixar fase (n/N)" / "Encaixar" mode → group targets / "Descartar"
+  with a skip-target picker; scoreboard, reactions, `handOver`/`gameOver` summaries)
+  · `HowToPlay` · scoped `fase10-controller.css` · +1 line in `CONTROLLER_GAMES`
+  **and** `CONTROLLER_HOW_TO_PLAY`.
+- **Art**: `tools/build-screen-bg.py` `GAMES` gained `fase10`; `cover.webp` (3:2) +
+  `lobby-bg.webp` (1672×941) baked from `gabriel-source/{thumbs,backgrounds}/fase10.png`.
+
+**Follow-up polish (owner asked, same batch):**
+- **"As 10 fases" viewer** — a phone button (`.f10c-myphase`, "ver as 10 ›") and a
+  host side-panel button ("📋 Fases") open an overlay listing all 10 phases, the
+  viewer's current one highlighted ("você está aqui"); the host overlay also shows
+  which players sit on each phase. Reads `pub.phaseSpecs`, no wire change.
+- **Board redesign** (`Fase10HostView` + `fase10-host.css`) — the cramped pile row
+  became a felt board: a 3-card stacked deck with a count badge, a large discard
+  card (`f10-card-lg`, gradient faces + a "10" card-back emblem), the turn banner +
+  current player's phase between them.
+- **Card animations** — a fly-card layer: `card_drawn` flies a card-back deck→player
+  row, `card_discarded` flies the card face row→discard, `phase_laid` glows the row;
+  single-in-flight queue, `prefers-reduced-motion`-guarded.
+- **Host UI-scale button** — a floating ⤢ control cycles 100 / 115 / 130 / 150 %
+  via CSS `zoom` on the view root (persists in `localStorage`); at ≥130 % the body
+  grid stacks the side panel below the board so nothing clips off-screen.
+
+## 2026-09-10 — Spec revision pass (owner-approved, docs only)
+
+The owner asked which `master-prompt.md` sections still push the project the wrong
+way. Six got an inline **"Revisado pelo dono em 2026-09-10"** note (same mechanism
+as the §47 retirement — original text kept, note added below it). No code changed.
+
+- **§9 — player count.** "2–8" was the UNO MVP range; every game now declares its
+  own `minPlayers`/`maxPlayers` (Coup and Dilema go to 10). 8 is not a platform cap.
+- **§30 — turn timer.** No longer mandatory — it's a per-game choice. Dilema runs
+  its pick steps and the verdict with no deadline on purpose (couch play). When a
+  game has a timer the server stays its sole authority; a timerless game only has
+  to never hard-block on someone who left.
+- **§36 — animation ↔ state ordering.** The "host finishes the animation, *then*
+  asks for the next state" handshake was never implemented and should not be — it
+  couples the server tick loop to client animation state and breaks reconnect /
+  multiple clients. Documented the real model: server pushes authoritative state
+  on its own cadence, host animates non-blockingly over it. Only the last line of
+  §36 ("animation never controls the logic") still holds.
+- **§41 — no database.** Still no DB / Redis / SQLite / separate process — but a
+  single-file JSON snapshot (rewritten per state transition, reloaded on boot) is
+  explicitly allowed as cheap crash-recovery insurance. Today a mid-party server
+  restart loses the match and every session.
+- **§53 — MVP success criteria.** Marked delivered (all 19 items pass, Fases 1–12
+  done, 9 games) so the "not in the MVP" lists (§1, §54) read as "current platform
+  constraint", not "not yet".
+- **§54 — do-not-do.** **Spectators / late-join** moved from "descoped" back to
+  "open question" — with 9+ people in the room and games that eliminate early
+  (Coup) or leave players out of a round, non-players have no screen at all.
+  **Bots stay permanently descoped** (owner decision 2026-09-07).
+
+Also reverted a stray one-line corruption in `CLAUDE.md` (a mangled §47 sentence:
+"a lot if heavy deps", "can stay copying a commercial trademark/logo") back to the
+committed text.
+
 ## 2026-09-10 — Sintonia UX + Dilema trolley crash (branch `feature/sintonia-gauge-and-trolley`, off `a626757`)
 
 Follow-ups the owner asked for after seeing the Sintonia gameover screens.
