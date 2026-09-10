@@ -240,13 +240,15 @@ export function DilemaHostView({ publicState, events, players, connected, reacti
             </p>
           ) : null}
 
-          <div className="dil-tracks">
+          <div className={`dil-tracks ${inResults && pub.killedTrack ? `is-crashing-${pub.killedTrack}` : ''}`}>
             <TrackColumn track={pub.tracks.left} avatarOf={avatarOf} state={trackState('left')} />
             <div
               className={`dil-fork ${inResults && pub.killedTrack ? `is-crash-${pub.killedTrack}` : ''}`}
               aria-hidden="true"
             >
               <span className="dil-trolley">🚋</span>
+              <span className="dil-crash-flash" />
+              <span className="dil-crash-boom">💥</span>
             </div>
             <TrackColumn track={pub.tracks.right} avatarOf={avatarOf} state={trackState('right')} />
           </div>
