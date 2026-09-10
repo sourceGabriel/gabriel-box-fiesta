@@ -246,16 +246,19 @@ export function CoupHostView({ publicState, events, players, connected, reaction
         <Overlay label="Partida pausada">
           <p className="eyebrow">Partida pausada</p>
           <h2>⏸ Aguardando o anfitrião</h2>
+          <p className="hint">O anfitrião controla pelo celular.</p>
         </Overlay>
       ) : null}
 
+      {/* TV keeps only end-of-game controls; mid-game pause / end are on the
+          owner's phone (HostControlsBar). */}
       <div className="coup-op-cluster">
         {over ? (
-          <Button variant="primary" onClick={() => send('START_GAME', {})}>Nova partida</Button>
-        ) : (
-          <Button variant="ghost" onClick={() => send(paused ? 'RESUME_GAME' : 'PAUSE_GAME', {})}>{paused ? '▶' : '⏸'}</Button>
-        )}
-        <Button variant="danger" onClick={() => send('END_GAME', {})}>Encerrar</Button>
+          <>
+            <Button variant="primary" onClick={() => send('START_GAME', {})}>Nova partida</Button>
+            <Button variant="danger" onClick={() => send('END_GAME', {})}>Encerrar</Button>
+          </>
+        ) : null}
         <button type="button" className="coup-sound-toggle" aria-pressed={soundOn} onClick={() => setSoundOn(sounds.toggle())}>
           {soundOn ? '🔊' : '🔇'}
         </button>

@@ -311,19 +311,19 @@ export function ZapHostView({ publicState, events, players, connected, reactions
         <Overlay label="Partida pausada">
           <p className="eyebrow">Partida pausada</p>
           <h2>⏸ Aguardando o anfitrião</h2>
+          <p className="hint">O anfitrião controla pelo celular.</p>
         </Overlay>
       ) : null}
 
-      {/* operator cluster — Phase 1.x moves this to the owner's phone */}
+      {/* the TV keeps only end-of-game controls + the sound toggle; pause / end
+          during play live on the owner's phone (HostControlsBar). */}
       <div className="zap-op-cluster">
         {over ? (
-          <Button variant="primary" onClick={() => send('START_GAME', {})}>Nova partida</Button>
-        ) : (
-          <Button variant="ghost" onClick={() => send(paused ? 'RESUME_GAME' : 'PAUSE_GAME', {})}>
-            {paused ? '▶' : '⏸'}
-          </Button>
-        )}
-        <Button variant="danger" onClick={() => send('END_GAME', {})}>Encerrar</Button>
+          <>
+            <Button variant="primary" onClick={() => send('START_GAME', {})}>Nova partida</Button>
+            <Button variant="danger" onClick={() => send('END_GAME', {})}>Encerrar</Button>
+          </>
+        ) : null}
         <button type="button" className="zap-sound-toggle" aria-pressed={soundOn} onClick={() => setSoundOn(sounds.toggle())}>
           {soundOn ? '🔊' : '🔇'}
         </button>

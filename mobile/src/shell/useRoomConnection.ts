@@ -19,6 +19,8 @@ export interface RoomConnection {
   roomCode: string;
   setRoomCode: (code: string) => void;
   playerId: string | null;
+  /** The room owner (host-lease holder), from ROOM_JOINED / ROOM_STATE / OWNER_CHANGED. */
+  ownerPlayerId: string | null;
   connected: boolean;
   error: string;
   /** Lobby roster (from ROOM_STATE). During a game the game view uses its own public state instead. */
@@ -43,6 +45,7 @@ export interface RoomConnection {
 export function useRoomConnection(): RoomConnection {
   const [roomCode, setRoomCode] = useState(getRoomCodeFromPath());
   const [playerId, setPlayerId] = useState<string | null>(null);
+  const [ownerPlayerId, setOwnerPlayerId] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
   const [error, setError] = useState('');
   const [roomPlayers, setRoomPlayers] = useState<ShellPlayer[]>([]);
@@ -118,6 +121,7 @@ export function useRoomConnection(): RoomConnection {
             if (message.payload.playerId) {
               setPlayerId(message.payload.playerId);
             }
+            setOwnerPlayerId(message.payload.ownerPlayerId);
             if (pendingSessionStorageKeyRef.current) {
               activeSessionKeyRef.current = pendingSessionStorageKeyRef.current;
               rememberActiveSession(roomCodeRef.current, pendingSessionStorageKeyRef.current);
@@ -130,6 +134,10 @@ export function useRoomConnection(): RoomConnection {
             break;
           case 'ROOM_STATE':
             setRoomPlayers(message.payload.players.map((p) => ({ id: p.id, name: p.name, avatar: p.avatar, connected: p.connected })));
+            setOwnerPlayerId(message.payload.ownerPlayerId);
+            break;
+          case 'OWNER_CHANGED':
+            setOwnerPlayerId(message.payload.ownerPlayerId);
             break;
           case 'GAME_CATALOG':
             setCatalog(message.payload.games);
@@ -248,6 +256,7 @@ export function useRoomConnection(): RoomConnection {
     roomCode,
     setRoomCode,
     playerId,
+    ownerPlayerId,
     connected,
     error,
     roomPlayers,

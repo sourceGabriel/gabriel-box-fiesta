@@ -1,0 +1,33 @@
+.host-bar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.6rem;
+  background: color-mix(in srgb, var(--panel, #161d29) 92%, #000);
+  border-bottom: 1px solid var(--line, #2b3646);
+  flex-wrap: wrap;
+}
+.host-bar-tag {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted, #94a3b8);
+  margin-right: auto;
+}
+.host-bar-btn {
+  font: 600 0.82rem/1 var(--font, system-ui);
+  padding: 0.45rem 0.7rem;
+  border-radius: 8px;
+  border: 1px solid var(--line, #2b3646);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text, #f1f5f9);
+  cursor: pointer;
+}
+.host-bar-btn:active { transform: translateY(1px); }
+.host-bar-btn.is-danger {
+  border-color: color-mix(in srgb, #f87171 50%, transparent);
+  color: #fca5a5;
+}

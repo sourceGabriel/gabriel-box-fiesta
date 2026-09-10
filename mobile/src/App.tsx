@@ -4,6 +4,7 @@ import { DEFAULT_AVATAR, isGabsintoName, sanitizeAvatar } from '@party/ui';
 import { useRoomConnection } from './shell/useRoomConnection';
 import { JoinScreen } from './shell/JoinScreen';
 import { WaitingScreen } from './shell/WaitingScreen';
+import { HostControlsBar } from './shell/HostControlsBar';
 import { TextScaleButton } from './shell/TextScaleButton';
 import { CONTROLLER_GAMES, CONTROLLER_HOW_TO_PLAY } from './games/registry';
 import './shell/shell.css';
@@ -78,6 +79,10 @@ function App() {
   const TIERED_GAMES = new Set(['zap', 'lorota', 'sabetudo', 'fdp', 'evoce', 'dilema', 'sintonia']);
   const GameView = conn.activeGameId ? CONTROLLER_GAMES[conn.activeGameId] : undefined;
 
+  const isOwner = conn.playerId != null && conn.playerId === conn.ownerPlayerId;
+  const inGame = Boolean(conn.activeGameId && conn.publicState && GameView);
+  const gamePaused = inGame && (conn.publicState as { phase?: string })?.phase === 'paused';
+
   let screen;
   if (!conn.playerId) {
     screen = (
@@ -129,6 +134,7 @@ function App() {
 
   return (
     <main className="mobile-layout">
+      {isOwner && inGame ? <HostControlsBar paused={gamePaused} send={conn.send} /> : null}
       {screen}
       {conn.error ? <p className="error">{conn.error}</p> : null}
       <TextScaleButton />
