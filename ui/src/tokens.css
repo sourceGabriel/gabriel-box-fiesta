@@ -32,8 +32,26 @@
 
   /* type */
   --font: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  /* display face for host-TV headlines / big moments (all-caps by design) */
+  --font-display: 'Anton', 'Arial Narrow', system-ui, sans-serif;
+
+  /* Host-TV type scale — read from a couch, ~3 m from a 1080p screen.
+     Nothing load-bearing should ever be < --tv-body. */
+  --tv-body: clamp(1.1rem, 2.1vmin, 1.6rem);
+  --tv-secondary: clamp(1.3rem, 2.6vmin, 2rem);
+  --tv-player: clamp(1.6rem, 3.4vmin, 2.8rem);
+  --tv-headline: clamp(3rem, 8vmin, 6rem);
+  --tv-climax: clamp(4.5rem, 15vmin, 11rem);
 
   font-family: var(--font);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+@font-face {
+  font-family: 'Anton';
+  src: url('./fonts/anton-latin-400.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
 }

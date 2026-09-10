@@ -814,3 +814,164 @@
   .ui-victory-frame { animation: ui-victory-pop 0.01s both; }
   .ui-victory-confetti { display: none; }
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   HostStage + Moment — the host-TV "show" layer (spike). See HostStage.tsx.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.ui-stage {
+  position: relative;
+  width: 100vw;
+  height: 100dvh;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  color: var(--text);
+  background:
+    radial-gradient(120vw 90vh at 50% -20%, color-mix(in srgb, var(--stage-accent) 16%, transparent), transparent 60%),
+    linear-gradient(180deg, #070b12 0%, #0b0f17 55%, #06090f 100%);
+}
+
+/* slow ambient drift — one animated layer at idle, near-imperceptible */
+.ui-stage-ambient {
+  position: absolute;
+  inset: -20%;
+  pointer-events: none;
+  background: radial-gradient(40vw 40vw at 30% 30%, color-mix(in srgb, var(--stage-accent) 22%, transparent), transparent 70%);
+  opacity: 0.5;
+  filter: blur(40px);
+  animation: ui-stage-drift 26s ease-in-out infinite alternate;
+}
+.ui-stage[data-intensity='high'] .ui-stage-ambient { opacity: 0.32; }
+.ui-stage[data-intensity='climax'] .ui-stage-ambient { opacity: 0.12; animation: none; }
+
+@keyframes ui-stage-drift {
+  from { transform: translate3d(-4%, -2%, 0) scale(1); }
+  to { transform: translate3d(5%, 3%, 0) scale(1.12); }
+}
+
+.ui-stage-hud {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: clamp(0.9rem, 2.4vmin, 2rem) clamp(1.2rem, 4vw, 3.5rem);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.ui-stage[data-intensity='high'] .ui-stage-hud { opacity: 0.55; transform: scale(0.94); }
+.ui-stage-hud[data-hidden='true'] { opacity: 0; transform: translateY(-40%); pointer-events: none; }
+
+.ui-stage-scene {
+  position: relative;
+  z-index: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(0.8rem, 2vmin, 1.6rem);
+  padding: 0 clamp(1.2rem, 5vw, 4rem);
+  text-align: center;
+  animation: ui-stage-scene-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes ui-stage-scene-in {
+  from { opacity: 0; transform: translateY(1.4rem) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+
+.ui-stage-strip {
+  position: relative;
+  z-index: 2;
+  padding: clamp(0.6rem, 1.8vmin, 1.4rem) clamp(1.2rem, 4vw, 3.5rem) clamp(0.9rem, 2.4vmin, 2rem);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.ui-stage-strip[data-hidden='true'] { opacity: 0; transform: translateY(40%); pointer-events: none; }
+
+/* ── Moment ── */
+
+.ui-moment {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 6vmin;
+  background: rgba(4, 6, 11, 0.72);
+  backdrop-filter: blur(3px);
+  animation: ui-moment-backdrop-in 0.24s ease both;
+}
+.ui-moment-inner {
+  max-width: 92vw;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(0.6rem, 1.8vmin, 1.4rem);
+  text-align: center;
+}
+.ui-moment-eyebrow {
+  font: 700 var(--tv-secondary) / 1 var(--font);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--moment-accent, var(--accent)) 80%, #fff);
+  opacity: 0;
+  animation: ui-moment-eyebrow-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both;
+}
+.ui-moment-title {
+  font-family: var(--font-display);
+  font-size: var(--tv-headline);
+  line-height: 1.02;
+  text-transform: uppercase;
+  text-wrap: balance;
+  color: #fff;
+  clip-path: inset(0 100% 0 0);
+  animation: ui-moment-title-wipe 0.55s cubic-bezier(0.16, 1, 0.3, 1) 0.22s both;
+}
+.ui-moment-subtitle {
+  font: 600 var(--tv-player) / 1.1 var(--font);
+  color: var(--muted);
+  opacity: 0;
+  animation: ui-moment-eyebrow-in 0.4s ease 0.5s both;
+}
+
+.ui-moment-callout .ui-moment-title {
+  font-size: var(--tv-climax);
+  clip-path: none;
+  animation: ui-moment-callout-pop 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  text-shadow: 0 0 3rem color-mix(in srgb, var(--moment-accent, var(--accent)) 55%, transparent);
+}
+.ui-moment.is-success .ui-moment-title { color: var(--good); }
+.ui-moment.is-danger .ui-moment-title { color: var(--danger); }
+
+.ui-moment-reveal .ui-moment-inner::after {
+  content: '';
+  width: min(46vw, 22rem);
+  height: 0.32rem;
+  border-radius: 999px;
+  background: var(--moment-accent, var(--accent));
+  transform: scaleX(0);
+  transform-origin: left;
+  animation: ui-moment-rule 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.6s both, ui-moment-rule-pulse 1.2s ease 1.1s;
+}
+
+@keyframes ui-moment-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ui-moment-eyebrow-in { from { opacity: 0; transform: translateY(0.8rem); } to { opacity: 1; transform: none; } }
+@keyframes ui-moment-title-wipe { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes ui-moment-callout-pop {
+  0% { opacity: 0; transform: scale(0.75); }
+  55% { opacity: 1; transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+@keyframes ui-moment-rule { to { transform: scaleX(1); } }
+@keyframes ui-moment-rule-pulse { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.6); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-stage-ambient { animation: none; }
+  .ui-stage-scene { animation: ui-moment-backdrop-in 0.01s both; }
+  .ui-moment,
+  .ui-moment * { animation-duration: 0.01s !important; animation-delay: 0s !important; }
+  .ui-moment-title { clip-path: none; }
+  .ui-moment-reveal .ui-moment-inner::after { transform: scaleX(1); }
+}

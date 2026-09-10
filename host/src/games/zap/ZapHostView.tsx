@@ -1,10 +1,32 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ZapDuel, ZapGameEvent, ZapPublicState } from '@party/shared';
-import { Avatar, BrandMark, Button, getSounds, Overlay, RoundScoreboard, roundTaunt, Timer, VictorySplash } from '@party/ui';
+import {
+  Avatar,
+  BrandMark,
+  Button,
+  getSounds,
+  HostStage,
+  Moment,
+  Overlay,
+  RoundScoreboard,
+  roundTaunt,
+  Timer,
+  useMomentQueue,
+  VictorySplash,
+  type HostScene,
+} from '@party/ui';
 import type { HostGameViewProps } from '../types';
-import { describeEvent } from './describeEvent';
 import { soundForEvent } from './sound-map';
 import './zap-host.css';
+
+const ZAP_ACCENT = '#ff3caf';
+
+/** Zap! phase → host "scene" (spike: answering/voting/results only). */
+const SCENE_FOR: Record<string, HostScene> = {
+  answering: 'thinking',
+  voting: 'reaction',
+  roundResults: 'reveal',
+};
 
 const SLOT_TONE = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'] as const;
 
@@ -66,7 +88,6 @@ function DuelBoard({ duel, revealed }: { duel: ZapDuel; revealed: boolean }) {
 export function ZapHostView({ publicState, events, players, connected, reactions, send }: HostGameViewProps) {
   const pub = publicState as ZapPublicState;
   const seenSeqRef = useRef(0);
-  const [feed, setFeed] = useState<{ seq: number; text: string }[]>([]);
   const sounds = useMemo(() => getSounds(), []);
   const [soundOn, setSoundOn] = useState(() => sounds.isEnabled());
 
@@ -97,7 +118,6 @@ export function ZapHostView({ publicState, events, players, connected, reactions
   useEffect(() => {
     if (events.length === 0) {
       seenSeqRef.current = 0;
-      setFeed([]);
       return;
     }
     const lastSeq = events[events.length - 1].seq;
@@ -106,16 +126,12 @@ export function ZapHostView({ publicState, events, players, connected, reactions
     seenSeqRef.current = lastSeq;
 
     // Sound follows the raw events (and ignores reduced-motion).
+    // Phase 1: the text feed becomes <Broadcast> lower-thirds via a richer describeEvent.
     for (const { event } of freshRaw) {
       const name = soundForEvent(event as ZapGameEvent);
       if (name) sounds.play(name);
     }
-
-    const lines = freshRaw
-      .map((e) => ({ seq: e.seq, text: describeEvent(e.event as ZapGameEvent, nameOf) }))
-      .filter((l): l is { seq: number; text: string } => l.text !== null);
-    if (lines.length > 0) setFeed((cur) => [...cur, ...lines].slice(-9));
-  }, [events, nameOf, sounds]);
+  }, [events, sounds]);
 
   const paused = pub.phase === 'paused';
   const over = pub.phase === 'gameover';
@@ -123,12 +139,95 @@ export function ZapHostView({ publicState, events, players, connected, reactions
   const isFinal = pub.roundKind === 'final';
   const currentDuel = pub.duels.find((d) => d.index === pub.currentDuelIndex) ?? pub.duels[pub.duels.length - 1];
 
+  // ── spike: the "big moments" for the results scene ──
+  const moments = useMomentQueue();
+  useEffect(() => {
+    if (pub.phase !== 'roundResults') return;
+    for (const d of pub.duels) {
+      const r = d.result;
+      if (!r) continue;
+      if (r.zap) {
+        moments.enqueue({
+          id: `r${pub.round}-d${d.index}-zap`,
+          priority: 10,
+          moment: {
+            type: 'callout',
+            title: 'ZAP!',
+            subtitle: 'levou todos os votos',
+            variant: 'success',
+            accent: ZAP_ACCENT,
+          },
+        });
+      }
+      if (r.winnerSlot !== null) {
+        const win = d.answers.find((a) => a.slot === r.winnerSlot);
+        if (win) {
+          moments.enqueue({
+            id: `r${pub.round}-d${d.index}-win`,
+            priority: 5,
+            moment: {
+              type: 'reveal',
+              eyebrow: 'Melhor resposta',
+              title: win.text,
+              subtitle: win.authorName ?? undefined,
+              accent: ZAP_ACCENT,
+            },
+          });
+        }
+      }
+    }
+  }, [pub.phase, pub.round, pub.duels, moments]);
+
   const standings = pub.standings.length
     ? pub.standings
     : [...pub.players].map((p) => ({ playerId: p.id, name: p.name, score: p.score, roundPoints: 0 })).sort((a, b) => b.score - a.score);
 
+  if (paused || over) {
+    return (
+      <main className="host-shell zap-host">
+        {paused ? (
+          <Overlay label="Partida pausada">
+            <p className="eyebrow">Partida pausada</p>
+            <h2>⏸ Aguardando o anfitrião</h2>
+            <div className="zap-result-actions">
+              <Button variant="primary" onClick={() => send('RESUME_GAME', {})}>Continuar</Button>
+              <Button variant="danger" onClick={() => send('END_GAME', {})}>Encerrar</Button>
+            </div>
+          </Overlay>
+        ) : null}
+
+        {over ? (
+          <Overlay label="Fim da partida">
+            <p className="eyebrow">Fim do Zap!</p>
+            <VictorySplash
+              winner={{ name: pub.winnerId ? nameOf(pub.winnerId) : '—', avatar: pub.winnerId ? avatarOf(pub.winnerId) : undefined }}
+              subtitle="venceu o Zap!"
+              accent={ZAP_ACCENT}
+            />
+            <ol className="zap-final-standings">
+              {standings.map((s, i) => (
+                <li key={s.playerId}>
+                  <span className="zap-rank">{i + 1}º</span>
+                  <span className="zap-final-name">{s.name}</span>
+                  <span className="zap-final-score">{s.score}</span>
+                </li>
+              ))}
+            </ol>
+            <div className="zap-result-actions">
+              <Button variant="primary" onClick={() => send('START_GAME', {})}>Nova partida</Button>
+              <Button variant="danger" onClick={() => send('END_GAME', {})}>Encerrar</Button>
+            </div>
+          </Overlay>
+        ) : null}
+      </main>
+    );
+  }
+
+  const scene: HostScene = SCENE_FOR[pub.phase] ?? 'thinking';
+  const intensity = pub.phase === 'roundResults' ? 'high' : 'normal';
+
   return (
-    <main className="host-shell zap-host">
+    <>
       <div className="zap-reactions" aria-hidden="true">
         {reactions.slice(-6).map((r) => (
           <div key={r.key} className="zap-reaction-bubble">
@@ -138,53 +237,34 @@ export function ZapHostView({ publicState, events, players, connected, reactions
         ))}
       </div>
 
-      {paused ? (
-        <Overlay label="Partida pausada">
-          <p className="eyebrow">Partida pausada</p>
-          <h2>⏸ Aguardando o anfitrião</h2>
-          <div className="zap-result-actions">
-            <Button variant="primary" onClick={() => send('RESUME_GAME', {})}>Continuar</Button>
-            <Button variant="danger" onClick={() => send('END_GAME', {})}>Encerrar</Button>
-          </div>
-        </Overlay>
-      ) : null}
-
-      {over ? (
-        <Overlay label="Fim da partida">
-          <p className="eyebrow">Fim do Zap!</p>
-          <VictorySplash
-            winner={{ name: pub.winnerId ? nameOf(pub.winnerId) : '—', avatar: pub.winnerId ? avatarOf(pub.winnerId) : undefined }}
-            subtitle="venceu o Zap!"
-            accent="#ff3caf"
-          />
-          <ol className="zap-final-standings">
-            {standings.map((s, i) => (
-              <li key={s.playerId}>
-                <span className="zap-rank">{i + 1}º</span>
-                <span className="zap-final-name">{s.name}</span>
-                <span className="zap-final-score">{s.score}</span>
+      <HostStage
+        scene={scene}
+        accent={ZAP_ACCENT}
+        intensity={intensity}
+        hud={
+          <>
+            <div className="zap-brand">
+              <BrandMark text="Zap!" size="md" />
+              <span className="zap-brand-sub">
+                Sala {pub.roomCode} · {isFinal ? 'Última Chance' : `Rodada ${pub.round}/${pub.totalRounds}`}
+              </span>
+              {!connected ? <span className="zap-conn-pill">reconectando…</span> : null}
+            </div>
+            <Timer seconds={timerSeconds} active={pub.phase === 'voting'} />
+          </>
+        }
+        strip={
+          <ul className="zap-strip">
+            {standings.map((s) => (
+              <li key={s.playerId} className={s.playerId === standings[0]?.playerId ? 'is-leader' : ''}>
+                {avatarOf(s.playerId) ? <Avatar spec={avatarOf(s.playerId)!} size={34} /> : null}
+                <span className="zap-strip-name">{s.name}</span>
+                <span className="zap-strip-score">{s.score}</span>
               </li>
             ))}
-          </ol>
-          <div className="zap-result-actions">
-            <Button variant="primary" onClick={() => send('START_GAME', {})}>Nova partida</Button>
-            <Button variant="danger" onClick={() => send('END_GAME', {})}>Encerrar</Button>
-          </div>
-        </Overlay>
-      ) : null}
-
-      <header className="zap-topbar">
-        <div className="zap-brand">
-          <BrandMark text="Zap!" size="md" />
-          <span className="zap-brand-sub">
-            Sala {pub.roomCode} · {isFinal ? 'Última Chance' : `Rodada ${pub.round}/${pub.totalRounds}`}
-          </span>
-          {!connected ? <span className="zap-conn-pill">reconectando…</span> : null}
-        </div>
-        <Timer seconds={timerSeconds} active={pub.phase === 'voting'} />
-      </header>
-
-      <div className="zap-body">
+          </ul>
+        }
+      >
         <section className="zap-stage">
           {pub.phase === 'answering' ? (
             <div className="zap-answering">
@@ -250,48 +330,23 @@ export function ZapHostView({ publicState, events, players, connected, reactions
             />
           ) : null}
         </section>
+      </HostStage>
 
-        <aside className="zap-side">
-          <div className="zap-side-head">
-            <h2>Placar</h2>
-            <span className="status-chip">{connected ? 'ao vivo' : 'offline'}</span>
-          </div>
-          <ol className="zap-standings">
-            {standings.map((s, i) => (
-              <li key={s.playerId}>
-                <span className="zap-rank">{i + 1}º</span>
-                {avatarOf(s.playerId) ? <Avatar spec={avatarOf(s.playerId)!} size={22} /> : null}
-                <span className="zap-standings-name">{s.name}</span>
-                {s.roundPoints > 0 ? <span className="zap-standings-delta">+{s.roundPoints}</span> : null}
-                <span className="zap-standings-score">{s.score}</span>
-              </li>
-            ))}
-          </ol>
-          {feed.length > 0 ? (
-            <ul className="zap-feed" aria-live="polite">
-              {feed.map((line) => (
-                <li key={line.seq}>{line.text}</li>
-              ))}
-            </ul>
-          ) : (
-            <p className="hint">Aguardando…</p>
-          )}
-          <div className="zap-side-actions">
-            <Button variant="ghost" onClick={() => send(paused ? 'RESUME_GAME' : 'PAUSE_GAME', {})}>
-              {paused ? '▶ Continuar' : '⏸ Pausar'}
-            </Button>
-            <Button variant="danger" onClick={() => send('END_GAME', {})}>Encerrar</Button>
-          </div>
-          <button
-            type="button"
-            className="zap-sound-toggle"
-            aria-pressed={soundOn}
-            onClick={() => setSoundOn(sounds.toggle())}
-          >
-            {soundOn ? '🔊 Som ligado' : '🔇 Som desligado'}
-          </button>
-        </aside>
+      {moments.current ? <Moment key={moments.currentId} {...moments.current} /> : null}
+
+      {/* spike: operator cluster stays on the TV; Phase 1 moves it to the owner's phone */}
+      <div className="zap-op-cluster">
+        <Button variant="ghost" onClick={() => send('PAUSE_GAME', {})}>⏸ Pausar</Button>
+        <Button variant="danger" onClick={() => send('END_GAME', {})}>Encerrar</Button>
+        <button
+          type="button"
+          className="zap-sound-toggle"
+          aria-pressed={soundOn}
+          onClick={() => setSoundOn(sounds.toggle())}
+        >
+          {soundOn ? '🔊' : '🔇'}
+        </button>
       </div>
-    </main>
+    </>
   );
 }
