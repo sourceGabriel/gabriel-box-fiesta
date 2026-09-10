@@ -84,21 +84,70 @@
   align-self: center;
   font-size: clamp(1.6rem, 4vmin, 2.6rem);
   opacity: 0.85;
+  position: relative;
+  z-index: 3;
 }
-.dil-trolley { display: inline-block; }
-.dil-fork.is-crash-left .dil-trolley { animation: dil-crash-left 0.9s ease-in forwards; }
-.dil-fork.is-crash-right .dil-trolley { animation: dil-crash-right 0.9s ease-in forwards; }
-@keyframes dil-crash-left {
+.dil-trolley { display: inline-block; will-change: transform; }
+
+/* the trolley slides down the doomed track, hits, and the tracks jolt */
+.dil-fork.is-crash-left .dil-trolley { animation: dil-run-left 1.45s cubic-bezier(0.55, 0, 0.9, 0.4) forwards; }
+.dil-fork.is-crash-right .dil-trolley { animation: dil-run-right 1.45s cubic-bezier(0.55, 0, 0.9, 0.4) forwards; }
+.dil-tracks.is-crashing-left, .dil-tracks.is-crashing-right { animation: dil-tracks-jolt 0.5s 1s ease-out; }
+
+@keyframes dil-run-left {
   0% { transform: none; }
-  65% { transform: translateX(-4.5vw) rotate(-10deg) scale(1.1); }
-  78% { transform: translateX(-4vw) rotate(6deg); }
-  100% { transform: translateX(-4.2vw) rotate(-3deg); }
+  8% { transform: translateX(1.4vw) rotate(5deg); } /* wind-up */
+  52% { transform: translateX(-10vw) translateY(3vh) rotate(-8deg) scale(1.25); }
+  64% { transform: translateX(-14vw) translateY(6vh) rotate(-11deg) scale(1.42); }
+  71% { transform: translateX(-13.2vw) translateY(6vh) rotate(11deg) scale(1.46); } /* impact recoil */
+  82% { transform: translateX(-13.8vw) translateY(6vh) rotate(-7deg) scale(1.24); }
+  100% { transform: translateX(-13.6vw) translateY(6vh) rotate(-5deg) scale(1.18); }
 }
-@keyframes dil-crash-right {
+@keyframes dil-run-right {
   0% { transform: none; }
-  65% { transform: translateX(4.5vw) rotate(10deg) scale(1.1); }
-  78% { transform: translateX(4vw) rotate(-6deg); }
-  100% { transform: translateX(4.2vw) rotate(3deg); }
+  8% { transform: translateX(-1.4vw) rotate(-5deg); }
+  52% { transform: translateX(10vw) translateY(3vh) rotate(8deg) scale(1.25); }
+  64% { transform: translateX(14vw) translateY(6vh) rotate(11deg) scale(1.42); }
+  71% { transform: translateX(13.2vw) translateY(6vh) rotate(-11deg) scale(1.46); }
+  82% { transform: translateX(13.8vw) translateY(6vh) rotate(7deg) scale(1.24); }
+  100% { transform: translateX(13.6vw) translateY(6vh) rotate(5deg) scale(1.18); }
+}
+@keyframes dil-tracks-jolt {
+  0%, 100% { transform: none; }
+  20% { transform: translateX(3px) translateY(-2px); }
+  45% { transform: translateX(-4px) translateY(2px); }
+  70% { transform: translateX(2px); }
+}
+
+/* impact flash + boom, positioned where the trolley lands */
+.dil-crash-flash, .dil-crash-boom {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  opacity: 0;
+  pointer-events: none;
+}
+.dil-crash-flash {
+  width: 13vw;
+  height: 13vw;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 240, 200, 0.95), rgba(249, 115, 22, 0.45) 45%, transparent 70%);
+  transform: translate(-50%, -50%) scale(0.2);
+}
+.dil-crash-boom { font-size: clamp(2.4rem, 6.5vmin, 4.2rem); transform: translate(-50%, -50%) scale(0.4); }
+.dil-fork.is-crash-left .dil-crash-flash, .dil-fork.is-crash-left .dil-crash-boom { margin-left: -13.6vw; margin-top: 6vh; }
+.dil-fork.is-crash-right .dil-crash-flash, .dil-fork.is-crash-right .dil-crash-boom { margin-left: 13.6vw; margin-top: 6vh; }
+.dil-fork.is-crash-left .dil-crash-flash, .dil-fork.is-crash-right .dil-crash-flash { animation: dil-flash 0.55s 0.94s ease-out forwards; }
+.dil-fork.is-crash-left .dil-crash-boom, .dil-fork.is-crash-right .dil-crash-boom { animation: dil-boom 0.7s 0.98s cubic-bezier(0.2, 1.5, 0.4, 1) forwards; }
+@keyframes dil-flash {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.2); }
+  30% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.6); }
+}
+@keyframes dil-boom {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.4) rotate(-12deg); }
+  40% { opacity: 1; transform: translate(-50%, -50%) scale(1.15) rotate(6deg); }
+  100% { opacity: 0.9; transform: translate(-50%, -50%) scale(1) rotate(0); }
 }
 
 .dil-track {
@@ -206,7 +255,6 @@
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%) rotate(-8deg);
   font-size: clamp(1rem, 2.6vmin, 1.7rem);
   font-weight: 800;
   letter-spacing: 0.05em;
@@ -216,8 +264,19 @@
   border-radius: 10px;
   padding: 0.25rem 0.9rem;
   pointer-events: none;
+  z-index: 4;
+  /* lands after the trolley arrives (~1s into the crash run) */
+  animation: dil-stamp-in 0.4s 1.05s cubic-bezier(0.2, 1.6, 0.4, 1) both;
 }
-.dil-track-stamp.is-good { color: var(--dil-green); border-color: var(--dil-green); }
+.dil-track-stamp.is-good {
+  color: var(--dil-green);
+  border-color: var(--dil-green);
+  animation-delay: 1.15s;
+}
+@keyframes dil-stamp-in {
+  from { opacity: 0; transform: translate(-50%, -50%) rotate(-8deg) scale(2.4); }
+  to { opacity: 1; transform: translate(-50%, -50%) rotate(-8deg) scale(1); }
+}
 
 /* ── side panel ── */
 .dil-side {
@@ -315,6 +374,12 @@
 .dil-reaction-who { font-size: 0.75rem; color: var(--muted); }
 
 @media (prefers-reduced-motion: reduce) {
-  .dil-card, .dil-reaction-bubble, .dil-fork .dil-trolley { animation: none; }
+  .dil-card, .dil-reaction-bubble, .dil-fork .dil-trolley,
+  .dil-tracks, .dil-crash-flash, .dil-crash-boom, .dil-track-stamp { animation: none; }
   .dil-track { transition: none; }
+  /* still show the outcome, just parked on the doomed side */
+  .dil-fork.is-crash-left .dil-trolley { transform: translateX(-13.6vw) translateY(6vh) rotate(-5deg); }
+  .dil-fork.is-crash-right .dil-trolley { transform: translateX(13.6vw) translateY(6vh) rotate(5deg); }
+  .dil-crash-flash, .dil-crash-boom { display: none; }
+  .dil-track-stamp { opacity: 1; transform: translate(-50%, -50%) rotate(-8deg); }
 }

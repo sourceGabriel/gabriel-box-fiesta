@@ -41,36 +41,65 @@
   text-align: center;
 }
 
-/* médium target bar */
-.sint-target-bar {
-  position: relative;
-  height: 14px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, #f43f5e, #facc15, #2dd4bf);
-  margin: 0.4rem 0 0.9rem;
-}
-.sint-target-fill { display: none; }
-.sint-target-pin {
-  position: absolute;
-  top: -1.1rem;
-  transform: translateX(-50%);
-  font-size: 1.2rem;
-}
-
-/* dial slider */
+/* the "termômetro" gauge */
 .sint-dial-readout {
   text-align: center;
   font-size: 2.4rem;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   color: #2dd4bf;
+  min-width: 2.6ch;
 }
-.sint-slider {
+.sint-gauge {
+  display: block;
   width: 100%;
-  height: 2.4rem;
-  accent-color: #2dd4bf;
+  max-width: 22rem;
+  margin: 0.3rem auto 0.2rem;
+  touch-action: none;
+  cursor: grab;
+  outline: none;
 }
-.sint-slider:disabled { opacity: 0.55; }
+.sint-gauge:focus-visible { filter: drop-shadow(0 0 3px #2dd4bf); }
+.sint-gauge.is-locked { cursor: default; opacity: 0.75; }
+.sint-gauge-bed { fill: #14343a; }
+.sint-gauge-fill { fill: rgba(45, 212, 191, 0.28); }
+.sint-gauge-rim { stroke: rgba(255, 255, 255, 0.12); stroke-width: 3; }
+.sint-gauge-needle { stroke: #e2f7f2; stroke-width: 6; stroke-linecap: round; }
+.sint-gauge-handle {
+  fill: #2dd4bf;
+  stroke: #04121a;
+  stroke-width: 3;
+}
+.sint-gauge.is-locked .sint-gauge-handle { fill: #7dd3c8; }
+.sint-gauge-hub { fill: #0b1418; stroke: #2dd4bf; stroke-width: 2; }
+.sint-gauge-target line { stroke: #fde047; stroke-width: 3; }
+.sint-gauge-target circle { fill: #fde047; }
+
+.sint-gauge-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9rem;
+  margin: 0.2rem 0 0.5rem;
+}
+.sint-nudge {
+  appearance: none;
+  font: inherit;
+  cursor: pointer;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 999px;
+  border: 1px solid rgba(45, 212, 191, 0.5);
+  background: rgba(45, 212, 191, 0.12);
+  color: #eef2f6;
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1;
+}
+.sint-nudge:active { background: rgba(45, 212, 191, 0.3); }
+.sint-nudge:disabled { opacity: 0.4; }
+
+.sint-gameover { gap: 0.7rem; }
 
 /* side bet */
 .sint-bet-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-top: 0.6rem; }

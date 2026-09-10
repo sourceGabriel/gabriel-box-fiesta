@@ -558,3 +558,20 @@ User report: É Você! drawing → clicking undo/submit a big drawing → `Range
   reset on a new round, several controller UX fixes, and integration tests that
   drive the new wire verbs. Scripted wire smoke played both games to gameover.
   **193 server tests.**
+
+## 2026-09-10 — Sintonia UX + Dilema trolley crash (branch `feature/sintonia-gauge-and-trolley`, off `a626757`, NOT merged)
+- Owner merged `feature/dilema-sintonia-rework` up through develop → main → origin
+  (`a626757`). New follow-ups on top, per the owner's requests after seeing the
+  Sintonia gameover screens:
+  - Phone `SintoniaGauge` — a touch-draggable SVG semicircular "termômetro" that
+    mirrors the TV dial (guesser: interactive; médium + reveal: read-only with a
+    target marker). Replaces the range slider.
+  - Mobile gameover → `<VictorySplash>` (winner's face + confetti) in Sintonia +
+    Dilema.
+  - `spectrums.ts` 66 → 125 pairs (+18 leve, +34 pesado, within guardrails).
+  - `meme.crash` cue for Dilema's `verdict_cast` (trolley squash) + fetch-tool /
+    manifest.example / README wiring.
+  - Dilema `roundResults` trolley crash animation (~1.45s CSS: slide into the
+    doomed track, flash + 💥 + jolt, stamps pop in). reduced-motion-safe.
+- **193 server tests, tsc + oxlint, 5-ws build green.** Live-smoked on a real
+  phone tab. §52 held.

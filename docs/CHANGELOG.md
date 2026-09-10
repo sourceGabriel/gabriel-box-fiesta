@@ -1,6 +1,40 @@
 # Changelog
 
-## 2026-09-09 — Dilema + Sintonia reworked to the owner's spec (branch `feature/dilema-sintonia-rework`)
+## 2026-09-10 — Sintonia UX + Dilema trolley crash (branch `feature/sintonia-gauge-and-trolley`, off `a626757`)
+
+Follow-ups the owner asked for after seeing the Sintonia gameover screens.
+193 server tests, `tsc --noEmit` clean, host/mobile oxlint clean, 5-workspace
+build green. Live-smoked on a real phone tab. §52 held.
+
+- **Phone "termômetro"** — `mobile/src/games/sintonia/SintoniaGauge.tsx`: a
+  touch-draggable pure-SVG semicircular gauge that mirrors the host TV dial. It
+  replaces the plain range slider for the guesser; it also renders read-only for
+  the médium (needle sits on the target) and at reveal (your locked needle + a
+  dashed target marker). `role="slider"` + arrow-key support, − / + nudge
+  buttons for precision, `touch-action: none` so a drag never scrolls. The old
+  `.sint-target-bar` and `.sint-slider` are removed.
+- **Mobile gameover** now shows `<VictorySplash>` (the winner's face, accent
+  glow, CSS confetti) instead of a one-liner — in Sintonia and Dilema. A tie
+  still shows "🤝 Empate!". No component change; `VictorySplash`'s CSS was
+  already responsive (`width: min(46vw, 240px)`).
+- **spectrums.ts** grew 66 → **125 pairs** (+18 LEVE, +34 PESADO). +18 framing
+  stays inside the documented guardrails (no protected group, no real private
+  person, no minors, no real atrocity). LEVE remains a strict prefix of the full
+  list (the content-tier test relies on that).
+- **`meme.crash`** local-sound cue — Dilema's `verdict_cast` (the trolley
+  squashing a track) fires `{ cue: 'meme.crash', fallback: { sample: 'chip-clash' } }`.
+  Wired into `tools/fetch-local-sounds.mjs` (`pum-impacto` page),
+  `manifest.example.json` and the drop-folder README; the owner's local `.mp3`
+  and `manifest.json` stay gitignored (already in place on this machine, verified
+  fetched + played on the verdict).
+- **Dilema trolley crash animation** — `roundResults` plays a ~1.45s CSS-only
+  sequence: the trolley winds up, accelerates into the killed track column,
+  recoils on impact (radial flash + a 💥 burst positioned at the impact point),
+  the whole tracks grid jolts, and the ATROPELADO / POUPADO stamps pop in
+  (scale 2.4→1) after it lands. `prefers-reduced-motion` parks the trolley on the
+  doomed side with no motion. Closes one of the parked Dilema follow-up ideas.
+
+## 2026-09-09 — Dilema + Sintonia reworked to the owner's spec (branch `feature/dilema-sintonia-rework`, merged → `a626757`)
 
 Owner brief (given mid-session, left before it landed): make Dilema faithful to
 *Trial by Trolley*'s card flow with **team consensus** and **no debate timers**,

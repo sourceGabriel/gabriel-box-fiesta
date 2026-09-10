@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { SintoniaPrivateState, SintoniaPublicState } from '@party/shared';
-import { Avatar, TextAnswerInput, Timer } from '@party/ui';
+import { Avatar, TextAnswerInput, Timer, VictorySplash } from '@party/ui';
 import { MobileHeader } from '../../shell/MobileHeader';
 import type { ControllerGameViewProps } from '../types';
 import { HowToPlay } from './HowToPlay';
+import { SintoniaGauge } from './SintoniaGauge';
 import './sintonia-controller.css';
 
 const REACTION_EMOJIS = ['😂', '🔥', '🤯', '🧠', '😱', '🙏'];
@@ -113,15 +114,24 @@ export function SintoniaControllerView({
           <button type="button" className="sint-howto-open" onClick={() => setShowHowTo(true)}>? Como jogar</button>
         </section>
       ) : over ? (
-        <section className="sint-panel sint-center">
-          <h2>
-            {pub.winnerId === null
-              ? '🤝 Empate!'
-              : pub.winnerId === playerId
-                ? '🏆 Você venceu!'
-                : `🏆 ${nameOf(pub.winnerId)} venceu`}
-          </h2>
-          {myRank ? <p className="hint">Você terminou em {myRank}º — {myStandingRow?.score ?? 0} pts</p> : null}
+        <section className="sint-panel sint-center sint-gameover">
+          {pub.winnerId === null ? (
+            <h2>🤝 Empate!</h2>
+          ) : (
+            <VictorySplash
+              winner={{
+                name: pub.winnerId === playerId ? 'Você' : (pub.winnerName ?? nameOf(pub.winnerId)),
+                avatar: avatarOf(pub.winnerId),
+              }}
+              subtitle={pub.winnerId === playerId ? 'venceu!' : 'mais em sintonia'}
+              accent="#2dd4bf"
+            />
+          )}
+          {myRank ? (
+            <p className="hint">
+              Você terminou em <strong>{myRank}º</strong> — {myStandingRow?.score ?? 0} pts
+            </p>
+          ) : null}
           <p className="hint">Aguarde o anfitrião iniciar uma nova partida.</p>
         </section>
       ) : (
@@ -138,11 +148,7 @@ export function SintoniaControllerView({
                 <span>◀ {pub.spectrum[0]}</span>
                 <span>{pub.spectrum[1]} ▶</span>
               </p>
-              <div className="sint-target-bar">
-                <div className="sint-target-pin" style={{ left: `${priv.target ?? 50}%` }} aria-hidden="true">
-                  🎯
-                </div>
-              </div>
+              <SintoniaGauge value={priv.target ?? 50} disabled />
               <p className="hint">O alvo está em <strong>{priv.target}</strong> — descreva esse ponto com uma dica curta, sem números.</p>
               <TextAnswerInput
                 key={`clue-${pub.round}`}
@@ -156,7 +162,7 @@ export function SintoniaControllerView({
             </section>
           ) : null}
 
-          {/* ── guesser: your own dial ── */}
+          {/* ── guesser: your own thermometer ── */}
           {role === 'guesser' ? (
             <section className="sint-panel">
               <p className="sint-clue-line">“{priv.clue ?? '…'}”</p>
@@ -164,19 +170,33 @@ export function SintoniaControllerView({
                 <span>◀ {pub.spectrum[0]}</span>
                 <span>{pub.spectrum[1]} ▶</span>
               </p>
-              <div className="sint-dial-readout">{Math.round(localDial)}</div>
-              <input
-                className="sint-slider"
-                type="range"
-                min={0}
-                max={100}
-                step={1}
+              <SintoniaGauge
                 value={localDial}
                 disabled={priv.myLocked}
-                onChange={(e) => setDial(Number(e.target.value))}
-                onPointerUp={flush}
-                aria-label="Seu ponteiro"
+                onChange={setDial}
+                onCommit={flush}
               />
+              <div className="sint-gauge-controls">
+                <button
+                  type="button"
+                  className="sint-nudge"
+                  disabled={priv.myLocked}
+                  onClick={() => { setDial(Math.max(0, dialRef.current - 1)); flush(); }}
+                  aria-label="Menos um"
+                >
+                  −
+                </button>
+                <div className="sint-dial-readout">{Math.round(localDial)}</div>
+                <button
+                  type="button"
+                  className="sint-nudge"
+                  disabled={priv.myLocked}
+                  onClick={() => { setDial(Math.min(100, dialRef.current + 1)); flush(); }}
+                  aria-label="Mais um"
+                >
+                  +
+                </button>
+              </div>
               {priv.myLocked ? (
                 <button type="button" className="sint-bet-btn" onClick={() => act({ type: 'unlockGuess' })}>
                   🔓 Destravar e mudar
@@ -189,7 +209,7 @@ export function SintoniaControllerView({
               <p className="hint">
                 {priv.myLocked
                   ? `Travado em ${Math.round(localDial)}. ${pub.guessersLockedCount}/${pub.guessersTotalCount} prontos.`
-                  : 'Trave quando decidir. Trava sozinho no fim do tempo.'}
+                  : 'Arraste o ponteiro. Trava sozinho no fim do tempo.'}
               </p>
             </section>
           ) : null}
@@ -206,20 +226,33 @@ export function SintoniaControllerView({
             <section className="sint-panel sint-center">
               {pub.roundSkipped ? (
                 <p className="hint">⌛ Ninguém deu a dica — rodada pulada.</p>
-              ) : priv.isMedium ? (
-                <>
-                  <h2>Alvo: {pub.target}</h2>
-                  <p className="sint-reveal-line">Sua dica rendeu +{pub.mediumPoints ?? 0} (média do grupo)</p>
-                </>
-              ) : myResult ? (
-                <>
-                  <h2>Alvo: {pub.target} · você: {myResult.value}</h2>
-                  <p className="sint-reveal-line">
-                    {myResult.points > 0 ? `+${myResult.points} pontos` : 'errou feio — 0'}
-                  </p>
-                </>
               ) : (
-                <h2>Alvo: {pub.target}</h2>
+                <>
+                  <p className="sint-spectrum">
+                    <span>◀ {pub.spectrum[0]}</span>
+                    <span>{pub.spectrum[1]} ▶</span>
+                  </p>
+                  <SintoniaGauge
+                    value={myResult ? myResult.value : (pub.target ?? 50)}
+                    disabled
+                    target={pub.target}
+                  />
+                  {priv.isMedium ? (
+                    <>
+                      <h2>Alvo: {pub.target}</h2>
+                      <p className="sint-reveal-line">Sua dica rendeu +{pub.mediumPoints ?? 0} (média do grupo)</p>
+                    </>
+                  ) : myResult ? (
+                    <>
+                      <h2>Alvo: {pub.target} · você: {myResult.value}</h2>
+                      <p className="sint-reveal-line">
+                        {myResult.points > 0 ? `+${myResult.points} pontos` : 'errou feio — 0'}
+                      </p>
+                    </>
+                  ) : (
+                    <h2>Alvo: {pub.target}</h2>
+                  )}
+                </>
               )}
             </section>
           ) : null}
