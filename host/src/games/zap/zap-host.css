@@ -375,3 +375,10 @@
   transition: opacity 0.2s ease;
 }
 .zap-op-cluster:hover { opacity: 1; }
+
+/* gameover scene inside <HostStage> */
+.zap-gameover-scene { display: flex; flex-direction: column; align-items: center; gap: clamp(0.8rem, 2.4vmin, 2rem); }
+.ui-stage .zap-final-standings { display: flex; flex-direction: column; gap: 0.3rem; font-size: var(--tv-secondary); }
+.ui-stage .zap-final-standings li { display: flex; gap: 1rem; align-items: baseline; }
+.ui-stage .zap-final-standings .zap-final-score { font-family: var(--font-display); color: var(--zap-bolt); }
+.zap-op-cluster .btn, .zap-op-cluster button { font-size: var(--tv-body); }

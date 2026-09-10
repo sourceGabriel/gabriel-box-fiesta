@@ -1,35 +1,31 @@
 import type { ZapGameEvent } from '@party/shared';
+import type { BroadcastItem } from '@party/ui';
 
-/** A human line for the host event feed, or null for events not worth showing. */
-export const describeEvent = (event: ZapGameEvent, nameOf: (id: string) => string): string | null => {
+/**
+ * Zap! events → broadcast lower-thirds for the host TV. Big beats (a duel win, a
+ * ZAP! sweep, the game winner) are `<Moment>`s driven from the public state in
+ * the view — here we only narrate the quieter stuff.
+ */
+export const broadcastFor = (event: ZapGameEvent, nameOf: (id: string) => string): BroadcastItem | null => {
   switch (event.type) {
-    case 'game_started':
-      return `⚡ Zap! começou — ${event.totalRounds} rodadas`;
     case 'round_started':
       return event.roundKind === 'final'
-        ? `🔥 Rodada ${event.round}: ÚLTIMA CHANCE (pontos triplos)`
-        : `Rodada ${event.round} de ${event.totalRounds}`;
-    case 'answering_started':
-      return '✍️ Escrevam as respostas no celular';
+        ? { tier: 'critical', graphic: 'headline', eyebrow: 'Rodada final', title: 'Última Chance — pontos triplos' }
+        : { tier: 'important', graphic: 'headline', eyebrow: `Rodada ${event.round}/${event.totalRounds}`, title: 'Escrevam no celular' };
     case 'all_answers_in':
-      return '✅ Todas as respostas chegaram';
+      return { tier: 'important', graphic: 'lower-third', eyebrow: 'Fechou', title: 'Todas as respostas chegaram' };
     case 'duel_started':
-      return `🥊 Duelo: "${event.prompt}"`;
-    case 'duel_revealed': {
-      if (event.zap) return '⚡ ZAP! Levou todos os votos';
-      if (event.winnerSlot === null) return '🤝 Empate no duelo';
-      return `🏅 Votos: ${event.votes.join(' × ')}`;
-    }
+      return { tier: 'important', graphic: 'lower-third', eyebrow: 'Duelo', title: event.prompt };
+    case 'answer_submitted':
+      return { tier: 'ambient', graphic: 'lower-third', eyebrow: 'Pronto', title: `${nameOf(event.playerId)} respondeu`, playerId: event.playerId };
     case 'round_finished': {
       const top = event.standings[0];
-      return top ? `Fim da rodada — ${nameOf(top.playerId)} lidera com ${top.score}` : 'Fim da rodada';
+      return top
+        ? { tier: 'important', graphic: 'lower-third', eyebrow: 'Placar', title: `${nameOf(top.playerId)} lidera com ${top.score}`, playerId: top.playerId }
+        : null;
     }
-    case 'game_finished':
-      return `🏆 ${nameOf(event.winnerId)} venceu o Zap!`;
     case 'game_paused':
-      return '⏸ Partida pausada';
-    case 'game_resumed':
-      return '▶ Partida retomada';
+      return { tier: 'critical', graphic: 'headline', title: 'Partida pausada' };
     default:
       return null;
   }

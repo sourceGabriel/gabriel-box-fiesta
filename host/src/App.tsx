@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FC } from 'react';
+import { PerformanceModeProvider, type PerformanceMode } from '@party/ui';
 import { useRoomConnection } from './shell/useRoomConnection';
 import { AttractScreen } from './shell/AttractScreen';
 import { CatalogScreen } from './shell/CatalogScreen';
@@ -9,12 +10,23 @@ import './shell/shell.css';
 
 type Flow = 'attract' | 'catalog' | 'lobby';
 
+const PERF_KEY = 'party:perfmode';
+const readPerfMode = (): PerformanceMode => {
+  try {
+    const v = localStorage.getItem(PERF_KEY);
+    if (v === 'high' || v === 'balanced' || v === 'safe') return v;
+  } catch {
+    /* private mode / disabled */
+  }
+  return 'balanced';
+};
+
 /**
  * Thin host shell. Pre-match it walks a 3-screen flow (attract → catalog →
  * lobby); once a game is running it hands off to that game's registered view.
  * Nothing here knows about UNO — adding a game is one entry in `HOST_GAMES`.
  */
-function App() {
+function AppInner() {
   const conn = useRoomConnection();
   const [flow, setFlow] = useState<Flow>('attract');
   const prevActiveRef = useRef<string | null>(null);
@@ -111,6 +123,17 @@ function App() {
       onSetContentTier={(tier) => conn.send('SET_CONTENT_TIER', { tier })}
       onSetMatchLength={(gameId, length) => conn.send('SET_MATCH_LENGTH', { gameId, length })}
     />
+  );
+}
+
+function App() {
+  // Performance tier for the host "show" layer. Persisted; the owner's phone
+  // controls (host-lease slice) will flip it live via a wire message.
+  const [perfMode] = useState<PerformanceMode>(readPerfMode);
+  return (
+    <PerformanceModeProvider mode={perfMode}>
+      <AppInner />
+    </PerformanceModeProvider>
   );
 }
 
