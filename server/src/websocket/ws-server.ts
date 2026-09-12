@@ -399,7 +399,15 @@ export class PartyServer {
     }
 
     if (message.type === 'GAME_ACTION') {
-      room.applyGameAction(ctx.playerId, message.payload.action);
+      try {
+        room.applyGameAction(ctx.playerId, message.payload.action);
+      } catch (error) {
+        // Engine rejections carry a `CODE:friendly message` payload — surface just
+        // the friendly half to the player (same shape as the other handlers).
+        const [code, msg] = (error as Error).message.split(/:(.*)/s);
+        this.send(socket, 'ERROR', { code: code ?? 'BAD_REQUEST', message: msg ?? 'Ação inválida', recoverable: true });
+        return;
+      }
       this.flushAndPublishState();
       return;
     }

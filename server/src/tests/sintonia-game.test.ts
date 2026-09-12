@@ -147,6 +147,20 @@ describe('SintoniaGame — clue rules', () => {
     expect(s.phase).toBe('reveal');
     expect(s.roundSkipped).toBe(true);
   });
+
+  it('skips a round whose médium is already disconnected when it begins', () => {
+    const game = mkGame(); // round 1 médium = p1, round 2 médium = p2
+    game.start();
+    game.setPlayerConnected('p2', false);
+    toGuessing(game);
+    allGuess(game, 50);
+    game.onTurnTimeout(); // reveal → round 2 begins with p2 (offline) as médium
+    const s = pub(game);
+    expect(s.round).toBe(2);
+    expect(s.mediumId).toBe('p2');
+    expect(s.phase).toBe('reveal');
+    expect(s.roundSkipped).toBe(true);
+  });
 });
 
 describe('SintoniaGame — guessing + proximity scoring', () => {

@@ -533,7 +533,7 @@ describe('multiplayer integration', () => {
     const otherWs = currentWs === p1 ? p2 : p1;
     const actionError = waitForMessage(otherWs, 'ERROR');
     otherWs.send(gameAction({ type: 'garbage' }));
-    expect((await actionError).payload.message).toMatch(/INVALID_ACTION/i);
+    expect((await actionError).payload.code).toBe('INVALID_ACTION');
 
     host.close();
     p1.close();
@@ -603,7 +603,7 @@ describe('multiplayer integration', () => {
     const otherWs = currentWs === p1 ? p2 : p1;
     const actionError = waitForMessage(otherWs, 'ERROR');
     otherWs.send(makeMessage('GAME_ACTION', { action: { kind: 'garbage' } }));
-    expect((await actionError).payload.message).toMatch(/INVALID_ACTION/i);
+    expect((await actionError).payload.code).toBe('INVALID_ACTION');
 
     host.close();
     p1.close();
@@ -677,7 +677,7 @@ describe('multiplayer integration', () => {
     // A malformed Zap action is rejected without crashing the room.
     const actionError = waitForMessage(phones[0], 'ERROR');
     phones[0].send(makeMessage('GAME_ACTION', { action: { type: 'garbage' } }));
-    expect((await actionError).payload.message).toMatch(/INVALID_ACTION/i);
+    expect((await actionError).payload.code).toBe('INVALID_ACTION');
 
     host.close();
     for (const ws of phones) ws.close();
@@ -735,7 +735,7 @@ describe('multiplayer integration', () => {
 
     const actionError = waitForMessage(phones[0], 'ERROR');
     phones[0].send(makeMessage('GAME_ACTION', { action: { type: 'garbage' } }));
-    expect((await actionError).payload.message).toMatch(/INVALID_ACTION/i);
+    expect((await actionError).payload.code).toBe('INVALID_ACTION');
 
     host.close();
     for (const ws of phones) ws.close();
@@ -794,7 +794,7 @@ describe('multiplayer integration', () => {
 
     const actionError = waitForMessage(phones[0], 'ERROR');
     phones[0].send(makeMessage('GAME_ACTION', { action: { type: 'garbage' } }));
-    expect((await actionError).payload.message).toMatch(/INVALID_ACTION/i);
+    expect((await actionError).payload.code).toBe('INVALID_ACTION');
 
     host.close();
     for (const ws of phones) ws.close();
@@ -887,7 +887,7 @@ describe('multiplayer integration', () => {
 
     const actionError = waitForMessage(phones[0], 'ERROR');
     phones[0].send(makeMessage('GAME_ACTION', { action: { type: 'garbage' } }));
-    expect((await actionError).payload.message).toMatch(/INVALID_ACTION/i);
+    expect((await actionError).payload.code).toBe('INVALID_ACTION');
 
     host.close();
     for (const ws of phones) ws.close();
@@ -947,7 +947,7 @@ describe('multiplayer integration', () => {
 
     const actionError = waitForMessage(phones[0], 'ERROR');
     phones[0].send(makeMessage('GAME_ACTION', { action: { type: 'garbage' } }));
-    expect((await actionError).payload.message).toMatch(/INVALID_ACTION/i);
+    expect((await actionError).payload.code).toBe('INVALID_ACTION');
 
     host.close();
     for (const ws of phones) ws.close();
@@ -1001,7 +1001,7 @@ describe('multiplayer integration', () => {
 
     const actionError = waitForMessage(phones[0], 'ERROR');
     phones[0].send(makeMessage('GAME_ACTION', { action: { type: 'garbage' } }));
-    expect((await actionError).payload.message).toMatch(/INVALID_ACTION/i);
+    expect((await actionError).payload.code).toBe('INVALID_ACTION');
 
     // assigning → pickInnocent (auto-advances after ~4s), then drive one team through propose over the wire.
     const picking = waitForMessageWhere(
@@ -1102,7 +1102,7 @@ describe('multiplayer integration', () => {
 
     const actionError = waitForMessage(phones[0], 'ERROR');
     phones[0].send(makeMessage('GAME_ACTION', { action: { type: 'garbage' } }));
-    expect((await actionError).payload.message).toMatch(/INVALID_ACTION/i);
+    expect((await actionError).payload.code).toBe('INVALID_ACTION');
 
     // Every guesser sets + locks their own dial over the wire → reveal.
     const revealReached = waitForMessageWhere(
@@ -1183,7 +1183,7 @@ describe('multiplayer integration', () => {
 
     const actionError = waitForMessage(phones[0], 'ERROR');
     phones[0].send(makeMessage('GAME_ACTION', { action: { type: 'garbage' } }));
-    expect((await actionError).payload.message).toMatch(/INVALID_ACTION/i);
+    expect((await actionError).payload.code).toBe('INVALID_ACTION');
 
     host.close();
     for (const ws of phones) ws.close();

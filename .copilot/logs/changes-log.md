@@ -589,6 +589,12 @@ User report: É Você! drawing → clicking undo/submit a big drawing → `Range
   committed text. No code, no tests touched. CLAUDE.md + CHANGELOG +
   repository-gap-review updated in the same pass.
 
+## 2026-09-12 — Fase 10 + games 6-10 review merged into develop (owner: realign branches, put Fase 10 back in the list)
+- 2 `--no-ff` merges: `feature/fase10` then `feature/games-6-10-review`.
+- 1 leftover `payload.message` INVALID_ACTION assertion (added to the test file
+  after games-6-10-review's recovery branch had diverged) fixed by hand to match.
+- 10 games in the catalog now. 221 server tests, tsc + oxlint + 5-ws build green.
+
 ## 2026-09-10 — Fase 10, game #10 (branch `feature/fase10`)
 - Clean-room reimplementation of Mattel *Phase 10* (contract rummy, 10 phases).
   Turn-based like UNO. §52 held (no `core/`/`ws-server`/shell/`shared/protocol` edits).
@@ -624,3 +630,19 @@ User report: É Você! drawing → clicking undo/submit a big drawing → `Range
   view root (localStorage-persisted); ≥130 % stacks the side panel below the board.
 - host/mobile lint + 5-ws build green, 220 server tests. Live-verified: board +
   deck + discard render bigger, UI-scale + stacking, host + phone phase overlays.
+
+## 2026-09-10 — Playability review: games 6–10 (branch `feature/ticketabc-abc-map`, recovered onto `feature/games-6-10-review`)
+- Reviewed FDP, É Você!, Dilema, Sintonia, Fase 10 (engines + solver + controllers
+  + host views) for bugs, softlocks, and UX gaps. FDP / É Você! / Dilema came up
+  clean; Dilema's timerless pick/verdict "hang if a player is AFK" is the owner's
+  documented design (spec §30) and disconnect paths are covered.
+- fix(ws): the GAME_ACTION handler let a thrown engine rejection reach the phone
+  verbatim, so players saw `PHASE_INCOMPLETE:…` / `NOT_YOUR_TURN:…` with the code
+  prefix. Now split like the other handlers → the mobile error line shows just
+  the friendly half. 10 integration assertions moved from `payload.message`
+  regex to `payload.code`.
+- fix(sintonia): a médium who was already offline when their round began still
+  made the room wait the full ~45s cluing backstop; `beginRound` now skips
+  straight to a short reveal (mirrors the existing mid-phase handler). +1 test.
+- Recovered by cherry-pick from the since-abandoned `feature/ticketabc-abc-map`
+  stack, now merged into `develop` together with Fase 10 (see above).
