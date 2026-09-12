@@ -263,11 +263,21 @@
 }
 
 /* ── UI-scale button ── */
-.f10-uiscale-btn {
+.f10-op-cluster {
   position: fixed;
-  right: clamp(0.6rem, 1.6vmin, 1.4rem);
-  bottom: clamp(0.6rem, 1.6vmin, 1.4rem);
-  z-index: 30;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 40;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  opacity: 0.35;
+  transition: opacity 0.2s ease;
+}
+.f10-op-cluster:hover { opacity: 1; }
+.f10-op-cluster .btn, .f10-op-cluster button { font-size: var(--tv-body); }
+
+.f10-uiscale-btn {
   display: flex;
   align-items: center;
   gap: 0.35rem;
@@ -332,6 +342,24 @@
    instead of letting it clip off the right edge */
 .fase10-host.is-zoomed .f10-body { grid-template-columns: minmax(0, 1fr); }
 .fase10-host.is-zoomed .f10-roster { max-height: 24rem; }
+
+/* ─── host-stage ─── .f10-body sits inside <HostStage>'s custom 'table' scene.
+   .ui-stage-scene centres/doesn't stretch its children, so .f10-body's old
+   `flex: 1` (meant for a full-height flex column) needs an explicit box. */
+.ui-stage .f10-body {
+  width: min(96vw, 1500px);
+  height: min(78vh, 780px);
+}
+.ui-stage-hud .f10-brand { display: flex; flex-direction: column; gap: 0.2rem; }
+.ui-stage-hud .f10-brand-sub { color: var(--muted); font-size: var(--tv-body); }
+.ui-stage-hud .f10-conn-pill {
+  align-self: flex-start;
+  font-size: 0.8em;
+  padding: 0.15em 0.7em;
+  border-radius: 999px;
+  background: rgba(255, 90, 90, 0.16);
+  color: #ffb4b4;
+}
 .fase10-host.is-zoomed .f10-reactions { top: auto; bottom: 5rem; }
 @media (max-width: 1024px) {
   .f10-body { grid-template-columns: minmax(0, 1fr); }

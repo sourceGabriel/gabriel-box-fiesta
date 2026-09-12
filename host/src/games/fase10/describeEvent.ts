@@ -1,4 +1,5 @@
 import type { Fase10Card, Fase10GameEvent } from '@party/shared';
+import type { BroadcastItem } from '@party/ui';
 
 const cardLabel = (c: Fase10Card): string => {
   if (c.kind === 'wild') return 'Curinga';
@@ -35,6 +36,25 @@ export const describeEvent = (
       return '⏸ Partida pausada';
     case 'game_resumed':
       return '▶ Partida retomada';
+    default:
+      return null;
+  }
+};
+
+/**
+ * Fase 10 events → broadcast lower-thirds for the host TV. `card_drawn` /
+ * `card_discarded` already get a bespoke fly-card animation and `phase_laid`
+ * a row glow (see the fly-card layer in `Fase10HostView.tsx`) — this only
+ * adds the beats those don't cover.
+ */
+export const broadcastFor = (event: Fase10GameEvent, nameOf: (id: string) => string): BroadcastItem | null => {
+  switch (event.type) {
+    case 'hand_started':
+      return { tier: 'important', graphic: 'headline', eyebrow: `Mão ${event.hand}`, title: `${nameOf(event.startingPlayerId)} começa` };
+    case 'phase_laid':
+      return { tier: 'important', graphic: 'lower-third', eyebrow: 'Baixou', title: `${nameOf(event.playerId)} completou a fase ${event.phaseIndex}!`, playerId: event.playerId };
+    case 'game_paused':
+      return { tier: 'critical', graphic: 'headline', title: 'Partida pausada' };
     default:
       return null;
   }

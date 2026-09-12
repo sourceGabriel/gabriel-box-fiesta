@@ -1,10 +1,26 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Fase10Card, Fase10GameEvent, Fase10LaidGroup, Fase10PublicState } from '@party/shared';
-import { Avatar, BrandMark, Button, getSounds, Overlay, Timer, VictorySplash } from '@party/ui';
+import {
+  Avatar,
+  Broadcast,
+  BrandMark,
+  Button,
+  getSounds,
+  HostStage,
+  Moment,
+  Overlay,
+  Timer,
+  useStageDirector,
+  VictorySplash,
+  type HostScene,
+} from '@party/ui';
 import type { HostGameViewProps } from '../types';
-import { describeEvent } from './describeEvent';
+import { broadcastFor, describeEvent } from './describeEvent';
 import { soundForEvent } from './sound-map';
+import { fase10Theme } from './theme';
 import './fase10-host.css';
+
+const ACCENT = fase10Theme.accent;
 
 const REDUCED_MOTION =
   typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
@@ -98,6 +114,18 @@ export function Fase10HostView({ publicState, events, players, connected, reacti
     return (id: string) => map.get(id);
   }, [players]);
 
+  // The board is a persistent "table" — one custom scene for the whole game
+  // (like UNO's), not the usual thinking/collecting/reveal set. Hand/game
+  // results stay the existing Overlay + VictorySplash presentation.
+  const scene: HostScene = 'table';
+  const stage = useStageDirector({
+    events,
+    scene,
+    broadcastFor: (e) => broadcastFor(e as Fase10GameEvent, nameOf),
+    nameFor: nameOf,
+    avatarFor: avatarOf,
+  });
+
   useEffect(() => {
     if (events.length === 0) {
       seenSeqRef.current = 0;
@@ -190,8 +218,8 @@ export function Fase10HostView({ publicState, events, players, connected, reacti
     : undefined;
 
   return (
-    <main
-      className={`host-shell fase10-host ${uiScale >= 1.3 ? 'is-zoomed' : ''}`}
+    <div
+      className={`fase10-host ${uiScale >= 1.3 ? 'is-zoomed' : ''}`}
       style={{ ['--f10-ui-scale' as string]: String(uiScale) } as React.CSSProperties}
     >
       {fly ? (
@@ -211,14 +239,134 @@ export function Fase10HostView({ publicState, events, players, connected, reacti
         ))}
       </div>
 
+      <HostStage
+        scene={scene}
+        theme={fase10Theme}
+        intensity={handOver || gameOver ? 'high' : 'normal'}
+        hud={
+          <>
+            <div className="f10-brand">
+              <BrandMark text="Fase 10" size="md" />
+              <span className="f10-brand-sub">
+                Sala {pub.roomCode} · Mão {pub.hand} · vence na fase {pub.targetPhase}
+              </span>
+              {!connected ? <span className="f10-conn-pill">reconectando…</span> : null}
+            </div>
+            <Timer seconds={timerSeconds} active={pub.phase === 'turn'} />
+          </>
+        }
+        moment={stage.moment ? <Moment key={stage.momentId} {...stage.moment} /> : null}
+        broadcast={stage.broadcast ? <Broadcast key={stage.broadcast.id} item={stage.broadcast} /> : null}
+      >
+        <div className="f10-body">
+          <section className="f10-stage">
+            <div className="f10-board">
+              <div className="f10-deck" ref={deckRef}>
+                <span className="f10-deck-label">Monte</span>
+                <div className="f10-deck-stack">
+                  <CardBack style={{ ['--i' as string]: 0 } as React.CSSProperties} />
+                  <CardBack style={{ ['--i' as string]: 1 } as React.CSSProperties} />
+                  <CardBack style={{ ['--i' as string]: 2 } as React.CSSProperties} />
+                </div>
+                <span className="f10-deck-count">{pub.drawPileCount}</span>
+              </div>
+
+              <div className="f10-throw">
+                <p className="f10-turn-banner">
+                  {pub.phase === 'turn' ? (
+                    <>
+                      Vez de <strong>{currentName}</strong>
+                      <span className="f10-turn-sub">
+                        {pub.hasDrawn ? 'montando / descartando…' : 'comprando…'}
+                      </span>
+                    </>
+                  ) : (
+                    'Distribuindo cartas…'
+                  )}
+                </p>
+                {currentPlayer ? (
+                  <p className="f10-turn-phase">
+                    fase {currentPlayer.phaseIndex}: {specLabel(currentPlayer.phaseIndex)}
+                  </p>
+                ) : null}
+              </div>
+
+              <div className="f10-discard" ref={discardRef}>
+                <span className="f10-deck-label">Descarte</span>
+                {pub.topDiscard ? (
+                  <span key={pub.topDiscard.id} className={REDUCED_MOTION ? '' : 'f10-discard-pop'}>
+                    <CardFace card={pub.topDiscard} size="lg" />
+                  </span>
+                ) : (
+                  <span className="f10-card f10-card-lg is-empty">—</span>
+                )}
+              </div>
+            </div>
+
+            <div className="f10-table" aria-label="Fases baixadas">
+              {tableOwners.length === 0 ? (
+                <p className="hint">Ninguém baixou a fase ainda.</p>
+              ) : (
+                tableOwners.map((p) => (
+                  <div key={p.id} className="f10-table-row">
+                    <span className="f10-table-owner">{p.name}</span>
+                    <div className="f10-table-groups">
+                      {(groupsByOwner.get(p.id) ?? []).map((g) => (
+                        <LaidGroupView key={g.id} group={g} />
+                      ))}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </section>
+
+          <aside className="f10-side">
+            <div className="f10-side-head">
+              <h2>Jogadores</h2>
+              <span className="status-chip">{connected ? 'ao vivo' : 'offline'}</span>
+            </div>
+            <ol className="f10-roster">
+              {pub.players.map((p) => (
+                <li
+                  key={p.id}
+                  ref={(el) => {
+                    if (el) rowRefs.current.set(p.id, el);
+                    else rowRefs.current.delete(p.id);
+                  }}
+                  className={`${p.id === pub.currentPlayerId ? 'is-turn' : ''} ${p.skipped ? 'is-skipped' : ''} ${glowRow === p.id ? 'just-laid' : ''}`}
+                >
+                  <span className={`f10-conn-dot ${p.connected ? 'on' : 'off'}`} aria-hidden="true" />
+                  {avatarOf(p.id) ? <Avatar spec={avatarOf(p.id)!} size={30} /> : null}
+                  <span className="f10-roster-main">
+                    <span className="f10-roster-name">{p.name}</span>
+                    <span className="f10-roster-phase">
+                      Fase {p.phaseIndex} · {specLabel(p.phaseIndex)}
+                    </span>
+                  </span>
+                  {p.laid ? <span className="f10-tag laid">montou</span> : null}
+                  {p.skipped ? <span className="f10-tag skip">pulado</span> : null}
+                  <span className="f10-roster-hand" title="cartas na mão">{p.handCount}</span>
+                  <span className="f10-roster-score">{p.score}</span>
+                </li>
+              ))}
+            </ol>
+            {feed.length > 0 ? (
+              <ul className="f10-feed" aria-live="polite">
+                {feed.map((line) => (
+                  <li key={line.seq}>{line.text}</li>
+                ))}
+              </ul>
+            ) : null}
+          </aside>
+        </div>
+      </HostStage>
+
       {paused ? (
         <Overlay label="Partida pausada">
           <p className="eyebrow">Partida pausada</p>
           <h2>⏸ Aguardando o anfitrião</h2>
-          <div className="f10-result-actions">
-            <Button variant="primary" onClick={() => send('RESUME_GAME', {})}>Continuar</Button>
-            <Button variant="danger" onClick={() => send('END_GAME', {})}>Encerrar</Button>
-          </div>
+          <p className="hint">O anfitrião controla pelo celular.</p>
         </Overlay>
       ) : null}
 
@@ -279,7 +427,7 @@ export function Fase10HostView({ publicState, events, players, connected, reacti
             <VictorySplash
               winner={{ name: nameOf(pub.gameWinnerId), avatar: avatarOf(pub.gameWinnerId) }}
               subtitle={`completou a fase ${pub.targetPhase}`}
-              accent="#a855f7"
+              accent={ACCENT}
             />
           )}
           <ol className="f10-final-standings">
@@ -299,147 +447,22 @@ export function Fase10HostView({ publicState, events, players, connected, reacti
         </Overlay>
       ) : null}
 
-      <header className="f10-topbar">
-        <div className="f10-brand">
-          <BrandMark text="Fase 10" size="md" />
-          <span className="f10-brand-sub">
-            Sala {pub.roomCode} · Mão {pub.hand} · vence na fase {pub.targetPhase}
-          </span>
-          {!connected ? <span className="f10-conn-pill">reconectando…</span> : null}
-        </div>
-        <Timer seconds={timerSeconds} active={pub.phase === 'turn'} />
-      </header>
-
-      <div className="f10-body">
-        <section className="f10-stage">
-          <div className="f10-board">
-            <div className="f10-deck" ref={deckRef}>
-              <span className="f10-deck-label">Monte</span>
-              <div className="f10-deck-stack">
-                <CardBack style={{ ['--i' as string]: 0 } as React.CSSProperties} />
-                <CardBack style={{ ['--i' as string]: 1 } as React.CSSProperties} />
-                <CardBack style={{ ['--i' as string]: 2 } as React.CSSProperties} />
-              </div>
-              <span className="f10-deck-count">{pub.drawPileCount}</span>
-            </div>
-
-            <div className="f10-throw">
-              <p className="f10-turn-banner">
-                {pub.phase === 'turn' ? (
-                  <>
-                    Vez de <strong>{currentName}</strong>
-                    <span className="f10-turn-sub">
-                      {pub.hasDrawn ? 'montando / descartando…' : 'comprando…'}
-                    </span>
-                  </>
-                ) : (
-                  'Distribuindo cartas…'
-                )}
-              </p>
-              {currentPlayer ? (
-                <p className="f10-turn-phase">
-                  fase {currentPlayer.phaseIndex}: {specLabel(currentPlayer.phaseIndex)}
-                </p>
-              ) : null}
-            </div>
-
-            <div className="f10-discard" ref={discardRef}>
-              <span className="f10-deck-label">Descarte</span>
-              {pub.topDiscard ? (
-                <span key={pub.topDiscard.id} className={REDUCED_MOTION ? '' : 'f10-discard-pop'}>
-                  <CardFace card={pub.topDiscard} size="lg" />
-                </span>
-              ) : (
-                <span className="f10-card f10-card-lg is-empty">—</span>
-              )}
-            </div>
-          </div>
-
-          <div className="f10-table" aria-label="Fases baixadas">
-            {tableOwners.length === 0 ? (
-              <p className="hint">Ninguém baixou a fase ainda.</p>
-            ) : (
-              tableOwners.map((p) => (
-                <div key={p.id} className="f10-table-row">
-                  <span className="f10-table-owner">{p.name}</span>
-                  <div className="f10-table-groups">
-                    {(groupsByOwner.get(p.id) ?? []).map((g) => (
-                      <LaidGroupView key={g.id} group={g} />
-                    ))}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </section>
-
-        <aside className="f10-side">
-          <div className="f10-side-head">
-            <h2>Jogadores</h2>
-            <span className="status-chip">{connected ? 'ao vivo' : 'offline'}</span>
-          </div>
-          <ol className="f10-roster">
-            {pub.players.map((p) => (
-              <li
-                key={p.id}
-                ref={(el) => {
-                  if (el) rowRefs.current.set(p.id, el);
-                  else rowRefs.current.delete(p.id);
-                }}
-                className={`${p.id === pub.currentPlayerId ? 'is-turn' : ''} ${p.skipped ? 'is-skipped' : ''} ${glowRow === p.id ? 'just-laid' : ''}`}
-              >
-                <span className={`f10-conn-dot ${p.connected ? 'on' : 'off'}`} aria-hidden="true" />
-                {avatarOf(p.id) ? <Avatar spec={avatarOf(p.id)!} size={30} /> : null}
-                <span className="f10-roster-main">
-                  <span className="f10-roster-name">{p.name}</span>
-                  <span className="f10-roster-phase">
-                    Fase {p.phaseIndex} · {specLabel(p.phaseIndex)}
-                  </span>
-                </span>
-                {p.laid ? <span className="f10-tag laid">montou</span> : null}
-                {p.skipped ? <span className="f10-tag skip">pulado</span> : null}
-                <span className="f10-roster-hand" title="cartas na mão">{p.handCount}</span>
-                <span className="f10-roster-score">{p.score}</span>
-              </li>
-            ))}
-          </ol>
-          {feed.length > 0 ? (
-            <ul className="f10-feed" aria-live="polite">
-              {feed.map((line) => (
-                <li key={line.seq}>{line.text}</li>
-              ))}
-            </ul>
-          ) : (
-            <p className="hint">Aguardando…</p>
-          )}
-          <div className="f10-side-actions">
-            <Button variant="ghost" onClick={() => setShowPhases(true)}>📋 Fases</Button>
-            <Button variant="ghost" onClick={() => send(paused ? 'RESUME_GAME' : 'PAUSE_GAME', {})}>
-              {paused ? '▶ Continuar' : '⏸ Pausar'}
-            </Button>
-            <Button variant="danger" onClick={() => send('END_GAME', {})}>Encerrar</Button>
-          </div>
-          <button
-            type="button"
-            className="f10-sound-toggle"
-            aria-pressed={soundOn}
-            onClick={() => setSoundOn(sounds.toggle())}
-          >
-            {soundOn ? '🔊 Som ligado' : '🔇 Som desligado'}
-          </button>
-        </aside>
+      <div className="f10-op-cluster">
+        <Button variant="ghost" onClick={() => setShowPhases(true)}>📋 Fases</Button>
+        <button
+          type="button"
+          className="f10-uiscale-btn"
+          onClick={() => setUiScale(UI_SCALES[(UI_SCALES.indexOf(uiScale) + 1) % UI_SCALES.length])}
+          aria-label={`Tamanho da tela: ${Math.round(uiScale * 100)}%. Clique para aumentar.`}
+          title="Aumentar a tela"
+        >
+          <span aria-hidden="true">⤢</span>
+          <span className="f10-uiscale-pct">{Math.round(uiScale * 100)}%</span>
+        </button>
+        <button type="button" className="f10-sound-toggle" aria-pressed={soundOn} onClick={() => setSoundOn(sounds.toggle())}>
+          {soundOn ? '🔊' : '🔇'}
+        </button>
       </div>
-
-      <button
-        type="button"
-        className="f10-uiscale-btn"
-        onClick={() => setUiScale(UI_SCALES[(UI_SCALES.indexOf(uiScale) + 1) % UI_SCALES.length])}
-        aria-label={`Tamanho da tela: ${Math.round(uiScale * 100)}%. Clique para aumentar.`}
-        title="Aumentar a tela"
-      >
-        <span aria-hidden="true">⤢</span>
-        <span className="f10-uiscale-pct">{Math.round(uiScale * 100)}%</span>
-      </button>
-    </main>
+    </div>
   );
 }
