@@ -135,6 +135,48 @@ stack — these two fixes weren't about Ticket to ABC and don't deserve to be
 stuck on a dead branch. Now merged into `develop` together with Fase 10 (see
 the entry above).
 
+## 2026-09-12 — Ticket to ABC abandoned; Phase 1.5 (`performanceMode` toggle, `<ContestantStrip>`, a Broadcast/strip fix) + a Coup regression test (branch `feature/host-stage-spike`)
+
+Owner: abandon Ticket to ABC (game #11), refocus on polishing/fixing the 9
+shipped games. The `feature/fase10`→…→`feature/ticketabc-abc-map` stack was
+parked untouched at the time (Fase 10 has since been recovered and merged —
+see the entry above).
+
+- **Coup "assassin-challenge surrender" bug, investigated.** Owner reported: a
+  challenge on an Assassin claim that fails (the actor genuinely holds it)
+  seemed to let the original target's Contessa block get skipped. Wrote a
+  regression test reproducing the exact scenario
+  (`server/src/tests/coup-game.test.ts`) — it **passes**: `action-resolver.ts`
+  correctly routes the challenger through `chooseInfluenceLoss` first, then
+  opens `AwaitingBlock` for the original target. Root cause not confirmed;
+  not a resolver bug on this evidence.
+- **`performanceMode` is now a live, owner-controlled room setting** (Phase 1.5
+  of the host-stage plan) instead of a host-local `localStorage` value nothing
+  ever changed. New `shared/src/games/performance-mode.ts` (`@party/ui`
+  `HostStage.tsx` re-exports it instead of declaring its own copy);
+  `SET_PERFORMANCE_MODE` message + `Room.performanceMode` (settable any time,
+  including mid-game — no `contentTier`-style lobby-only gate) +
+  `ROOM_STATE.performanceMode`; host reads it live into
+  `<PerformanceModeProvider>` (`App.tsx` simplified — one component, provider
+  wraps the computed `content`); mobile `<HostControlsBar>` gained a
+  "🖥️ TV: Alta/Padrão/Leve" toggle. Live-verified (host + 2 phones): the
+  owner's phone toggle changes the TV's `<HostStage data-perf>` instantly, no
+  reload, and the setting survives switching games (room-level, not
+  per-game).
+- **`<ContestantStrip>`** (`ui/src/components/ContestantStrip.tsx`) replaces
+  Zap!'s inline `.zap-strip` — a game hands it `{id,name,avatar?,score?,tag?,
+  highlighted?,dimmed?}[]`, ready for Phase 2 games. Score colour follows the
+  theme's `accentSecondary` instead of a bespoke var, so Zap!'s gold came free.
+- **Fixed a `<Broadcast>` lower-third overlapping the strip**, found live while
+  verifying the above. Root cause: `<Broadcast>`/`<Moment>` were rendered as
+  siblings of `<HostStage>` (outside `.ui-stage`), so their `position: fixed`
+  offset had no idea a strip existed underneath. `HostStageProps` gained
+  `moment`/`broadcast` (now rendered inside `.ui-stage`) plus a `data-has-strip`
+  attribute so `.ui-bcast` only lifts clear when a strip is actually showing
+  (Coup, which has none, is unaffected). `ZapHostView`/`CoupHostView` updated.
+- 194 server tests (was 193), tsc + oxlint + 5-workspace build green.
+  Live-verified host + 3 phones on Zap!.
+
 ## 2026-09-10 — Host-TV "show" layer, Phase 0 + 1 MVP (branch `feature/host-stage-spike`, off `develop`)
 
 The host TV stops being a 70/30 dashboard and becomes a *stage* that interprets

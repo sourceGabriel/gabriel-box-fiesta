@@ -659,3 +659,16 @@ User report: É Você! drawing → clicking undo/submit a big drawing → `Range
 - Owner controls `360a802`: mobile tracks `ownerPlayerId`; `<HostControlsBar>`
   (Pausar/Encerrar) for the owner only, mid-game. TV keeps only end-of-game buttons.
 - Build + tsc + oxlint green; 193 server tests (host-only). §52 held.
+
+## 2026-09-12 — Ticket to ABC abandoned; Coup bug investigated; `performanceMode` goes live
+- Owner: drop Ticket to ABC (game #11), refocus on polishing the 9 shipped games.
+  `feature/fase10`→`ticketabc-abc-map` stack left parked, not merged/deleted.
+- Coup "assassin-challenge surrender" report investigated: a new regression test
+  (`server/src/tests/coup-game.test.ts`) reproduces the exact scenario and
+  **passes** — the resolver correctly gives the original target a Contessa-block
+  window after a failed challenge. Not confirmed as a resolver bug. 194 tests.
+- `performanceMode` is now a live room setting, not a dead host-local
+  `localStorage` value: `SET_PERFORMANCE_MODE` message, `Room.performanceMode`
+  (any time, incl. mid-game), `ROOM_STATE.performanceMode`, mobile
+  `<HostControlsBar>` Alta/Padrão/Leve toggle. Live-verified host+2 phones: TV
+  `data-perf` updates instantly, survives a game switch. tsc+oxlint+build green.
