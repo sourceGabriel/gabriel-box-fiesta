@@ -1,34 +1,25 @@
 import type { FdpGameEvent } from '@party/shared';
+import type { BroadcastItem } from '@party/ui';
 
-/** A human line for the host event feed, or null for events not worth showing. */
-export const describeEvent = (event: FdpGameEvent, nameOf: (id: string) => string): string | null => {
+/**
+ * FDP events → broadcast lower-thirds for the host TV. The round winner and a
+ * sweep are `<Moment>`s driven from the public state in the view — here we
+ * only narrate the quieter stuff.
+ */
+export const broadcastFor = (event: FdpGameEvent, nameOf: (id: string) => string): BroadcastItem | null => {
   switch (event.type) {
-    case 'game_started':
-      return `😈 FDP começou — ${event.totalRounds} rodadas`;
     case 'round_started':
       return event.roundKind === 'final'
-        ? `🔥 Rodada ${event.round}: FINAL FDP (pontos em dobro)`
-        : `Rodada ${event.round} de ${event.totalRounds}`;
-    case 'writing_started':
-      return '✍️ Completem a frase no celular';
-    case 'answer_submitted':
-      return `${nameOf(event.playerId)} mandou a resposta`;
+        ? { tier: 'critical', graphic: 'headline', eyebrow: 'Rodada final', title: 'Final FDP — pontos em dobro' }
+        : { tier: 'important', graphic: 'headline', eyebrow: `Rodada ${event.round}/${event.totalRounds}`, title: 'Completem no celular' };
     case 'all_answers_in':
-      return '✅ Todas as respostas chegaram';
+      return { tier: 'important', graphic: 'lower-third', eyebrow: 'Fechou', title: 'Todas as respostas chegaram' };
     case 'voting_started':
-      return `🗳️ ${event.answerCount} respostas na mesa — votem na melhor`;
-    case 'vote_cast':
-      return `${nameOf(event.playerId)} votou`;
-    case 'results_started':
-      return '🎭 Revelando os autores…';
-    case 'round_finished':
-      return event.winnerId ? `👑 ${nameOf(event.winnerId)} ganhou a rodada` : 'Rodada empatada';
-    case 'game_finished':
-      return `🏆 ${nameOf(event.winnerId)} venceu o FDP!`;
+      return { tier: 'important', graphic: 'lower-third', eyebrow: 'Na mesa', title: `${event.answerCount} respostas — votem na melhor` };
+    case 'answer_submitted':
+      return { tier: 'ambient', graphic: 'lower-third', eyebrow: 'Pronto', title: `${nameOf(event.playerId)} respondeu`, playerId: event.playerId };
     case 'game_paused':
-      return '⏸ Partida pausada';
-    case 'game_resumed':
-      return '▶ Partida retomada';
+      return { tier: 'critical', graphic: 'headline', title: 'Partida pausada' };
     default:
       return null;
   }

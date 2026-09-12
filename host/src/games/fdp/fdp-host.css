@@ -1,5 +1,7 @@
 /* FDP — Foi De Propósito — host/TV view. Loaded only when FDP is active.
-   All rules scoped under .fdp-host so they can't collide with other games. */
+   All rules scoped under .fdp-host so they can't collide with other games.
+   The stage sits inside <HostStage> — see the "host-stage" section at the
+   bottom for the overrides that strip the old panel chrome + rescale type. */
 
 .fdp-host {
   --fdp-red: #fb7185;
@@ -7,16 +9,6 @@
   position: relative;
 }
 
-.fdp-topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: clamp(0.5rem, 1.5vmin, 1rem) clamp(0.75rem, 2vmin, 1.5rem);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: var(--panel);
-}
 .fdp-brand { display: flex; align-items: baseline; gap: 0.9rem; min-width: 0; }
 .fdp-brand-sub { color: var(--muted); font-size: clamp(0.85rem, 1.6vmin, 1.15rem); white-space: nowrap; }
 .fdp-conn-pill {
@@ -25,13 +17,6 @@
   background: rgba(251, 191, 36, 0.16); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.4);
 }
 
-.fdp-body {
-  flex: 1;
-  min-height: 0;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(240px, 24vw, 380px);
-  gap: clamp(0.5rem, 1.5vmin, 1.25rem);
-}
 .fdp-stage {
   min-width: 0;
   border: 1px solid var(--line);
@@ -140,51 +125,6 @@
   100% { transform: scale(1); }
 }
 
-/* ---------- side panel ---------- */
-.fdp-side {
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  background: var(--panel);
-  padding: clamp(0.6rem, 1.8vmin, 1.1rem);
-  display: flex;
-  flex-direction: column;
-  gap: 0.7rem;
-  min-height: 0;
-}
-.fdp-side-head { display: flex; align-items: center; justify-content: space-between; }
-.fdp-side-head h2 { margin: 0; font-size: clamp(1rem, 2vmin, 1.35rem); }
-
-.fdp-standings { display: flex; flex-direction: column; gap: 0.3rem; }
-.fdp-standings li,
-.fdp-final-standings li {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.4rem 0.55rem;
-  border-radius: 10px;
-  background: #0f1826;
-  border: 1px solid var(--line);
-}
-.fdp-standings li:first-child { border-color: var(--fdp-gold); }
-.fdp-rank { color: var(--muted); font-weight: 700; font-size: 0.85em; min-width: 2.2ch; }
-.fdp-standings-name, .fdp-final-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.fdp-standings-delta { color: var(--fdp-red); font-weight: 700; font-size: 0.85em; }
-.fdp-standings-score, .fdp-final-score { font-weight: 800; color: var(--fdp-gold); }
-
-.fdp-feed {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  font-size: clamp(0.75rem, 1.5vmin, 0.95rem);
-  color: var(--muted);
-  border-top: 1px solid var(--line);
-  padding-top: 0.5rem;
-}
-.fdp-side-actions { display: flex; gap: 0.5rem; }
-.fdp-side-actions button { flex: 1; }
 .fdp-sound-toggle {
   border: 1px solid var(--line);
   background: transparent;
@@ -196,8 +136,19 @@
   cursor: pointer;
 }
 
-.fdp-result-actions { display: flex; gap: 0.6rem; justify-content: center; margin-top: 0.8rem; flex-wrap: wrap; }
 .fdp-final-standings { display: flex; flex-direction: column; gap: 0.3rem; margin: 0.8rem 0 0; width: min(360px, 80vw); }
+.fdp-final-standings li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.55rem;
+  border-radius: 10px;
+  background: #0f1826;
+  border: 1px solid var(--line);
+}
+.fdp-rank { color: var(--muted); font-weight: 700; font-size: 0.85em; min-width: 2.2ch; }
+.fdp-final-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fdp-final-score { font-weight: 800; color: var(--fdp-gold); }
 
 .fdp-reactions {
   position: absolute;
@@ -222,7 +173,6 @@
 .fdp-reaction-who { color: var(--muted); font-size: 0.8rem; }
 
 @media (max-width: 900px) {
-  .fdp-body { grid-template-columns: 1fr; }
   .fdp-answer { flex-direction: column; align-items: flex-start; }
   .fdp-answer-meta { align-items: flex-start; text-align: left; }
 }
@@ -230,3 +180,54 @@
 @media (prefers-reduced-motion: reduce) {
   .fdp-answer.is-winner, .fdp-progress-fill { animation: none; transition: none; }
 }
+
+/* ─── host-stage ─── the stage sits inside <HostStage>, so drop the panel chrome */
+.ui-stage .fdp-stage {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  width: min(96vw, 1400px);
+  overflow: visible;
+}
+.ui-stage .fdp-prompt {
+  font-family: var(--font-display);
+  font-size: var(--tv-headline);
+  text-transform: uppercase;
+  line-height: 1.02;
+  max-width: 20ch;
+}
+.ui-stage .fdp-count { font-size: var(--tv-secondary); color: var(--muted); }
+.ui-stage .fdp-answer-text { font-size: var(--tv-body); }
+
+/* HUD bits reuse the old topbar classes */
+.ui-stage-hud .fdp-brand { display: flex; flex-direction: column; gap: 0.2rem; }
+.ui-stage-hud .fdp-brand-sub { color: var(--muted); font-size: var(--tv-body); }
+.ui-stage-hud .fdp-conn-pill {
+  align-self: flex-start;
+  font-size: 0.8em;
+  padding: 0.15em 0.7em;
+  border-radius: 999px;
+  background: rgba(255, 90, 90, 0.16);
+  color: #ffb4b4;
+}
+
+/* operator cluster — end-of-game controls + sound toggle; pause/end live on the owner's phone */
+.fdp-op-cluster {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 40;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  opacity: 0.35;
+  transition: opacity 0.2s ease;
+}
+.fdp-op-cluster:hover { opacity: 1; }
+.fdp-op-cluster .btn, .fdp-op-cluster button { font-size: var(--tv-body); }
+
+/* gameover scene inside <HostStage> */
+.fdp-gameover-scene { display: flex; flex-direction: column; align-items: center; gap: clamp(0.8rem, 2.4vmin, 2rem); }
+.ui-stage .fdp-final-standings { display: flex; flex-direction: column; gap: 0.3rem; font-size: var(--tv-secondary); }
+.ui-stage .fdp-final-standings li { display: flex; gap: 1rem; align-items: baseline; }
+.ui-stage .fdp-final-standings .fdp-final-score { font-family: var(--font-display); color: var(--fdp-gold); }
