@@ -1,10 +1,36 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { LorotaGameEvent, LorotaOption, LorotaPublicState } from '@party/shared';
-import { Avatar, BrandMark, Button, getSounds, Overlay, RoundScoreboard, roundTaunt, Timer, VictorySplash } from '@party/ui';
+import {
+  Avatar,
+  Broadcast,
+  BrandMark,
+  Button,
+  ContestantStrip,
+  getSounds,
+  HostStage,
+  Moment,
+  Overlay,
+  RoundScoreboard,
+  roundTaunt,
+  Timer,
+  useStageDirector,
+  VictorySplash,
+  type HostScene,
+} from '@party/ui';
 import type { HostGameViewProps } from '../types';
-import { describeEvent } from './describeEvent';
+import { broadcastFor } from './describeEvent';
 import { soundForEvent } from './sound-map';
+import { lorotaTheme } from './theme';
 import './lorota-host.css';
+
+const ACCENT = lorotaTheme.accent;
+
+const SCENE_FOR: Record<string, HostScene> = {
+  lying: 'thinking',
+  guessing: 'collecting',
+  reveal: 'reveal',
+  gameover: 'victory',
+};
 
 function OptionRow({ option, revealed }: { option: LorotaOption; revealed: boolean }) {
   const truth = revealed && option.isTruth;
@@ -32,8 +58,6 @@ function OptionRow({ option, revealed }: { option: LorotaOption; revealed: boole
 
 export function LorotaHostView({ publicState, events, players, connected, reactions, send }: HostGameViewProps) {
   const pub = publicState as LorotaPublicState;
-  const seenSeqRef = useRef(0);
-  const [feed, setFeed] = useState<{ seq: number; text: string }[]>([]);
   const sounds = useMemo(() => getSounds(), []);
   const [soundOn, setSoundOn] = useState(() => sounds.isEnabled());
 
@@ -60,31 +84,63 @@ export function LorotaHostView({ publicState, events, players, connected, reacti
     return set;
   }, [events]);
 
+  const paused = pub.phase === 'paused';
+  const over = pub.phase === 'gameover';
+  const timerSeconds = pub.timer ? Math.max(0, Math.ceil(pub.timer.remainingMs / 1000)) : null;
+  const isFinal = pub.roundKind === 'final';
+  const scene: HostScene = SCENE_FOR[pub.phase] ?? 'thinking';
+
+  // ── stage director: moments (from public state) + broadcast lower-thirds (from events) ──
+  const stage = useStageDirector({
+    events,
+    scene,
+    broadcastFor: (e) => broadcastFor(e as LorotaGameEvent, nameOf),
+    nameFor: nameOf,
+    avatarFor: avatarOf,
+  });
+  const { enqueueMoment } = stage;
+
+  // sound follows the raw event stream
+  const seenSeq = useRef(0);
   useEffect(() => {
-    if (events.length === 0) {
-      seenSeqRef.current = 0;
-      setFeed([]);
-      return;
-    }
-    const lastSeq = events[events.length - 1].seq;
-    if (lastSeq <= seenSeqRef.current) return;
-    const freshRaw = events.filter((e) => e.seq > seenSeqRef.current);
-    seenSeqRef.current = lastSeq;
-    for (const { event } of freshRaw) {
+    if (events.length === 0) { seenSeq.current = 0; return; }
+    const last = events[events.length - 1].seq;
+    if (last <= seenSeq.current) return;
+    for (const { seq, event } of events) {
+      if (seq <= seenSeq.current) continue;
       const name = soundForEvent(event as LorotaGameEvent);
       if (name) sounds.play(name);
     }
-    const lines = freshRaw
-      .map((e) => ({ seq: e.seq, text: describeEvent(e.event as LorotaGameEvent, nameOf) }))
-      .filter((l): l is { seq: number; text: string } => l.text !== null);
-    if (lines.length > 0) setFeed((cur) => [...cur, ...lines].slice(-9));
-  }, [events, nameOf, sounds]);
+    seenSeq.current = last;
+  }, [events, sounds]);
 
-  const paused = pub.phase === 'paused';
-  const over = pub.phase === 'gameover';
-  const inReveal = pub.phase === 'reveal' || over;
-  const timerSeconds = pub.timer ? Math.max(0, Math.ceil(pub.timer.remainingMs / 1000)) : null;
-  const isFinal = pub.roundKind === 'final';
+  // reveal fires the truth, then spotlights whoever's lie fooled the most people
+  useEffect(() => {
+    if (pub.phase !== 'reveal' || pub.options.length === 0) return;
+    enqueueMoment({
+      id: `r${pub.round}-truth`,
+      priority: 10,
+      moment: { type: 'reveal', eyebrow: 'A verdade era', title: pub.truthText ?? '—', accent: ACCENT },
+    });
+    const topLie = [...pub.options]
+      .filter((o) => o.isTruth === false && (o.pickedBy?.length ?? 0) > 0)
+      .sort((a, b) => (b.pickedBy?.length ?? 0) - (a.pickedBy?.length ?? 0))[0];
+    if (topLie?.authorIds && topLie.authorIds.length > 0) {
+      const fooledCount = topLie.pickedBy?.length ?? 0;
+      enqueueMoment({
+        id: `r${pub.round}-mentiroso`,
+        priority: 5,
+        moment: {
+          type: 'spotlight',
+          eyebrow: 'O MENTIROSO',
+          title: topLie.authorNames?.join(' + ') ?? '—',
+          subtitle: `enganou ${fooledCount} ${fooledCount === 1 ? 'pessoa' : 'pessoas'}`,
+          accent: ACCENT,
+          avatar: avatarOf(topLie.authorIds[0]),
+        },
+      });
+    }
+  }, [pub.phase, pub.round, pub.options, pub.truthText, enqueueMoment, avatarOf]);
 
   const standings = pub.standings.length
     ? pub.standings
@@ -92,8 +148,10 @@ export function LorotaHostView({ publicState, events, players, connected, reacti
         .map((p) => ({ playerId: p.id, name: p.name, score: p.score, roundPoints: 0 }))
         .sort((a, b) => b.score - a.score);
 
+  const intensity = over ? 'climax' : pub.phase === 'reveal' ? 'high' : 'normal';
+
   return (
-    <main className="host-shell lorota-host">
+    <>
       <div className="lorota-reactions" aria-hidden="true">
         {reactions.slice(-6).map((r) => (
           <div key={r.key} className="lorota-reaction-bubble">
@@ -103,53 +161,38 @@ export function LorotaHostView({ publicState, events, players, connected, reacti
         ))}
       </div>
 
-      {paused ? (
-        <Overlay label="Partida pausada">
-          <p className="eyebrow">Partida pausada</p>
-          <h2>⏸ Aguardando o anfitrião</h2>
-          <div className="lorota-result-actions">
-            <Button variant="primary" onClick={() => send('RESUME_GAME', {})}>Continuar</Button>
-            <Button variant="danger" onClick={() => send('END_GAME', {})}>Encerrar</Button>
-          </div>
-        </Overlay>
-      ) : null}
-
-      {over ? (
-        <Overlay label="Fim da partida">
-          <p className="eyebrow">Fim da Lorota!</p>
-          <VictorySplash
-            winner={{ name: pub.winnerId ? nameOf(pub.winnerId) : '—', avatar: pub.winnerId ? avatarOf(pub.winnerId) : undefined }}
-            subtitle="mentiu melhor que todo mundo"
-            accent="#2ee6a6"
-          />
-          <ol className="lorota-final-standings">
-            {standings.map((s, i) => (
-              <li key={s.playerId}>
-                <span className="lorota-rank">{i + 1}º</span>
-                <span className="lorota-final-name">{s.name}</span>
-                <span className="lorota-final-score">{s.score}</span>
-              </li>
-            ))}
-          </ol>
-          <div className="lorota-result-actions">
-            <Button variant="primary" onClick={() => send('START_GAME', {})}>Nova partida</Button>
-            <Button variant="danger" onClick={() => send('END_GAME', {})}>Encerrar</Button>
-          </div>
-        </Overlay>
-      ) : null}
-
-      <header className="lorota-topbar">
-        <div className="lorota-brand">
-          <BrandMark text="Lorota!" size="md" />
-          <span className="lorota-brand-sub">
-            Sala {pub.roomCode} · {isFinal ? 'Lorota Final' : `Rodada ${pub.round}/${pub.totalRounds}`}
-          </span>
-          {!connected ? <span className="lorota-conn-pill">reconectando…</span> : null}
-        </div>
-        <Timer seconds={timerSeconds} active={pub.phase === 'guessing' || pub.phase === 'lying'} />
-      </header>
-
-      <div className="lorota-body">
+      <HostStage
+        scene={scene}
+        theme={lorotaTheme}
+        intensity={intensity}
+        hud={
+          <>
+            <div className="lorota-brand">
+              <BrandMark text="Lorota!" size="md" />
+              <span className="lorota-brand-sub">
+                Sala {pub.roomCode} · {isFinal ? 'Lorota Final' : `Rodada ${pub.round}/${pub.totalRounds}`}
+              </span>
+              {!connected ? <span className="lorota-conn-pill">reconectando…</span> : null}
+            </div>
+            <Timer seconds={timerSeconds} active={pub.phase === 'guessing' || pub.phase === 'lying'} />
+          </>
+        }
+        strip={
+          over || pub.phase === 'reveal' ? undefined : (
+            <ContestantStrip
+              entries={standings.map((s) => ({
+                id: s.playerId,
+                name: s.name,
+                avatar: avatarOf(s.playerId),
+                score: s.score,
+                highlighted: s.playerId === standings[0]?.playerId,
+              }))}
+            />
+          )
+        }
+        moment={stage.moment ? <Moment key={stage.momentId} {...stage.moment} /> : null}
+        broadcast={stage.broadcast ? <Broadcast key={stage.broadcast.id} item={stage.broadcast} /> : null}
+      >
         <section className="lorota-stage">
           {pub.prompt ? (
             <p className={`lorota-prompt ${isFinal ? 'is-final' : ''}`}>{pub.prompt}</p>
@@ -189,68 +232,64 @@ export function LorotaHostView({ publicState, events, players, connected, reacti
             </div>
           ) : null}
 
-          {inReveal && pub.options.length > 0 ? (
+          {pub.phase === 'reveal' && pub.options.length > 0 ? (
             <div className="lorota-reveal">
-              <p className="lorota-eyebrow">A verdade era: <strong>{pub.truthText}</strong></p>
               <ol className="lorota-options">
                 {pub.options.map((o) => (
                   <OptionRow key={o.id} option={o} revealed />
                 ))}
               </ol>
+              <RoundScoreboard
+                title={isFinal ? 'Lorota Final' : `Rodada ${pub.round} de ${pub.totalRounds}`}
+                standings={standings}
+                taunt={roundTaunt(standings, pub.round)}
+                avatarFor={avatarOf}
+              />
             </div>
           ) : null}
 
-          {inReveal && !over ? (
-            <RoundScoreboard
-              title={isFinal ? 'Lorota Final' : `Rodada ${pub.round} de ${pub.totalRounds}`}
-              standings={standings}
-              taunt={roundTaunt(standings, pub.round)}
-              avatarFor={avatarOf}
-            />
+          {over ? (
+            <div className="lorota-gameover-scene">
+              <VictorySplash
+                winner={{ name: pub.winnerId ? nameOf(pub.winnerId) : '—', avatar: pub.winnerId ? avatarOf(pub.winnerId) : undefined }}
+                subtitle="mentiu melhor que todo mundo"
+                accent={ACCENT}
+              />
+              <ol className="lorota-final-standings">
+                {standings.map((s, i) => (
+                  <li key={s.playerId}>
+                    <span className="lorota-rank">{i + 1}º</span>
+                    <span className="lorota-final-name">{s.name}</span>
+                    <span className="lorota-final-score">{s.score}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
           ) : null}
         </section>
+      </HostStage>
 
-        <aside className="lorota-side">
-          <div className="lorota-side-head">
-            <h2>Placar</h2>
-            <span className="status-chip">{connected ? 'ao vivo' : 'offline'}</span>
-          </div>
-          <ol className="lorota-standings">
-            {standings.map((s, i) => (
-              <li key={s.playerId}>
-                <span className="lorota-rank">{i + 1}º</span>
-                {avatarOf(s.playerId) ? <Avatar spec={avatarOf(s.playerId)!} size={22} /> : null}
-                <span className="lorota-standings-name">{s.name}</span>
-                {s.roundPoints > 0 ? <span className="lorota-standings-delta">+{s.roundPoints}</span> : null}
-                <span className="lorota-standings-score">{s.score}</span>
-              </li>
-            ))}
-          </ol>
-          {feed.length > 0 ? (
-            <ul className="lorota-feed" aria-live="polite">
-              {feed.map((line) => (
-                <li key={line.seq}>{line.text}</li>
-              ))}
-            </ul>
-          ) : (
-            <p className="hint">Aguardando…</p>
-          )}
-          <div className="lorota-side-actions">
-            <Button variant="ghost" onClick={() => send(paused ? 'RESUME_GAME' : 'PAUSE_GAME', {})}>
-              {paused ? '▶ Continuar' : '⏸ Pausar'}
-            </Button>
+      {paused ? (
+        <Overlay label="Partida pausada">
+          <p className="eyebrow">Partida pausada</p>
+          <h2>⏸ Aguardando o anfitrião</h2>
+          <p className="hint">O anfitrião controla pelo celular.</p>
+        </Overlay>
+      ) : null}
+
+      {/* the TV keeps only end-of-game controls + the sound toggle; pause / end
+          during play live on the owner's phone (HostControlsBar). */}
+      <div className="lorota-op-cluster">
+        {over ? (
+          <>
+            <Button variant="primary" onClick={() => send('START_GAME', {})}>Nova partida</Button>
             <Button variant="danger" onClick={() => send('END_GAME', {})}>Encerrar</Button>
-          </div>
-          <button
-            type="button"
-            className="lorota-sound-toggle"
-            aria-pressed={soundOn}
-            onClick={() => setSoundOn(sounds.toggle())}
-          >
-            {soundOn ? '🔊 Som ligado' : '🔇 Som desligado'}
-          </button>
-        </aside>
+          </>
+        ) : null}
+        <button type="button" className="lorota-sound-toggle" aria-pressed={soundOn} onClick={() => setSoundOn(sounds.toggle())}>
+          {soundOn ? '🔊' : '🔇'}
+        </button>
       </div>
-    </main>
+    </>
   );
 }

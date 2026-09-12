@@ -1,5 +1,7 @@
 /* Lorota! — host/TV view. Loaded only when the Lorota! game is active.
-   All rules scoped under .lorota-host so they can't collide with other games. */
+   All rules scoped under .lorota-host so they can't collide with other games.
+   The stage sits inside <HostStage> — see the "host-stage" section at the
+   bottom for the overrides that strip the old panel chrome + rescale type. */
 
 .lorota-host {
   --lorota-green: #2ee6a6;
@@ -7,16 +9,6 @@
   position: relative;
 }
 
-.lorota-topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: clamp(0.5rem, 1.5vmin, 1rem) clamp(0.75rem, 2vmin, 1.5rem);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: var(--panel);
-}
 .lorota-brand { display: flex; align-items: baseline; gap: 0.9rem; min-width: 0; }
 .lorota-brand-sub { color: var(--muted); font-size: clamp(0.85rem, 1.6vmin, 1.15rem); white-space: nowrap; }
 .lorota-conn-pill {
@@ -25,13 +17,6 @@
   background: rgba(251, 191, 36, 0.16); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.4);
 }
 
-.lorota-body {
-  flex: 1;
-  min-height: 0;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(240px, 24vw, 380px);
-  gap: clamp(0.5rem, 1.5vmin, 1.25rem);
-}
 .lorota-stage {
   min-width: 0;
   border: 1px solid var(--line);
@@ -41,6 +26,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: clamp(0.6rem, 1.6vmin, 1.2rem);
   overflow-y: auto;
 }
@@ -144,51 +130,6 @@
   100% { transform: scale(1); }
 }
 
-/* ---------- side panel ---------- */
-.lorota-side {
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  background: var(--panel);
-  padding: clamp(0.6rem, 1.8vmin, 1.1rem);
-  display: flex;
-  flex-direction: column;
-  gap: 0.7rem;
-  min-height: 0;
-}
-.lorota-side-head { display: flex; align-items: center; justify-content: space-between; }
-.lorota-side-head h2 { margin: 0; font-size: clamp(1rem, 2vmin, 1.35rem); }
-
-.lorota-standings { display: flex; flex-direction: column; gap: 0.3rem; }
-.lorota-standings li,
-.lorota-final-standings li {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.4rem 0.55rem;
-  border-radius: 10px;
-  background: #0f1826;
-  border: 1px solid var(--line);
-}
-.lorota-standings li:first-child { border-color: var(--lorota-green); }
-.lorota-rank { color: var(--muted); font-weight: 700; font-size: 0.85em; min-width: 2.2ch; }
-.lorota-standings-name, .lorota-final-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.lorota-standings-delta { color: var(--lorota-gold); font-weight: 700; font-size: 0.85em; }
-.lorota-standings-score, .lorota-final-score { font-weight: 800; color: var(--lorota-green); }
-
-.lorota-feed {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  font-size: clamp(0.75rem, 1.5vmin, 0.95rem);
-  color: var(--muted);
-  border-top: 1px solid var(--line);
-  padding-top: 0.5rem;
-}
-.lorota-side-actions { display: flex; gap: 0.5rem; }
-.lorota-side-actions button { flex: 1; }
 .lorota-sound-toggle {
   border: 1px solid var(--line);
   background: transparent;
@@ -200,8 +141,19 @@
   cursor: pointer;
 }
 
-.lorota-result-actions { display: flex; gap: 0.6rem; justify-content: center; margin-top: 0.8rem; flex-wrap: wrap; }
 .lorota-final-standings { display: flex; flex-direction: column; gap: 0.3rem; margin: 0.8rem 0 0; width: min(360px, 80vw); }
+.lorota-final-standings li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.55rem;
+  border-radius: 10px;
+  background: #0f1826;
+  border: 1px solid var(--line);
+}
+.lorota-rank { color: var(--muted); font-weight: 700; font-size: 0.85em; min-width: 2.2ch; }
+.lorota-final-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lorota-final-score { font-weight: 800; color: var(--lorota-green); }
 
 .lorota-reactions {
   position: absolute;
@@ -226,7 +178,6 @@
 .lorota-reaction-who { color: var(--muted); font-size: 0.8rem; }
 
 @media (max-width: 900px) {
-  .lorota-body { grid-template-columns: 1fr; }
   .lorota-option { flex-direction: column; align-items: flex-start; }
   .lorota-option-meta { align-items: flex-start; text-align: left; }
 }
@@ -234,3 +185,58 @@
 @media (prefers-reduced-motion: reduce) {
   .lorota-option.is-truth, .lorota-progress-fill { animation: none; transition: none; }
 }
+
+/* ─── host-stage ─── the stage sits inside <HostStage>, so drop the panel chrome */
+.ui-stage .lorota-stage {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  width: min(96vw, 1400px);
+  overflow: visible;
+}
+.ui-stage .lorota-eyebrow {
+  font-size: var(--tv-secondary);
+  letter-spacing: 0.18em;
+}
+.ui-stage .lorota-prompt {
+  font-family: var(--font-display);
+  font-size: var(--tv-headline);
+  text-transform: uppercase;
+  line-height: 1.02;
+  max-width: 18ch;
+}
+.ui-stage .lorota-count { font-size: var(--tv-secondary); color: var(--muted); }
+.ui-stage .lorota-option-text { font-size: var(--tv-body); }
+
+/* HUD bits reuse the old topbar classes */
+.ui-stage-hud .lorota-brand { display: flex; flex-direction: column; gap: 0.2rem; }
+.ui-stage-hud .lorota-brand-sub { color: var(--muted); font-size: var(--tv-body); }
+.ui-stage-hud .lorota-conn-pill {
+  align-self: flex-start;
+  font-size: 0.8em;
+  padding: 0.15em 0.7em;
+  border-radius: 999px;
+  background: rgba(255, 90, 90, 0.16);
+  color: #ffb4b4;
+}
+
+/* operator cluster — end-of-game controls + sound toggle; pause/end live on the owner's phone */
+.lorota-op-cluster {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 40;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  opacity: 0.35;
+  transition: opacity 0.2s ease;
+}
+.lorota-op-cluster:hover { opacity: 1; }
+.lorota-op-cluster .btn, .lorota-op-cluster button { font-size: var(--tv-body); }
+
+/* gameover scene inside <HostStage> */
+.lorota-gameover-scene { display: flex; flex-direction: column; align-items: center; gap: clamp(0.8rem, 2.4vmin, 2rem); }
+.ui-stage .lorota-final-standings { display: flex; flex-direction: column; gap: 0.3rem; font-size: var(--tv-secondary); }
+.ui-stage .lorota-final-standings li { display: flex; gap: 1rem; align-items: baseline; }
+.ui-stage .lorota-final-standings .lorota-final-score { font-family: var(--font-display); color: var(--lorota-green); }
