@@ -1,12 +1,28 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { UnoGameEvent, UnoPublicState } from '@party/shared';
-import { Avatar, BrandMark, Button, getSounds, Overlay, Timer, VictorySplash } from '@party/ui';
+import {
+  Avatar,
+  Broadcast,
+  BrandMark,
+  Button,
+  getSounds,
+  HostStage,
+  Moment,
+  Overlay,
+  Timer,
+  useStageDirector,
+  VictorySplash,
+  type HostScene,
+} from '@party/ui';
 import { getCardArt, getCardBackArt } from '@party/ui/uno-cards';
 import type { HostGameViewProps } from '../types';
-import { describeEvent } from './describeEvent';
+import { broadcastFor, describeEvent } from './describeEvent';
 import { soundForEvent } from './sound-map';
+import { unoTheme } from './theme';
 import { ANIMATION_MS, centre, flyStyle, isAnimated, REDUCED_MOTION, type ActiveAnim } from './animations';
 import './uno-host.css';
+
+const ACCENT = unoTheme.accent;
 
 const formatCardLabel = (card: NonNullable<UnoPublicState['topDiscard']>): string => {
   const colorLabel = card.color === 'wild' ? 'coringa' : card.color;
@@ -27,6 +43,10 @@ export function UnoHostView({ publicState, events, players, connected, send }: H
   const discardRef = useRef<HTMLDivElement | null>(null);
   const monteRef = useRef<HTMLDivElement | null>(null);
   const rowRefs = useRef(new Map<string, HTMLLIElement>());
+
+  const boardPlayers = state.players;
+  const nameOf = (id: string) => boardPlayers.find((p) => p.id === id)?.name ?? players.find((p) => p.id === id)?.name ?? '—';
+  const avatarOf = (id: string) => players.find((p) => p.id === id)?.avatar;
 
   // Enqueue newly-arrived animated events; reset when a fresh game clears the stream.
   useEffect(() => {
@@ -57,6 +77,20 @@ export function UnoHostView({ publicState, events, players, connected, send }: H
       setAnimQueue((current) => [...current, ...animated].slice(-5));
     }
   }, [events, sounds]);
+
+  // The board is a persistent "table" — one custom scene for the whole game
+  // (like Coup's 'table'), not the usual thinking/collecting/reveal set. Round
+  // and game results stay the existing Overlay + VictorySplash + confetti,
+  // not a scene swap — that presentation already works well and is orthogonal
+  // to the scene mechanism.
+  const scene: HostScene = 'table';
+  const stage = useStageDirector({
+    events,
+    scene,
+    broadcastFor: (e) => broadcastFor(e as UnoGameEvent, nameOf),
+    nameFor: nameOf,
+    avatarFor: avatarOf,
+  });
 
   // Drain the queue one event at a time so animations never overlap or race the board.
   useEffect(() => {
@@ -99,9 +133,6 @@ export function UnoHostView({ publicState, events, players, connected, send }: H
     return () => clearTimeout(timer);
   }, [roundOverPhase]);
 
-  const boardPlayers = state.players;
-  const nameOf = (id: string) => boardPlayers.find((p) => p.id === id)?.name ?? players.find((p) => p.id === id)?.name ?? '—';
-  const avatarOf = (id: string) => players.find((p) => p.id === id)?.avatar;
   const onlineCount = boardPlayers.filter((p) => p.connected).length;
   const currentPlayerName = nameOf(state.currentPlayerId ?? '');
   const unoCaller = boardPlayers.find((p) => p.calledUno && p.handCount === 1);
@@ -169,18 +200,125 @@ export function UnoHostView({ publicState, events, players, connected, send }: H
   };
 
   return (
-    <main className="host-shell host-game">
+    <>
       <div className="anim-layer" aria-hidden="true">{renderAnim()}</div>
       {roundOverPhase && !showResult ? <div className="anim-layer confetti" aria-hidden="true" /> : null}
+
+      <HostStage
+        scene={scene}
+        theme={unoTheme}
+        intensity={roundOverPhase ? 'high' : 'normal'}
+        hud={
+          <>
+            <div className="uno-brand">
+              <BrandMark text="UNO" size="md" />
+              <span className="uno-brand-sub">Sala {state.roomCode} · Rodada {state.round}</span>
+              {!connected ? <span className="uno-conn-pill">reconectando…</span> : null}
+            </div>
+            <Timer seconds={timerSeconds} />
+          </>
+        }
+        moment={stage.moment ? <Moment key={stage.momentId} {...stage.moment} /> : null}
+        broadcast={stage.broadcast ? <Broadcast key={stage.broadcast.id} item={stage.broadcast} /> : null}
+      >
+        <div className="uno-board">
+          <section className="table-zone">
+            <div className="table-meta-row">
+              <span className={`color-dot dot-${state.currentColor ?? 'neutral'}`}>{state.currentColor ?? '—'}</span>
+              <span className={`meta-chip ${anim?.event.type === 'direction_changed' ? 'spin' : ''}`}>{directionLabel}</span>
+              {state.pendingDraw > 0 ? <span className="meta-chip is-danger">Comprar +{state.pendingDraw}</span> : null}
+            </div>
+
+            <div className="piles">
+              <div className="pile" ref={monteRef}>
+                <span className="pile-label">Monte</span>
+                <img
+                  className="pile-art"
+                  src={revealDrawPile && state.topDrawPileCard ? getCardArt(state.topDrawPileCard) : getCardBackArt()}
+                  alt={revealDrawPile && state.topDrawPileCard ? formatCardLabel(state.topDrawPileCard) : 'Monte de cartas'}
+                />
+                <span className="pile-count">{state.drawPileCount} cartas</span>
+              </div>
+              <div className={`pile is-discard color-${state.currentColor ?? 'neutral'}`} ref={discardRef}>
+                <span className="pile-label">Descarte</span>
+                <img
+                  key={state.topDiscard?.id ?? 'none'}
+                  className="pile-art discard-pop"
+                  src={state.topDiscard ? getCardArt(state.topDiscard) : getCardBackArt()}
+                  alt={state.topDiscard ? formatCardLabel(state.topDiscard) : 'Sem descarte'}
+                />
+                <span className="pile-count">{state.topDiscard ? formatCardLabel(state.topDiscard) : '—'}</span>
+              </div>
+            </div>
+
+            <p className="turn-banner">
+              {state.phase === 'awaiting_color_choice'
+                ? <><strong>{currentPlayerName}</strong> está escolhendo a cor…</>
+                : <>Vez de <strong>{currentPlayerName}</strong></>}
+            </p>
+
+            {unoForgot ? (
+              <p className="uno-shout forgot">⚠️ {unoForgot.name} esqueceu de dizer UNO!</p>
+            ) : unoCaller ? (
+              <p className="uno-shout">🔥 {unoCaller.name} está em UNO!</p>
+            ) : null}
+          </section>
+
+          <aside className="side-zone">
+            <div className="side-head">
+              <h2>Jogadores</h2>
+              <span className="status-chip">{connected ? `${onlineCount} online` : 'offline'}</span>
+            </div>
+            <ul className="player-rows">
+              {boardPlayers.map((player) => (
+                <li
+                  key={player.id}
+                  ref={(el) => {
+                    if (el) rowRefs.current.set(player.id, el);
+                    else rowRefs.current.delete(player.id);
+                  }}
+                  className={`${state.currentPlayerId === player.id ? 'is-turn' : ''} ${skippedPlayerId === player.id ? 'just-skipped' : ''}`}
+                >
+                  <span className={`conn-dot ${player.connected ? 'on' : 'off'}`} aria-hidden="true" />
+                  {avatarOf(player.id) ? <Avatar spec={avatarOf(player.id)!} size={28} className="p-avatar" /> : null}
+                  <span className="p-name">{player.name}</span>
+                  {state.currentPlayerId === player.id && state.pendingDraw > 0
+                    ? <span className="p-tag">+{state.pendingDraw}</span>
+                    : null}
+                  {player.unoChallengeable
+                    ? <span className="p-tag danger">SEM UNO</span>
+                    : player.calledUno && player.handCount === 1
+                      ? <span className="p-tag uno">UNO!</span>
+                      : null}
+                  <span className="p-score">{player.score} pts</span>
+                  <span className="p-hand">{player.handCount}</span>
+                  <button
+                    type="button"
+                    className="kick-button"
+                    aria-label={`Expulsar ${player.name}`}
+                    onClick={() => kickPlayer(player.id)}
+                  >
+                    ✕
+                  </button>
+                </li>
+              ))}
+            </ul>
+            {feedLines.length > 0 ? (
+              <ul className="event-feed" aria-live="polite">
+                {feedLines.map((line) => (
+                  <li key={line.seq}>{line.text}</li>
+                ))}
+              </ul>
+            ) : null}
+          </aside>
+        </div>
+      </HostStage>
 
       {paused ? (
         <Overlay label="Partida pausada">
           <p className="eyebrow">Partida pausada</p>
           <h2>⏸ Aguardando o anfitrião</h2>
-          <div className="result-actions">
-            <Button variant="primary" onClick={() => send('RESUME_GAME', {})}>Continuar</Button>
-            <Button variant="danger" onClick={() => send('END_GAME', {})}>Encerrar</Button>
-          </div>
+          <p className="hint">O anfitrião controla pelo celular.</p>
         </Overlay>
       ) : null}
 
@@ -191,7 +329,7 @@ export function UnoHostView({ publicState, events, players, connected, send }: H
             <VictorySplash
               winner={{ name: gameWinnerName, avatar: state.gameWinnerPlayerId ? avatarOf(state.gameWinnerPlayerId) : undefined }}
               subtitle="venceu a partida"
-              accent="#ef4444"
+              accent={ACCENT}
             />
           ) : (
             <h2>{roundWinnerName} zerou a mão</h2>
@@ -218,123 +356,18 @@ export function UnoHostView({ publicState, events, players, connected, send }: H
         </Overlay>
       ) : null}
 
-      <header className="host-topbar">
-        <div className="brand">
-          <BrandMark text="UNO" size="md" />
-          <span className="brand-sub">Sala {state.roomCode} · Rodada {state.round}</span>
-          {!connected ? <span className="conn-pill">reconectando…</span> : null}
-        </div>
-        <Timer seconds={timerSeconds} />
-      </header>
-
-      <div className="host-body">
-        <section className="table-zone">
-          <div className="table-meta-row">
-            <span className={`color-dot dot-${state.currentColor ?? 'neutral'}`}>{state.currentColor ?? '—'}</span>
-            <span className={`meta-chip ${anim?.event.type === 'direction_changed' ? 'spin' : ''}`}>{directionLabel}</span>
-            {state.pendingDraw > 0 ? <span className="meta-chip is-danger">Comprar +{state.pendingDraw}</span> : null}
-          </div>
-
-          <div className="piles">
-            <div className="pile" ref={monteRef}>
-              <span className="pile-label">Monte</span>
-              <img
-                className="pile-art"
-                src={revealDrawPile && state.topDrawPileCard ? getCardArt(state.topDrawPileCard) : getCardBackArt()}
-                alt={revealDrawPile && state.topDrawPileCard ? formatCardLabel(state.topDrawPileCard) : 'Monte de cartas'}
-              />
-              <span className="pile-count">{state.drawPileCount} cartas</span>
-            </div>
-            <div className={`pile is-discard color-${state.currentColor ?? 'neutral'}`} ref={discardRef}>
-              <span className="pile-label">Descarte</span>
-              <img
-                key={state.topDiscard?.id ?? 'none'}
-                className="pile-art discard-pop"
-                src={state.topDiscard ? getCardArt(state.topDiscard) : getCardBackArt()}
-                alt={state.topDiscard ? formatCardLabel(state.topDiscard) : 'Sem descarte'}
-              />
-              <span className="pile-count">{state.topDiscard ? formatCardLabel(state.topDiscard) : '—'}</span>
-            </div>
-          </div>
-
-          <p className="turn-banner">
-            {state.phase === 'awaiting_color_choice'
-              ? <><strong>{currentPlayerName}</strong> está escolhendo a cor…</>
-              : <>Vez de <strong>{currentPlayerName}</strong></>}
-          </p>
-
-          {unoForgot ? (
-            <p className="uno-shout forgot">⚠️ {unoForgot.name} esqueceu de dizer UNO!</p>
-          ) : unoCaller ? (
-            <p className="uno-shout">🔥 {unoCaller.name} está em UNO!</p>
-          ) : null}
-        </section>
-
-        <aside className="side-zone">
-          <div className="side-head">
-            <h2>Jogadores</h2>
-            <span className="status-chip">{connected ? `${onlineCount} online` : 'offline'}</span>
-          </div>
-          <ul className="player-rows">
-            {boardPlayers.map((player) => (
-              <li
-                key={player.id}
-                ref={(el) => {
-                  if (el) rowRefs.current.set(player.id, el);
-                  else rowRefs.current.delete(player.id);
-                }}
-                className={`${state.currentPlayerId === player.id ? 'is-turn' : ''} ${skippedPlayerId === player.id ? 'just-skipped' : ''}`}
-              >
-                <span className={`conn-dot ${player.connected ? 'on' : 'off'}`} aria-hidden="true" />
-                {avatarOf(player.id) ? <Avatar spec={avatarOf(player.id)!} size={28} className="p-avatar" /> : null}
-                <span className="p-name">{player.name}</span>
-                {state.currentPlayerId === player.id && state.pendingDraw > 0
-                  ? <span className="p-tag">+{state.pendingDraw}</span>
-                  : null}
-                {player.unoChallengeable
-                  ? <span className="p-tag danger">SEM UNO</span>
-                  : player.calledUno && player.handCount === 1
-                    ? <span className="p-tag uno">UNO!</span>
-                    : null}
-                <span className="p-score">{player.score} pts</span>
-                <span className="p-hand">{player.handCount}</span>
-                <button
-                  type="button"
-                  className="kick-button"
-                  aria-label={`Expulsar ${player.name}`}
-                  onClick={() => kickPlayer(player.id)}
-                >
-                  ✕
-                </button>
-              </li>
-            ))}
-          </ul>
-          {feedLines.length > 0 ? (
-            <ul className="event-feed" aria-live="polite">
-              {feedLines.map((line) => (
-                <li key={line.seq}>{line.text}</li>
-              ))}
-            </ul>
-          ) : null}
-
-          <div className="side-actions">
-            <Button variant="ghost" onClick={() => send(paused ? 'RESUME_GAME' : 'PAUSE_GAME', {})}>
-              {paused ? '▶ Continuar' : '⏸ Pausar'}
-            </Button>
-            <Button variant="ghost" onClick={() => setRevealDrawPile((current) => !current)}>
-              {revealDrawPile ? 'Ocultar monte' : 'Revelar monte'}
-            </Button>
-            <Button
-              variant="ghost"
-              aria-pressed={soundOn}
-              onClick={() => setSoundOn(sounds.toggle())}
-            >
-              {soundOn ? '🔊 Som ligado' : '🔇 Som desligado'}
-            </Button>
-            <Button variant="danger" onClick={() => send('END_GAME', {})}>Encerrar partida</Button>
-          </div>
-        </aside>
+      <div className="uno-op-cluster">
+        <Button
+          variant="ghost"
+          aria-pressed={revealDrawPile}
+          onClick={() => setRevealDrawPile((current) => !current)}
+        >
+          {revealDrawPile ? 'Ocultar monte' : 'Revelar monte'}
+        </Button>
+        <button type="button" className="uno-sound-toggle" aria-pressed={soundOn} onClick={() => setSoundOn(sounds.toggle())}>
+          {soundOn ? '🔊' : '🔇'}
+        </button>
       </div>
-    </main>
+    </>
   );
 }

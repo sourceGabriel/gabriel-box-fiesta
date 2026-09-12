@@ -1,4 +1,5 @@
 import type { UnoCard, UnoGameEvent } from '@party/shared';
+import type { BroadcastItem } from '@party/ui';
 
 export const COLOR_LABEL: Record<string, string> = {
   red: 'vermelho',
@@ -18,7 +19,24 @@ export const cardText = (card: UnoCard): string => {
   return 'coringa';
 };
 
-/** A human line for the host event feed, or null for events not worth showing. */
+/**
+ * UNO events → broadcast lower-thirds for the host TV. Most events already
+ * get a bespoke fly-card/fx animation on the board (`animations.ts`) — a
+ * lower-third for the same beat would just be noise, so this only covers the
+ * ones that don't: a fresh round, and the owner pausing.
+ */
+export const broadcastFor = (event: UnoGameEvent, _nameOf: (id: string) => string): BroadcastItem | null => {
+  switch (event.type) {
+    case 'round_started':
+      return { tier: 'important', graphic: 'headline', title: `Rodada ${event.round}` };
+    case 'game_paused':
+      return { tier: 'critical', graphic: 'headline', title: 'Partida pausada' };
+    default:
+      return null;
+  }
+};
+
+/** The event-feed line (the sidebar list) — unrelated to the broadcast lower-thirds above. */
 export const describeEvent = (event: UnoGameEvent, nameOf: (id: string) => string): string | null => {
   switch (event.type) {
     case 'round_started': return `Rodada ${event.round} começou`;
