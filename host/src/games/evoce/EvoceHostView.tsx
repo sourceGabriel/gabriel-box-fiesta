@@ -1,10 +1,30 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { EvoceGameEvent, EvocePublicState, EvoceSubmission } from '@party/shared';
-import { Avatar, BrandMark, Button, DrawingView, getSounds, Overlay, RoundScoreboard, roundTaunt, Timer, VictorySplash } from '@party/ui';
+import {
+  Avatar,
+  Broadcast,
+  BrandMark,
+  Button,
+  ContestantStrip,
+  DrawingView,
+  getSounds,
+  HostStage,
+  Moment,
+  Overlay,
+  RoundScoreboard,
+  roundTaunt,
+  Timer,
+  useStageDirector,
+  VictorySplash,
+  type HostScene,
+} from '@party/ui';
 import type { HostGameViewProps } from '../types';
-import { describeEvent } from './describeEvent';
+import { broadcastFor } from './describeEvent';
 import { soundForEvent } from './sound-map';
+import { evoceTheme } from './theme';
 import './evoce-host.css';
+
+const ACCENT = evoceTheme.accent;
 
 const KIND_LABEL: Record<string, string> = {
   enquete: 'Enquete',
@@ -13,10 +33,15 @@ const KIND_LABEL: Record<string, string> = {
   final: 'A Obra-Prima',
 };
 
+const SCENE_FOR: Record<string, HostScene> = {
+  answering: 'thinking',
+  voting: 'collecting',
+  roundResults: 'reveal',
+  gameover: 'victory',
+};
+
 export function EvoceHostView({ publicState, events, players, connected, reactions, send }: HostGameViewProps) {
   const pub = publicState as EvocePublicState;
-  const seenSeqRef = useRef(0);
-  const [feed, setFeed] = useState<{ seq: number; text: string }[]>([]);
   const sounds = useMemo(() => getSounds(), []);
   const [soundOn, setSoundOn] = useState(() => sounds.isEnabled());
 
@@ -50,38 +75,84 @@ export function EvoceHostView({ publicState, events, players, connected, reactio
     return set;
   }, [events]);
 
-  useEffect(() => {
-    if (events.length === 0) {
-      seenSeqRef.current = 0;
-      setFeed([]);
-      return;
-    }
-    const lastSeq = events[events.length - 1].seq;
-    if (lastSeq <= seenSeqRef.current) return;
-    const fresh = events.filter((e) => e.seq > seenSeqRef.current);
-    seenSeqRef.current = lastSeq;
-    for (const { event } of fresh) {
-      const name = soundForEvent(event as EvoceGameEvent);
-      if (name) sounds.play(name);
-    }
-    const lines = fresh
-      .map((e) => ({ seq: e.seq, text: describeEvent(e.event as EvoceGameEvent, nameOf) }))
-      .filter((l): l is { seq: number; text: string } => l.text !== null);
-    if (lines.length > 0) setFeed((cur) => [...cur, ...lines].slice(-9));
-  }, [events, nameOf, sounds]);
-
   const paused = pub.phase === 'paused';
   const over = pub.phase === 'gameover';
   const inResults = pub.phase === 'roundResults' || over;
   const timerSeconds = pub.timer ? Math.max(0, Math.ceil(pub.timer.remainingMs / 1000)) : null;
   const isFinal = pub.roundKind === 'final';
   const isEnquete = pub.roundKind === 'enquete';
+  const scene: HostScene = SCENE_FOR[pub.phase] ?? 'thinking';
+
+  const stage = useStageDirector({
+    events,
+    scene,
+    broadcastFor: (e) => broadcastFor(e as EvoceGameEvent, nameOf),
+    nameFor: nameOf,
+    avatarFor: avatarOf,
+  });
+  const { enqueueMoment } = stage;
+
+  const seenSeq = useRef(0);
+  useEffect(() => {
+    if (events.length === 0) { seenSeq.current = 0; return; }
+    const last = events[events.length - 1].seq;
+    if (last <= seenSeq.current) return;
+    for (const { seq, event } of events) {
+      if (seq <= seenSeq.current) continue;
+      const name = soundForEvent(event as EvoceGameEvent);
+      if (name) sounds.play(name);
+    }
+    seenSeq.current = last;
+  }, [events, sounds]);
+
+  // results: enquete spotlights the poll winner; the others reveal a caption or
+  // spotlight the artist (a drawing can't be a Moment's text title).
+  useEffect(() => {
+    if (pub.phase !== 'roundResults') return;
+    if (isEnquete) {
+      if (!pub.pollWinnerId) return;
+      enqueueMoment({
+        id: `r${pub.round}-poll`,
+        priority: 10,
+        moment: {
+          type: 'spotlight',
+          eyebrow: 'A galera aponta pra',
+          title: nameOf(pub.pollWinnerId),
+          accent: ACCENT,
+          avatar: avatarOf(pub.pollWinnerId),
+        },
+      });
+      return;
+    }
+    const winner = pub.submissions.find((s) => s.isRoundWinner);
+    if (!winner) return;
+    if (winner.kind === 'caption' && winner.text) {
+      enqueueMoment({
+        id: `r${pub.round}-caption`,
+        priority: 10,
+        moment: { type: 'reveal', eyebrow: 'Vencedora da rodada', title: winner.text, subtitle: winner.authorName ?? undefined, accent: ACCENT },
+      });
+    } else if (winner.kind === 'drawing' && winner.authorId) {
+      enqueueMoment({
+        id: `r${pub.round}-artist`,
+        priority: 10,
+        moment: {
+          type: 'spotlight',
+          eyebrow: 'MELHOR ARTISTA',
+          title: winner.authorName ?? '—',
+          accent: ACCENT,
+          avatar: avatarOf(winner.authorId),
+        },
+      });
+    }
+  }, [pub.phase, pub.round, isEnquete, pub.pollWinnerId, pub.submissions, enqueueMoment, avatarOf, nameOf]);
 
   const standings = pub.standings.length
     ? pub.standings
     : [...pub.players].map((p) => ({ playerId: p.id, name: p.name, score: p.score, roundPoints: 0 })).sort((a, b) => b.score - a.score);
 
   const roster = pub.players.filter((p) => !(pub.roundKind === 'rabisco' && p.id === pub.targetId));
+  const intensity = over ? 'climax' : pub.phase === 'roundResults' ? 'high' : 'normal';
 
   const SubmissionCard = ({ s, n }: { s: EvoceSubmission; n: number }) => (
     <li className={`evoce-sub ${s.isRoundWinner ? 'is-winner' : ''}`}>
@@ -104,7 +175,7 @@ export function EvoceHostView({ publicState, events, players, connected, reactio
   );
 
   return (
-    <main className="host-shell evoce-host">
+    <>
       <div className="evoce-reactions" aria-hidden="true">
         {reactions.slice(-6).map((r) => (
           <div key={r.key} className="evoce-reaction-bubble">
@@ -114,53 +185,42 @@ export function EvoceHostView({ publicState, events, players, connected, reactio
         ))}
       </div>
 
-      {paused ? (
-        <Overlay label="Partida pausada">
-          <p className="eyebrow">Partida pausada</p>
-          <h2>⏸ Aguardando o anfitrião</h2>
-          <div className="evoce-result-actions">
-            <Button variant="primary" onClick={() => send('RESUME_GAME', {})}>Continuar</Button>
-            <Button variant="danger" onClick={() => send('END_GAME', {})}>Encerrar</Button>
-          </div>
-        </Overlay>
-      ) : null}
-
-      {over ? (
-        <Overlay label="Fim da partida">
-          <p className="eyebrow">Fim do É Você!</p>
-          <VictorySplash
-            winner={{ name: pub.winnerId ? nameOf(pub.winnerId) : '—', avatar: pub.winnerId ? avatarOf(pub.winnerId) : undefined }}
-            subtitle="a galera te conhece"
-            accent="#c4b5fd"
-          />
-          <ol className="evoce-final-standings">
-            {standings.map((s, i) => (
-              <li key={s.playerId}>
-                <span className="evoce-rank">{i + 1}º</span>
-                <span className="evoce-final-name">{s.name}</span>
-                <span className="evoce-final-score">{s.score}</span>
-              </li>
-            ))}
-          </ol>
-          <div className="evoce-result-actions">
-            <Button variant="primary" onClick={() => send('START_GAME', {})}>Nova partida</Button>
-            <Button variant="danger" onClick={() => send('END_GAME', {})}>Encerrar</Button>
-          </div>
-        </Overlay>
-      ) : null}
-
-      <header className="evoce-topbar">
-        <div className="evoce-brand">
-          <BrandMark text="É Você!" size="md" />
-          <span className="evoce-brand-sub">
-            Sala {pub.roomCode} · Rodada {pub.round}/{pub.totalRounds} · {KIND_LABEL[pub.roundKind] ?? pub.roundKind}
-          </span>
-          {!connected ? <span className="evoce-conn-pill">reconectando…</span> : null}
-        </div>
-        <Timer seconds={timerSeconds} active={pub.phase === 'answering' || pub.phase === 'voting'} />
-      </header>
-
-      <div className="evoce-body">
+      <HostStage
+        scene={scene}
+        theme={evoceTheme}
+        intensity={intensity}
+        hud={
+          <>
+            <div className="evoce-brand">
+              <BrandMark text="É Você!" size="md" />
+              <span className="evoce-brand-sub">
+                Sala {pub.roomCode} · Rodada {pub.round}/{pub.totalRounds} · {KIND_LABEL[pub.roundKind] ?? pub.roundKind}
+              </span>
+              {!connected ? <span className="evoce-conn-pill">reconectando…</span> : null}
+            </div>
+            <Timer seconds={timerSeconds} active={pub.phase === 'answering' || pub.phase === 'voting'} />
+          </>
+        }
+        strip={
+          over || pub.phase === 'roundResults' ? undefined : (
+            <ContestantStrip
+              entries={standings.map((s) => {
+                const jk = pub.players.find((p) => p.id === s.playerId)?.jokersLeft ?? 0;
+                return {
+                  id: s.playerId,
+                  name: s.name,
+                  avatar: avatarOf(s.playerId),
+                  score: s.score,
+                  tag: jk > 0 ? '🃏'.repeat(jk) : undefined,
+                  highlighted: s.playerId === standings[0]?.playerId,
+                };
+              })}
+            />
+          )
+        }
+        moment={stage.moment ? <Moment key={stage.momentId} {...stage.moment} /> : null}
+        broadcast={stage.broadcast ? <Broadcast key={stage.broadcast.id} item={stage.broadcast} /> : null}
+      >
         <section className="evoce-stage">
           {pub.targetId && (pub.roundKind === 'legenda' || pub.roundKind === 'rabisco') ? (
             <div className="evoce-target">
@@ -171,7 +231,6 @@ export function EvoceHostView({ publicState, events, players, connected, reactio
 
           {pub.prompt ? <p className={`evoce-prompt ${isFinal ? 'is-final' : ''}`}>{pub.prompt}</p> : null}
 
-          {/* answering */}
           {pub.phase === 'answering' ? (
             <div className="evoce-answering">
               <p className="evoce-eyebrow">
@@ -195,7 +254,6 @@ export function EvoceHostView({ publicState, events, players, connected, reactio
             </div>
           ) : null}
 
-          {/* voting (legenda/rabisco/final) */}
           {pub.phase === 'voting' ? (
             <div className="evoce-voting">
               <p className="evoce-eyebrow">Votem na melhor · no celular</p>
@@ -206,8 +264,7 @@ export function EvoceHostView({ publicState, events, players, connected, reactio
             </div>
           ) : null}
 
-          {/* results — enquete */}
-          {inResults && isEnquete && pub.pollBars ? (
+          {pub.phase === 'roundResults' && isEnquete && pub.pollBars ? (
             <div className="evoce-poll">
               <p className="evoce-eyebrow">
                 {pub.pollWinnerId ? `👉 A galera aponta pra ${nameOf(pub.pollWinnerId)}` : 'Deu empate!'}
@@ -228,8 +285,7 @@ export function EvoceHostView({ publicState, events, players, connected, reactio
             </div>
           ) : null}
 
-          {/* results — legenda/rabisco/final */}
-          {inResults && !isEnquete && pub.submissions.length > 0 ? (
+          {pub.phase === 'roundResults' && !isEnquete && pub.submissions.length > 0 ? (
             <div className="evoce-voting">
               <p className="evoce-eyebrow">
                 {pub.roundWinnerId ? `👑 ${nameOf(pub.roundWinnerId)} levou a rodada` : 'Rodada empatada'}
@@ -250,44 +306,47 @@ export function EvoceHostView({ publicState, events, players, connected, reactio
               avatarFor={avatarOf}
             />
           ) : null}
-        </section>
 
-        <aside className="evoce-side">
-          <div className="evoce-side-head">
-            <h2>Placar</h2>
-            <span className="status-chip">{connected ? 'ao vivo' : 'offline'}</span>
-          </div>
-          <ol className="evoce-standings">
-            {standings.map((s, i) => {
-              const jk = pub.players.find((p) => p.id === s.playerId)?.jokersLeft ?? 0;
-              return (
-                <li key={s.playerId}>
-                  <span className="evoce-rank">{i + 1}º</span>
-                  {avatarOf(s.playerId) ? <Avatar spec={avatarOf(s.playerId)!} size={22} /> : null}
-                  <span className="evoce-standings-name">{s.name}</span>
-                  <span className="evoce-jk">{'🃏'.repeat(jk)}</span>
-                  {s.roundPoints > 0 ? <span className="evoce-standings-delta">+{s.roundPoints}</span> : null}
-                  <span className="evoce-standings-score">{s.score}</span>
-                </li>
-              );
-            })}
-          </ol>
-          {feed.length > 0 ? (
-            <ul className="evoce-feed" aria-live="polite">{feed.map((l) => <li key={l.seq}>{l.text}</li>)}</ul>
-          ) : (
-            <p className="hint">Aguardando…</p>
-          )}
-          <div className="evoce-side-actions">
-            <Button variant="ghost" onClick={() => send(paused ? 'RESUME_GAME' : 'PAUSE_GAME', {})}>
-              {paused ? '▶ Continuar' : '⏸ Pausar'}
-            </Button>
+          {over ? (
+            <div className="evoce-gameover-scene">
+              <VictorySplash
+                winner={{ name: pub.winnerId ? nameOf(pub.winnerId) : '—', avatar: pub.winnerId ? avatarOf(pub.winnerId) : undefined }}
+                subtitle="a galera te conhece"
+                accent={ACCENT}
+              />
+              <ol className="evoce-final-standings">
+                {standings.map((s, i) => (
+                  <li key={s.playerId}>
+                    <span className="evoce-rank">{i + 1}º</span>
+                    <span className="evoce-final-name">{s.name}</span>
+                    <span className="evoce-final-score">{s.score}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ) : null}
+        </section>
+      </HostStage>
+
+      {paused ? (
+        <Overlay label="Partida pausada">
+          <p className="eyebrow">Partida pausada</p>
+          <h2>⏸ Aguardando o anfitrião</h2>
+          <p className="hint">O anfitrião controla pelo celular.</p>
+        </Overlay>
+      ) : null}
+
+      <div className="evoce-op-cluster">
+        {over ? (
+          <>
+            <Button variant="primary" onClick={() => send('START_GAME', {})}>Nova partida</Button>
             <Button variant="danger" onClick={() => send('END_GAME', {})}>Encerrar</Button>
-          </div>
-          <button type="button" className="evoce-sound-toggle" aria-pressed={soundOn} onClick={() => setSoundOn(sounds.toggle())}>
-            {soundOn ? '🔊 Som ligado' : '🔇 Som desligado'}
-          </button>
-        </aside>
+          </>
+        ) : null}
+        <button type="button" className="evoce-sound-toggle" aria-pressed={soundOn} onClick={() => setSoundOn(sounds.toggle())}>
+          {soundOn ? '🔊' : '🔇'}
+        </button>
       </div>
-    </main>
+    </>
   );
 }
