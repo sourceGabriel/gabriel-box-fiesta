@@ -1,4 +1,5 @@
 import { createContext, useContext, type CSSProperties, type ReactNode } from 'react';
+import type { PerformanceMode } from '@party/shared';
 
 /**
  * The host TV as a *stage*, not a dashboard: one full-bleed surface with a
@@ -57,8 +58,10 @@ export interface HostTheme {
 }
 
 // ── performance mode ──
-
-export type PerformanceMode = 'high' | 'balanced' | 'safe';
+// `PerformanceMode` itself lives in `@party/shared` (the room-level setting,
+// owner-controlled from their phone via SET_PERFORMANCE_MODE) — re-exported
+// here so existing `@party/ui` imports keep working.
+export type { PerformanceMode };
 
 const PerfContext = createContext<PerformanceMode>('balanced');
 
@@ -82,10 +85,19 @@ export interface HostStageProps {
   /** Bottom contestant strip. Hidden at `climax`. */
   strip?: ReactNode;
   intensity?: HostIntensity;
+  /** A `<Moment>` (or null) — rendered layered on top of the stage. */
+  moment?: ReactNode;
+  /**
+   * A `<Broadcast>` lower-third (or null) — rendered layered on top of the
+   * stage. Nested here (rather than as a sibling) so its CSS can tell, via
+   * `data-has-strip` on `.ui-stage`, to lift itself clear of `strip` instead
+   * of overlapping it.
+   */
+  broadcast?: ReactNode;
   children: ReactNode;
 }
 
-export function HostStage({ scene, theme, accent, hud, strip, intensity = 'normal', children }: HostStageProps) {
+export function HostStage({ scene, theme, accent, hud, strip, intensity = 'normal', moment, broadcast, children }: HostStageProps) {
   const perf = usePerformanceMode();
   const acc = theme?.accent ?? accent ?? 'var(--accent)';
   const style = {
@@ -105,6 +117,7 @@ export function HostStage({ scene, theme, accent, hud, strip, intensity = 'norma
       data-texture={perf === 'safe' ? 'none' : theme?.texture ?? 'grain'}
       data-motion={theme?.motion ?? 'punchy'}
       data-perf={perf}
+      data-has-strip={strip ? 'true' : undefined}
       style={style}
     >
       <div className="ui-stage-ambient" aria-hidden="true" />
@@ -122,6 +135,8 @@ export function HostStage({ scene, theme, accent, hud, strip, intensity = 'norma
           {strip}
         </footer>
       ) : null}
+      {moment}
+      {broadcast}
     </div>
   );
 }

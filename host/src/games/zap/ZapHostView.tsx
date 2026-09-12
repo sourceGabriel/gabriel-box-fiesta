@@ -5,6 +5,7 @@ import {
   BrandMark,
   Broadcast,
   Button,
+  ContestantStrip,
   getSounds,
   HostStage,
   Moment,
@@ -208,17 +209,19 @@ export function ZapHostView({ publicState, events, players, connected, reactions
         }
         strip={
           over || pub.phase === 'roundResults' ? undefined : (
-            <ul className="zap-strip">
-              {standings.map((s) => (
-                <li key={s.playerId} className={s.playerId === standings[0]?.playerId ? 'is-leader' : ''}>
-                  {avatarOf(s.playerId) ? <Avatar spec={avatarOf(s.playerId)!} size={34} /> : null}
-                  <span className="zap-strip-name">{s.name}</span>
-                  <span className="zap-strip-score">{s.score}</span>
-                </li>
-              ))}
-            </ul>
+            <ContestantStrip
+              entries={standings.map((s) => ({
+                id: s.playerId,
+                name: s.name,
+                avatar: avatarOf(s.playerId),
+                score: s.score,
+                highlighted: s.playerId === standings[0]?.playerId,
+              }))}
+            />
           )
         }
+        moment={stage.moment ? <Moment key={stage.momentId} {...stage.moment} /> : null}
+        broadcast={stage.broadcast ? <Broadcast key={stage.broadcast.id} item={stage.broadcast} /> : null}
       >
         <section className="zap-stage">
           {pub.phase === 'answering' ? (
@@ -303,9 +306,6 @@ export function ZapHostView({ publicState, events, players, connected, reactions
           ) : null}
         </section>
       </HostStage>
-
-      {stage.moment ? <Moment key={stage.momentId} {...stage.moment} /> : null}
-      {stage.broadcast ? <Broadcast key={stage.broadcast.id} item={stage.broadcast} /> : null}
 
       {paused ? (
         <Overlay label="Partida pausada">

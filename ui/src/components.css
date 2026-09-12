@@ -898,6 +898,40 @@
 }
 .ui-stage-strip[data-hidden="true"] { opacity: 0; transform: translateY(40%); pointer-events: none; }
 
+/* ── ContestantStrip ── */
+
+.ui-cstrip {
+  display: flex;
+  gap: clamp(0.6rem, 2vw, 1.6rem);
+  align-items: flex-end;
+  justify-content: center;
+  flex-wrap: wrap;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.ui-cstrip-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.4rem 0.7rem 0.5rem;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line-soft, rgba(255, 255, 255, 0.1));
+  min-width: 4.5rem;
+  transition: transform 0.25s ease, background 0.25s ease, opacity 0.25s ease;
+}
+.ui-cstrip-item.is-highlighted {
+  background: color-mix(in srgb, var(--stage-accent, var(--accent)) 20%, transparent);
+  border-color: color-mix(in srgb, var(--stage-accent, var(--accent)) 45%, transparent);
+  transform: translateY(-0.3rem);
+}
+.ui-cstrip-item.is-dimmed { opacity: 0.45; }
+.ui-cstrip-name { font-size: var(--tv-body, 0.95rem); font-weight: 600; max-width: 8ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ui-cstrip-score { font-family: var(--font-display); font-size: var(--tv-player, 1.3rem); color: var(--stage-accent-2, var(--stage-accent, var(--accent))); }
+.ui-cstrip-tag { font-size: 0.78rem; opacity: 0.8; }
+
 /* ── Moment ── */
 
 .ui-moment {
@@ -1008,6 +1042,11 @@
 .ui-bcast.tier-critical {
   border-color: color-mix(in srgb, var(--stage-accent) 60%, transparent);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--stage-accent) 25%, transparent), 0 1rem 2.4rem rgba(0, 0, 0, 0.5);
+}
+/* Nested under `.ui-stage[data-has-strip]` (see HostStage.tsx) so a lower-third
+   never sits on top of the contestant strip — it lifts clear of it instead. */
+.ui-stage[data-has-strip="true"] .ui-bcast {
+  bottom: calc(clamp(1rem, 4vh, 3rem) + 6.5rem);
 }
 .ui-bcast-headline {
   border-radius: 12px;

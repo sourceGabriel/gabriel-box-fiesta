@@ -188,6 +188,8 @@ export function CoupHostView({ publicState, events, players, connected, reaction
             <Timer seconds={timerSeconds} />
           </>
         }
+        moment={stage.moment ? <Moment key={stage.momentId} {...stage.moment} /> : null}
+        broadcast={stage.broadcast ? <Broadcast key={stage.broadcast.id} item={stage.broadcast} /> : null}
       >
         {over ? (
           <div className="coup-gameover-scene">
@@ -238,9 +240,6 @@ export function CoupHostView({ publicState, events, players, connected, reaction
           </section>
         )}
       </HostStage>
-
-      {stage.moment ? <Moment key={stage.momentId} {...stage.moment} /> : null}
-      {stage.broadcast ? <Broadcast key={stage.broadcast.id} item={stage.broadcast} /> : null}
 
       {paused ? (
         <Overlay label="Partida pausada">
