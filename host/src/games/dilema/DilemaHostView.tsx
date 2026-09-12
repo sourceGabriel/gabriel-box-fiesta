@@ -1,10 +1,27 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { AvatarSpec, DilemaGameEvent, DilemaPublicState, DilemaStep, DilemaTrack, DilemaTrackView } from '@party/shared';
-import { Avatar, BrandMark, Button, getSounds, Overlay, RoundScoreboard, roundTaunt, VictorySplash } from '@party/ui';
+import {
+  Avatar,
+  Broadcast,
+  BrandMark,
+  Button,
+  getSounds,
+  HostStage,
+  Moment,
+  Overlay,
+  RoundScoreboard,
+  roundTaunt,
+  useStageDirector,
+  VictorySplash,
+  type HostScene,
+} from '@party/ui';
 import type { HostGameViewProps } from '../types';
-import { describeEvent } from './describeEvent';
+import { broadcastFor } from './describeEvent';
 import { soundForEvent } from './sound-map';
+import { dilemaTheme } from './theme';
 import './dilema-host.css';
+
+const ACCENT = dilemaTheme.accent;
 
 const CARD_ICON: Record<string, string> = { innocent: '😇', guilty: '😈', modifier: '✨' };
 const STEP_LABEL: Record<DilemaStep, string> = { innocent: 'Inocentes', guilty: 'Culpados', modifier: 'Modificadores' };
@@ -87,8 +104,6 @@ function TrackColumn({
 
 export function DilemaHostView({ publicState, events, players, connected, reactions, send }: HostGameViewProps) {
   const pub = publicState as DilemaPublicState;
-  const seenSeqRef = useRef(0);
-  const [feed, setFeed] = useState<{ seq: number; text: string }[]>([]);
   const sounds = useMemo(() => getSounds(), []);
   const [soundOn, setSoundOn] = useState(() => sounds.isEnabled());
 
@@ -104,30 +119,53 @@ export function DilemaHostView({ publicState, events, players, connected, reacti
     return (id: string) => map.get(id);
   }, [players]);
 
-  useEffect(() => {
-    if (events.length === 0) {
-      seenSeqRef.current = 0;
-      setFeed([]);
-      return;
-    }
-    const lastSeq = events[events.length - 1].seq;
-    if (lastSeq <= seenSeqRef.current) return;
-    const fresh = events.filter((e) => e.seq > seenSeqRef.current);
-    seenSeqRef.current = lastSeq;
-    for (const { event } of fresh) {
-      const spec = soundForEvent(event as DilemaGameEvent);
-      if (spec) sounds.play(spec);
-    }
-    const lines = fresh
-      .map((e) => ({ seq: e.seq, text: describeEvent(e.event as DilemaGameEvent, nameOf) }))
-      .filter((l): l is { seq: number; text: string } => l.text !== null);
-    if (lines.length > 0) setFeed((cur) => [...cur, ...lines].slice(-9));
-  }, [events, nameOf, sounds]);
-
   const paused = pub.phase === 'paused';
   const over = pub.phase === 'gameover';
   const inResults = pub.phase === 'roundResults' || over;
   const inPicks = pub.phase === 'pickInnocent' || pub.phase === 'pickGuilty' || pub.phase === 'pickModifier';
+
+  // The board (the two tracks) is the whole game, continuously on screen — one
+  // custom scene for everything up to gameover, not the usual thinking/collecting/reveal set.
+  const scene: HostScene = over ? 'victory' : 'trilhos';
+
+  const stage = useStageDirector({
+    events,
+    scene,
+    broadcastFor: (e) => broadcastFor(e as DilemaGameEvent, nameOf),
+    nameFor: nameOf,
+    avatarFor: avatarOf,
+  });
+  const { enqueueMoment } = stage;
+
+  const seenSeq = useRef(0);
+  useEffect(() => {
+    if (events.length === 0) { seenSeq.current = 0; return; }
+    const last = events[events.length - 1].seq;
+    if (last <= seenSeq.current) return;
+    for (const { seq, event } of events) {
+      if (seq <= seenSeq.current) continue;
+      const spec = soundForEvent(event as DilemaGameEvent);
+      if (spec) sounds.play(spec);
+    }
+    seenSeq.current = last;
+  }, [events, sounds]);
+
+  // a new Maquinista gets a spotlight when the round assigns tracks
+  useEffect(() => {
+    if (pub.phase !== 'assigning' || !pub.conductorId) return;
+    enqueueMoment({
+      id: `r${pub.round}-conductor`,
+      priority: 10,
+      moment: {
+        type: 'spotlight',
+        eyebrow: '🎩 O MAQUINISTA',
+        title: pub.conductorName ?? nameOf(pub.conductorId),
+        subtitle: 'puxa a alavanca nesta rodada',
+        accent: ACCENT,
+        avatar: avatarOf(pub.conductorId),
+      },
+    });
+  }, [pub.phase, pub.round, pub.conductorId, pub.conductorName, enqueueMoment, avatarOf, nameOf]);
 
   const scoreRows = useMemo(() => {
     return pub.standings.length
@@ -143,8 +181,10 @@ export function DilemaHostView({ publicState, events, players, connected, reacti
     return 'idle';
   };
 
+  const intensity = over ? 'climax' : pub.phase === 'verdict' || pub.phase === 'roundResults' ? 'high' : 'normal';
+
   return (
-    <main className="host-shell dilema-host">
+    <>
       <div className="dil-reactions" aria-hidden="true">
         {reactions.slice(-6).map((r) => (
           <div key={r.key} className="dil-reaction-bubble">
@@ -154,159 +194,131 @@ export function DilemaHostView({ publicState, events, players, connected, reacti
         ))}
       </div>
 
+      <HostStage
+        scene={scene}
+        theme={dilemaTheme}
+        intensity={intensity}
+        hud={
+          <>
+            <div className="dil-brand">
+              <BrandMark text="Dilema" size="md" />
+              <span className="dil-brand-sub">
+                Sala {pub.roomCode} · Rodada {pub.round}/{pub.totalRounds}
+              </span>
+              {!connected ? <span className="dil-conn-pill">reconectando…</span> : null}
+            </div>
+            <div className="dil-conductor">
+              🎩 Maquinista: <strong>{pub.conductorName ?? '—'}</strong>
+            </div>
+            {inPicks && pub.step ? (
+              <div className="dil-step-pill">
+                Passo {STEP_NUM[pub.step]}/3 · {STEP_LABEL[pub.step]}
+              </div>
+            ) : null}
+          </>
+        }
+        moment={stage.moment ? <Moment key={stage.momentId} {...stage.moment} /> : null}
+        broadcast={stage.broadcast ? <Broadcast key={stage.broadcast.id} item={stage.broadcast} /> : null}
+      >
+        {over ? (
+          <div className="dil-gameover-scene">
+            {pub.winnerId ? (
+              <VictorySplash
+                winner={{ name: nameOf(pub.winnerId), avatar: avatarOf(pub.winnerId) }}
+                subtitle="o mais poupado"
+                accent={ACCENT}
+              />
+            ) : (
+              <h2>🤝 Empate — ninguém foi mais poupado</h2>
+            )}
+            <ol className="dil-final-standings">
+              {scoreRows.map((s, i) => (
+                <li key={s.playerId}>
+                  <span className="dil-rank">{i + 1}º</span>
+                  <span className="dil-final-name">{s.name}</span>
+                  <span className="dil-final-score">poupado {s.score}×</span>
+                </li>
+              ))}
+            </ol>
+          </div>
+        ) : (
+          <section className="dil-stage">
+            {pub.phase === 'assigning' ? (
+              <p className="dil-eyebrow dil-assign">
+                🎩 <strong>{pub.conductorName}</strong> puxa a alavanca nesta rodada. Formando os times…
+              </p>
+            ) : null}
+
+            {inPicks && pub.step ? (
+              <p className="dil-eyebrow">
+                {CARD_ICON[pub.step]} <strong>{STEP_LABEL[pub.step]}</strong> — {STEP_HINT[pub.step]}
+              </p>
+            ) : null}
+
+            {pub.phase === 'verdict' ? (
+              <p className="dil-eyebrow dil-verdict">
+                ⚖️ <strong>{pub.conductorName}</strong> decide qual trilho o trólebus atropela. Sem relógio — discutam.
+              </p>
+            ) : null}
+
+            {inResults ? (
+              <p className="dil-eyebrow dil-result-line">
+                {pub.verdictWasAuto ? '🪙 Maquinista fora — ' : `🔧 ${pub.conductorName} escolheu — `}
+                {pub.sparedTrack
+                  ? `${pub.sparedTrack === 'left' ? pub.tracks.left.label : pub.tracks.right.label} sobreviveu`
+                  : ''}
+              </p>
+            ) : null}
+
+            <div className={`dil-tracks ${inResults && pub.killedTrack ? `is-crashing-${pub.killedTrack}` : ''}`}>
+              <TrackColumn track={pub.tracks.left} avatarOf={avatarOf} state={trackState('left')} />
+              <div
+                className={`dil-fork ${inResults && pub.killedTrack ? `is-crash-${pub.killedTrack}` : ''}`}
+                aria-hidden="true"
+              >
+                <span className="dil-trolley">🚋</span>
+                <span className="dil-crash-flash" />
+                <span className="dil-crash-boom">💥</span>
+              </div>
+              <TrackColumn track={pub.tracks.right} avatarOf={avatarOf} state={trackState('right')} />
+            </div>
+
+            {inResults ? (
+              <RoundScoreboard
+                title={`Rodada ${pub.round} de ${pub.totalRounds} · poupados`}
+                standings={scoreRows}
+                taunt={roundTaunt(scoreRows.map((s) => ({ name: s.name, score: s.score })), pub.round)}
+                avatarFor={avatarOf}
+              />
+            ) : null}
+          </section>
+        )}
+      </HostStage>
+
       {paused ? (
         <Overlay label="Partida pausada">
           <p className="eyebrow">Partida pausada</p>
           <h2>⏸ Aguardando o anfitrião</h2>
-          <div className="dil-result-actions">
-            <Button variant="primary" onClick={() => send('RESUME_GAME', {})}>Continuar</Button>
-            <Button variant="danger" onClick={() => send('END_GAME', {})}>Encerrar</Button>
-          </div>
+          <p className="hint">O anfitrião controla pelo celular.</p>
         </Overlay>
       ) : null}
 
-      {over ? (
-        <Overlay label="Fim da partida">
-          <p className="eyebrow">Fim de Dilema nos Trilhos</p>
-          {pub.winnerId ? (
-            <VictorySplash
-              winner={{ name: nameOf(pub.winnerId), avatar: avatarOf(pub.winnerId) }}
-              subtitle="o mais poupado"
-              accent="#f97316"
-            />
-          ) : (
-            <h2>🤝 Empate — ninguém foi mais poupado</h2>
-          )}
-          <ol className="dil-final-standings">
-            {scoreRows.map((s, i) => (
-              <li key={s.playerId}>
-                <span className="dil-rank">{i + 1}º</span>
-                <span className="dil-final-name">{s.name}</span>
-                <span className="dil-final-score">poupado {s.score}×</span>
-              </li>
-            ))}
-          </ol>
-          <div className="dil-result-actions">
+      <div className="dil-op-cluster">
+        {over ? (
+          <>
             <Button variant="primary" onClick={() => send('START_GAME', {})}>Nova partida</Button>
             <Button variant="danger" onClick={() => send('END_GAME', {})}>Encerrar</Button>
-          </div>
-        </Overlay>
-      ) : null}
-
-      <header className="dil-topbar">
-        <div className="dil-brand">
-          <BrandMark text="Dilema" size="md" />
-          <span className="dil-brand-sub">
-            Sala {pub.roomCode} · Rodada {pub.round}/{pub.totalRounds}
-          </span>
-          {!connected ? <span className="dil-conn-pill">reconectando…</span> : null}
-        </div>
-        <div className="dil-conductor">
-          🎩 Maquinista: <strong>{pub.conductorName ?? '—'}</strong>
-        </div>
-        {inPicks && pub.step ? (
-          <div className="dil-step-pill">
-            Passo {STEP_NUM[pub.step]}/3 · {STEP_LABEL[pub.step]}
-          </div>
+          </>
         ) : null}
-      </header>
-
-      <div className="dil-body">
-        <section className="dil-stage">
-          {pub.phase === 'assigning' ? (
-            <p className="dil-eyebrow dil-assign">
-              🎩 <strong>{pub.conductorName}</strong> puxa a alavanca nesta rodada. Formando os times…
-            </p>
-          ) : null}
-
-          {inPicks && pub.step ? (
-            <p className="dil-eyebrow">
-              {CARD_ICON[pub.step]} <strong>{STEP_LABEL[pub.step]}</strong> — {STEP_HINT[pub.step]}
-            </p>
-          ) : null}
-
-          {pub.phase === 'verdict' ? (
-            <p className="dil-eyebrow dil-verdict">
-              ⚖️ <strong>{pub.conductorName}</strong> decide qual trilho o trólebus atropela. Sem relógio — discutam.
-            </p>
-          ) : null}
-
-          {inResults ? (
-            <p className="dil-eyebrow dil-result-line">
-              {pub.verdictWasAuto ? '🪙 Maquinista fora — ' : `🔧 ${pub.conductorName} escolheu — `}
-              {pub.sparedTrack
-                ? `${pub.sparedTrack === 'left' ? pub.tracks.left.label : pub.tracks.right.label} sobreviveu`
-                : ''}
-            </p>
-          ) : null}
-
-          <div className={`dil-tracks ${inResults && pub.killedTrack ? `is-crashing-${pub.killedTrack}` : ''}`}>
-            <TrackColumn track={pub.tracks.left} avatarOf={avatarOf} state={trackState('left')} />
-            <div
-              className={`dil-fork ${inResults && pub.killedTrack ? `is-crash-${pub.killedTrack}` : ''}`}
-              aria-hidden="true"
-            >
-              <span className="dil-trolley">🚋</span>
-              <span className="dil-crash-flash" />
-              <span className="dil-crash-boom">💥</span>
-            </div>
-            <TrackColumn track={pub.tracks.right} avatarOf={avatarOf} state={trackState('right')} />
-          </div>
-
-          {inResults && !over ? (
-            <RoundScoreboard
-              title={`Rodada ${pub.round} de ${pub.totalRounds} · poupados`}
-              standings={scoreRows}
-              taunt={roundTaunt(scoreRows.map((s) => ({ name: s.name, score: s.score })), pub.round)}
-              avatarFor={avatarOf}
-            />
-          ) : null}
-        </section>
-
-        <aside className="dil-side">
-          <div className="dil-side-head">
-            <h2>Poupados</h2>
-            <span className="status-chip">{connected ? 'ao vivo' : 'offline'}</span>
-          </div>
-          <ol className="dil-standings">
-            {scoreRows.map((s, i) => (
-              <li key={s.playerId} className={s.playerId === pub.conductorId ? 'is-conductor' : ''}>
-                <span className="dil-rank">{i + 1}º</span>
-                {avatarOf(s.playerId) ? <Avatar spec={avatarOf(s.playerId)!} size={22} /> : null}
-                <span className="dil-standings-name">
-                  {s.name}
-                  {s.playerId === pub.conductorId ? ' 🎩' : ''}
-                </span>
-                {s.roundPoints > 0 ? <span className="dil-standings-delta">+1</span> : null}
-                <span className="dil-standings-score">{s.score}</span>
-              </li>
-            ))}
-          </ol>
-          {feed.length > 0 ? (
-            <ul className="dil-feed" aria-live="polite">
-              {feed.map((line) => (
-                <li key={line.seq}>{line.text}</li>
-              ))}
-            </ul>
-          ) : (
-            <p className="hint">Aguardando…</p>
-          )}
-          <div className="dil-side-actions">
-            <Button variant="ghost" onClick={() => send(paused ? 'RESUME_GAME' : 'PAUSE_GAME', {})}>
-              {paused ? '▶ Continuar' : '⏸ Pausar'}
-            </Button>
-            <Button variant="danger" onClick={() => send('END_GAME', {})}>Encerrar</Button>
-          </div>
-          <button
-            type="button"
-            className="dil-sound-toggle"
-            aria-pressed={soundOn}
-            onClick={() => setSoundOn(sounds.toggle())}
-          >
-            {soundOn ? '🔊 Som ligado' : '🔇 Som desligado'}
-          </button>
-        </aside>
+        <button
+          type="button"
+          className="dil-sound-toggle"
+          aria-pressed={soundOn}
+          onClick={() => setSoundOn(sounds.toggle())}
+        >
+          {soundOn ? '🔊' : '🔇'}
+        </button>
       </div>
-    </main>
+    </>
   );
 }

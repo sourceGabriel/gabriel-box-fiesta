@@ -1,39 +1,28 @@
 import type { DilemaGameEvent, DilemaStep } from '@party/shared';
+import type { BroadcastItem } from '@party/ui';
 
 const TRACK_PT: Record<'left' | 'right', string> = { left: 'Trilho Esquerdo', right: 'Trilho Direito' };
 const STEP_PT: Record<DilemaStep, string> = { innocent: 'inocente', guilty: 'culpado', modifier: 'modificador' };
 
-/** A human line for the host event feed, or null for events not worth showing. */
-export const describeEvent = (event: DilemaGameEvent, nameOf: (id: string) => string): string | null => {
+/**
+ * Dilema events → broadcast lower-thirds for the host TV. The Maquinista reveal
+ * is a `<Moment>` driven from the public state in the view; the verdict itself
+ * is the trolley-crash animation baked into the persistent track board (not a
+ * `<Moment>` — a full-screen overlay would fight the board's own drama). Here
+ * we only narrate the quieter stuff.
+ */
+export const broadcastFor = (event: DilemaGameEvent, nameOf: (id: string) => string): BroadcastItem | null => {
   switch (event.type) {
-    case 'game_started':
-      return `🚋 Dilema nos Trilhos — ${event.totalRounds} rodadas`;
     case 'round_started':
-      return `Rodada ${event.round} de ${event.totalRounds}`;
-    case 'assignments_made':
-      return `🎩 ${nameOf(event.conductorId)} é o Maquinista`;
+      return { tier: 'important', graphic: 'headline', eyebrow: `Rodada ${event.round}/${event.totalRounds}`, title: 'Formando os times' };
     case 'pick_step_started':
-      return `🃏 Escolham o ${STEP_PT[event.step]} — em consenso`;
-    case 'team_proposed':
-      return null; // the live pick-status panel already shows the proposal — no feed spam on every re-propose
+      return { tier: 'important', graphic: 'lower-third', eyebrow: 'Passo', title: `Escolham o ${STEP_PT[event.step]}` };
     case 'team_locked':
-      return `✅ ${TRACK_PT[event.side]} travou o ${STEP_PT[event.step]}`;
-    case 'both_locked':
-      return null;
+      return { tier: 'ambient', graphic: 'lower-third', eyebrow: 'Travou', title: `${TRACK_PT[event.side]} travou o ${STEP_PT[event.step]}` };
     case 'verdict_started':
-      return `⚖️ ${nameOf(event.conductorId)} decide…`;
-    case 'verdict_cast':
-      return event.auto
-        ? `🪙 Maquinista fora — a sorte atropelou o ${TRACK_PT[event.killedTrack].toLowerCase()}`
-        : `🔧 Maquinista mandou o trólebus no ${TRACK_PT[event.killedTrack].toLowerCase()}`;
-    case 'round_finished':
-      return `🚋 ${TRACK_PT[event.sparedTrack]} sobreviveu`;
-    case 'game_finished':
-      return `🏆 ${nameOf(event.winnerId)} foi o mais poupado!`;
+      return { tier: 'important', graphic: 'headline', eyebrow: 'Veredito', title: `${nameOf(event.conductorId)} decide…` };
     case 'game_paused':
-      return '⏸ Partida pausada';
-    case 'game_resumed':
-      return '▶ Partida retomada';
+      return { tier: 'critical', graphic: 'headline', title: 'Partida pausada' };
     default:
       return null;
   }
