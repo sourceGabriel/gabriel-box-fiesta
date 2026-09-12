@@ -1,5 +1,7 @@
 /* Sabe-Tudo — host/TV view. Loaded only when the Sabe-Tudo game is active.
-   All rules scoped under .sabetudo-host so they can't collide with other games. */
+   All rules scoped under .sabetudo-host so they can't collide with other games.
+   The stage sits inside <HostStage> — see the "host-stage" section at the
+   bottom for the overrides that strip the old panel chrome + rescale type. */
 
 .sabetudo-host {
   --sabetudo-purple: #a78bfa;
@@ -8,16 +10,6 @@
   position: relative;
 }
 
-.sabetudo-topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: clamp(0.5rem, 1.5vmin, 1rem) clamp(0.75rem, 2vmin, 1.5rem);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: var(--panel);
-}
 .sabetudo-brand { display: flex; align-items: baseline; gap: 0.9rem; min-width: 0; }
 .sabetudo-brand-sub { color: var(--muted); font-size: clamp(0.85rem, 1.6vmin, 1.15rem); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sabetudo-conn-pill {
@@ -26,13 +18,6 @@
   background: rgba(251, 191, 36, 0.16); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.4);
 }
 
-.sabetudo-body {
-  flex: 1;
-  min-height: 0;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(240px, 24vw, 380px);
-  gap: clamp(0.5rem, 1.5vmin, 1.25rem);
-}
 .sabetudo-stage {
   min-width: 0;
   border: 1px solid var(--line);
@@ -125,52 +110,6 @@
 }
 .sabetudo-roster-chip.is-done { opacity: 1; border-color: var(--sabetudo-green); }
 
-/* ---------- side panel ---------- */
-.sabetudo-side {
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  background: var(--panel);
-  padding: clamp(0.6rem, 1.8vmin, 1.1rem);
-  display: flex;
-  flex-direction: column;
-  gap: 0.7rem;
-  min-height: 0;
-}
-.sabetudo-side-head { display: flex; align-items: center; justify-content: space-between; }
-.sabetudo-side-head h2 { margin: 0; font-size: clamp(1rem, 2vmin, 1.35rem); }
-
-.sabetudo-standings { display: flex; flex-direction: column; gap: 0.3rem; }
-.sabetudo-standings li,
-.sabetudo-final-standings li {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.4rem 0.55rem;
-  border-radius: 10px;
-  background: #0f1826;
-  border: 1px solid var(--line);
-}
-.sabetudo-standings li:first-child { border-color: var(--sabetudo-green); }
-.sabetudo-rank { color: var(--muted); font-weight: 700; font-size: 0.85em; min-width: 2.2ch; }
-.sabetudo-standings-name, .sabetudo-final-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.sabetudo-streak { color: #fb923c; font-weight: 700; font-size: 0.8em; }
-.sabetudo-standings-delta { color: var(--sabetudo-purple); font-weight: 700; font-size: 0.85em; }
-.sabetudo-standings-score, .sabetudo-final-score { font-weight: 800; color: var(--sabetudo-green); }
-
-.sabetudo-feed {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  font-size: clamp(0.75rem, 1.5vmin, 0.95rem);
-  color: var(--muted);
-  border-top: 1px solid var(--line);
-  padding-top: 0.5rem;
-}
-.sabetudo-side-actions { display: flex; gap: 0.5rem; }
-.sabetudo-side-actions button { flex: 1; }
 .sabetudo-sound-toggle {
   border: 1px solid var(--line);
   background: transparent;
@@ -182,8 +121,19 @@
   cursor: pointer;
 }
 
-.sabetudo-result-actions { display: flex; gap: 0.6rem; justify-content: center; margin-top: 0.8rem; flex-wrap: wrap; }
 .sabetudo-final-standings { display: flex; flex-direction: column; gap: 0.3rem; margin: 0.8rem 0 0; width: min(360px, 80vw); }
+.sabetudo-final-standings li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.55rem;
+  border-radius: 10px;
+  background: #0f1826;
+  border: 1px solid var(--line);
+}
+.sabetudo-rank { color: var(--muted); font-weight: 700; font-size: 0.85em; min-width: 2.2ch; }
+.sabetudo-final-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sabetudo-final-score { font-weight: 800; color: var(--sabetudo-green); }
 
 .sabetudo-reactions {
   position: absolute;
@@ -208,10 +158,60 @@
 .sabetudo-reaction-who { color: var(--muted); font-size: 0.8rem; }
 
 @media (max-width: 900px) {
-  .sabetudo-body { grid-template-columns: 1fr; }
   .sabetudo-options { grid-template-columns: 1fr; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .sabetudo-option, .sabetudo-progress-fill { animation: none; transition: none; }
 }
+
+/* ─── host-stage ─── the stage sits inside <HostStage>, so drop the panel chrome */
+.ui-stage .sabetudo-stage {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  width: min(96vw, 1400px);
+  overflow: visible;
+}
+.ui-stage .sabetudo-question {
+  font-family: var(--font-display);
+  font-size: var(--tv-headline);
+  text-transform: uppercase;
+  line-height: 1.02;
+  max-width: 20ch;
+}
+.ui-stage .sabetudo-option-text { font-size: var(--tv-body); }
+.ui-stage .sabetudo-count { font-size: var(--tv-secondary); color: var(--muted); }
+
+/* HUD bits reuse the old topbar classes */
+.ui-stage-hud .sabetudo-brand { display: flex; flex-direction: column; gap: 0.2rem; }
+.ui-stage-hud .sabetudo-brand-sub { color: var(--muted); font-size: var(--tv-body); }
+.ui-stage-hud .sabetudo-conn-pill {
+  align-self: flex-start;
+  font-size: 0.8em;
+  padding: 0.15em 0.7em;
+  border-radius: 999px;
+  background: rgba(255, 90, 90, 0.16);
+  color: #ffb4b4;
+}
+
+/* operator cluster — end-of-game controls + sound toggle; pause/end live on the owner's phone */
+.sabetudo-op-cluster {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 40;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  opacity: 0.35;
+  transition: opacity 0.2s ease;
+}
+.sabetudo-op-cluster:hover { opacity: 1; }
+.sabetudo-op-cluster .btn, .sabetudo-op-cluster button { font-size: var(--tv-body); }
+
+/* gameover scene inside <HostStage> */
+.sabetudo-gameover-scene { display: flex; flex-direction: column; align-items: center; gap: clamp(0.8rem, 2.4vmin, 2rem); }
+.ui-stage .sabetudo-final-standings { display: flex; flex-direction: column; gap: 0.3rem; font-size: var(--tv-secondary); }
+.ui-stage .sabetudo-final-standings li { display: flex; gap: 1rem; align-items: baseline; }
+.ui-stage .sabetudo-final-standings .sabetudo-final-score { font-family: var(--font-display); color: var(--sabetudo-green); }

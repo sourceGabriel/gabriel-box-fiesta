@@ -1,17 +1,39 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { SabeTudoGameEvent, SabeTudoPublicState } from '@party/shared';
-import { Avatar, BrandMark, Button, getSounds, Overlay, RoundScoreboard, roundTaunt, Timer, VictorySplash } from '@party/ui';
+import {
+  Avatar,
+  Broadcast,
+  BrandMark,
+  Button,
+  ContestantStrip,
+  getSounds,
+  HostStage,
+  Moment,
+  Overlay,
+  RoundScoreboard,
+  roundTaunt,
+  Timer,
+  useStageDirector,
+  VictorySplash,
+  type HostScene,
+} from '@party/ui';
 import type { HostGameViewProps } from '../types';
-import { describeEvent } from './describeEvent';
+import { broadcastFor, letterFor } from './describeEvent';
 import { soundForEvent } from './sound-map';
+import { sabeTudoTheme } from './theme';
 import './sabetudo-host.css';
 
+const ACCENT = sabeTudoTheme.accent;
 const LETTERS = ['A', 'B', 'C', 'D'];
+
+const SCENE_FOR: Record<string, HostScene> = {
+  question: 'thinking',
+  reveal: 'reveal',
+  gameover: 'victory',
+};
 
 export function SabeTudoHostView({ publicState, events, players, connected, reactions, send }: HostGameViewProps) {
   const pub = publicState as SabeTudoPublicState;
-  const seenSeqRef = useRef(0);
-  const [feed, setFeed] = useState<{ seq: number; text: string }[]>([]);
   const sounds = useMemo(() => getSounds(), []);
   const [soundOn, setSoundOn] = useState(() => sounds.isEnabled());
 
@@ -38,30 +60,57 @@ export function SabeTudoHostView({ publicState, events, players, connected, reac
     return set;
   }, [events]);
 
+  const paused = pub.phase === 'paused';
+  const over = pub.phase === 'gameover';
+  const timerSeconds = pub.timer ? Math.max(0, Math.ceil(pub.timer.remainingMs / 1000)) : null;
+  const scene: HostScene = SCENE_FOR[pub.phase] ?? 'thinking';
+
+  const stage = useStageDirector({
+    events,
+    scene,
+    broadcastFor: (e) => broadcastFor(e as SabeTudoGameEvent, nameOf),
+    nameFor: nameOf,
+    avatarFor: avatarOf,
+  });
+  const { enqueueMoment } = stage;
+
+  const seenSeq = useRef(0);
   useEffect(() => {
-    if (events.length === 0) {
-      seenSeqRef.current = 0;
-      setFeed([]);
-      return;
-    }
-    const lastSeq = events[events.length - 1].seq;
-    if (lastSeq <= seenSeqRef.current) return;
-    const freshRaw = events.filter((e) => e.seq > seenSeqRef.current);
-    seenSeqRef.current = lastSeq;
-    for (const { event } of freshRaw) {
+    if (events.length === 0) { seenSeq.current = 0; return; }
+    const last = events[events.length - 1].seq;
+    if (last <= seenSeq.current) return;
+    for (const { seq, event } of events) {
+      if (seq <= seenSeq.current) continue;
       const name = soundForEvent(event as SabeTudoGameEvent);
       if (name) sounds.play(name);
     }
-    const lines = freshRaw
-      .map((e) => ({ seq: e.seq, text: describeEvent(e.event as SabeTudoGameEvent, nameOf) }))
-      .filter((l): l is { seq: number; text: string } => l.text !== null);
-    if (lines.length > 0) setFeed((cur) => [...cur, ...lines].slice(-9));
-  }, [events, nameOf, sounds]);
+    seenSeq.current = last;
+  }, [events, sounds]);
 
-  const paused = pub.phase === 'paused';
-  const over = pub.phase === 'gameover';
-  const inReveal = pub.phase === 'reveal' || over;
-  const timerSeconds = pub.timer ? Math.max(0, Math.ceil(pub.timer.remainingMs / 1000)) : null;
+  // reveal fires the correct answer, then spotlights a hot streak (3+ in a row)
+  useEffect(() => {
+    if (pub.phase !== 'reveal' || pub.correctIndex === null) return;
+    enqueueMoment({
+      id: `r${pub.round}-correct`,
+      priority: 10,
+      moment: { type: 'reveal', eyebrow: 'A resposta certa era a', title: `${letterFor(pub.correctIndex)} — ${pub.options[pub.correctIndex] ?? ''}`, accent: ACCENT },
+    });
+    const onFire = pub.standings.find((s) => s.streak >= 3);
+    if (onFire) {
+      enqueueMoment({
+        id: `r${pub.round}-streak`,
+        priority: 5,
+        moment: {
+          type: 'spotlight',
+          eyebrow: 'EM CHAMAS',
+          title: onFire.name,
+          subtitle: `${onFire.streak} certas seguidas`,
+          accent: ACCENT,
+          avatar: avatarOf(onFire.playerId),
+        },
+      });
+    }
+  }, [pub.phase, pub.round, pub.correctIndex, pub.options, pub.standings, enqueueMoment, avatarOf]);
 
   const standings = pub.standings.length
     ? pub.standings
@@ -70,9 +119,10 @@ export function SabeTudoHostView({ publicState, events, players, connected, reac
         .sort((a, b) => b.score - a.score);
 
   const resultFor = (index: number) => pub.optionResults?.find((r) => r.index === index) ?? null;
+  const intensity = over ? 'climax' : pub.phase === 'reveal' ? 'high' : 'normal';
 
   return (
-    <main className="host-shell sabetudo-host">
+    <>
       <div className="sabetudo-reactions" aria-hidden="true">
         {reactions.slice(-6).map((r) => (
           <div key={r.key} className="sabetudo-reaction-bubble">
@@ -82,85 +132,73 @@ export function SabeTudoHostView({ publicState, events, players, connected, reac
         ))}
       </div>
 
-      {paused ? (
-        <Overlay label="Partida pausada">
-          <p className="eyebrow">Partida pausada</p>
-          <h2>⏸ Aguardando o anfitrião</h2>
-          <div className="sabetudo-result-actions">
-            <Button variant="primary" onClick={() => send('RESUME_GAME', {})}>Continuar</Button>
-            <Button variant="danger" onClick={() => send('END_GAME', {})}>Encerrar</Button>
-          </div>
-        </Overlay>
-      ) : null}
-
-      {over ? (
-        <Overlay label="Fim da partida">
-          <p className="eyebrow">Fim do Sabe-Tudo</p>
-          <VictorySplash
-            winner={{ name: pub.winnerId ? nameOf(pub.winnerId) : '—', avatar: pub.winnerId ? avatarOf(pub.winnerId) : undefined }}
-            subtitle="sabe tudo mesmo"
-            accent="#a78bfa"
-          />
-          <ol className="sabetudo-final-standings">
-            {standings.map((s, i) => (
-              <li key={s.playerId}>
-                <span className="sabetudo-rank">{i + 1}º</span>
-                <span className="sabetudo-final-name">{s.name}</span>
-                <span className="sabetudo-final-score">{s.score}</span>
-              </li>
-            ))}
-          </ol>
-          <div className="sabetudo-result-actions">
-            <Button variant="primary" onClick={() => send('START_GAME', {})}>Nova partida</Button>
-            <Button variant="danger" onClick={() => send('END_GAME', {})}>Encerrar</Button>
-          </div>
-        </Overlay>
-      ) : null}
-
-      <header className="sabetudo-topbar">
-        <div className="sabetudo-brand">
-          <BrandMark text="Sabe-Tudo" size="md" />
-          <span className="sabetudo-brand-sub">
-            Sala {pub.roomCode} · Pergunta {pub.round}/{pub.totalRounds}
-            {pub.category ? ` · ${pub.category}` : ''}
-          </span>
-          {!connected ? <span className="sabetudo-conn-pill">reconectando…</span> : null}
-        </div>
-        <Timer seconds={timerSeconds} active={pub.phase === 'question'} />
-      </header>
-
-      <div className="sabetudo-body">
+      <HostStage
+        scene={scene}
+        theme={sabeTudoTheme}
+        intensity={intensity}
+        hud={
+          <>
+            <div className="sabetudo-brand">
+              <BrandMark text="Sabe-Tudo" size="md" />
+              <span className="sabetudo-brand-sub">
+                Sala {pub.roomCode} · Pergunta {pub.round}/{pub.totalRounds}
+                {pub.category ? ` · ${pub.category}` : ''}
+              </span>
+              {!connected ? <span className="sabetudo-conn-pill">reconectando…</span> : null}
+            </div>
+            <Timer seconds={timerSeconds} active={pub.phase === 'question'} />
+          </>
+        }
+        strip={
+          over || pub.phase === 'reveal' ? undefined : (
+            <ContestantStrip
+              entries={standings.map((s) => ({
+                id: s.playerId,
+                name: s.name,
+                avatar: avatarOf(s.playerId),
+                score: s.score,
+                tag: s.streak >= 2 ? `🔥${s.streak}` : undefined,
+                highlighted: s.playerId === standings[0]?.playerId,
+              }))}
+            />
+          )
+        }
+        moment={stage.moment ? <Moment key={stage.momentId} {...stage.moment} /> : null}
+        broadcast={stage.broadcast ? <Broadcast key={stage.broadcast.id} item={stage.broadcast} /> : null}
+      >
         <section className="sabetudo-stage">
           {pub.question ? <p className="sabetudo-question">{pub.question}</p> : null}
 
-          <ol className="sabetudo-options">
-            {pub.options.map((opt, i) => {
-              const res = resultFor(i);
-              const state = inReveal
-                ? res?.correct
-                  ? 'is-correct'
-                  : (res?.count ?? 0) > 0
-                    ? 'is-wrong-picked'
-                    : 'is-dim'
-                : '';
-              return (
-                <li key={i} className={`sabetudo-option ${state}`}>
-                  <span className="sabetudo-option-letter">{LETTERS[i]}</span>
-                  <span className="sabetudo-option-text">{opt}</span>
-                  {inReveal ? (
-                    <span className="sabetudo-option-meta">
-                      {res?.correct ? <span className="sabetudo-badge correct">✔ certa</span> : null}
-                      {res && res.count > 0 ? (
-                        <span className="sabetudo-pickers">{res.pickedBy.map((p) => p.name).join(', ')}</span>
-                      ) : null}
-                    </span>
-                  ) : null}
-                </li>
-              );
-            })}
-          </ol>
+          {pub.phase === 'question' || pub.phase === 'reveal' ? (
+            <ol className="sabetudo-options">
+              {pub.options.map((opt, i) => {
+                const res = resultFor(i);
+                const state = pub.phase === 'reveal'
+                  ? res?.correct
+                    ? 'is-correct'
+                    : (res?.count ?? 0) > 0
+                      ? 'is-wrong-picked'
+                      : 'is-dim'
+                  : '';
+                return (
+                  <li key={i} className={`sabetudo-option ${state}`}>
+                    <span className="sabetudo-option-letter">{LETTERS[i]}</span>
+                    <span className="sabetudo-option-text">{opt}</span>
+                    {pub.phase === 'reveal' ? (
+                      <span className="sabetudo-option-meta">
+                        {res?.correct ? <span className="sabetudo-badge correct">✔ certa</span> : null}
+                        {res && res.count > 0 ? (
+                          <span className="sabetudo-pickers">{res.pickedBy.map((p) => p.name).join(', ')}</span>
+                        ) : null}
+                      </span>
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ol>
+          ) : null}
 
-          {inReveal && !over ? (
+          {pub.phase === 'reveal' ? (
             <RoundScoreboard
               title={`Rodada ${pub.round} de ${pub.totalRounds}`}
               standings={standings}
@@ -191,50 +229,47 @@ export function SabeTudoHostView({ publicState, events, players, connected, reac
               </ul>
             </div>
           ) : null}
-        </section>
 
-        <aside className="sabetudo-side">
-          <div className="sabetudo-side-head">
-            <h2>Placar</h2>
-            <span className="status-chip">{connected ? 'ao vivo' : 'offline'}</span>
-          </div>
-          <ol className="sabetudo-standings">
-            {standings.map((s, i) => (
-              <li key={s.playerId}>
-                <span className="sabetudo-rank">{i + 1}º</span>
-                {avatarOf(s.playerId) ? <Avatar spec={avatarOf(s.playerId)!} size={22} /> : null}
-                <span className="sabetudo-standings-name">{s.name}</span>
-                {s.streak >= 2 ? <span className="sabetudo-streak">🔥{s.streak}</span> : null}
-                {s.roundPoints > 0 ? <span className="sabetudo-standings-delta">+{s.roundPoints}</span> : null}
-                <span className="sabetudo-standings-score">{s.score}</span>
-              </li>
-            ))}
-          </ol>
-          {feed.length > 0 ? (
-            <ul className="sabetudo-feed" aria-live="polite">
-              {feed.map((line) => (
-                <li key={line.seq}>{line.text}</li>
-              ))}
-            </ul>
-          ) : (
-            <p className="hint">Aguardando…</p>
-          )}
-          <div className="sabetudo-side-actions">
-            <Button variant="ghost" onClick={() => send(paused ? 'RESUME_GAME' : 'PAUSE_GAME', {})}>
-              {paused ? '▶ Continuar' : '⏸ Pausar'}
-            </Button>
+          {over ? (
+            <div className="sabetudo-gameover-scene">
+              <VictorySplash
+                winner={{ name: pub.winnerId ? nameOf(pub.winnerId) : '—', avatar: pub.winnerId ? avatarOf(pub.winnerId) : undefined }}
+                subtitle="sabe tudo mesmo"
+                accent={ACCENT}
+              />
+              <ol className="sabetudo-final-standings">
+                {standings.map((s, i) => (
+                  <li key={s.playerId}>
+                    <span className="sabetudo-rank">{i + 1}º</span>
+                    <span className="sabetudo-final-name">{s.name}</span>
+                    <span className="sabetudo-final-score">{s.score}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ) : null}
+        </section>
+      </HostStage>
+
+      {paused ? (
+        <Overlay label="Partida pausada">
+          <p className="eyebrow">Partida pausada</p>
+          <h2>⏸ Aguardando o anfitrião</h2>
+          <p className="hint">O anfitrião controla pelo celular.</p>
+        </Overlay>
+      ) : null}
+
+      <div className="sabetudo-op-cluster">
+        {over ? (
+          <>
+            <Button variant="primary" onClick={() => send('START_GAME', {})}>Nova partida</Button>
             <Button variant="danger" onClick={() => send('END_GAME', {})}>Encerrar</Button>
-          </div>
-          <button
-            type="button"
-            className="sabetudo-sound-toggle"
-            aria-pressed={soundOn}
-            onClick={() => setSoundOn(sounds.toggle())}
-          >
-            {soundOn ? '🔊 Som ligado' : '🔇 Som desligado'}
-          </button>
-        </aside>
+          </>
+        ) : null}
+        <button type="button" className="sabetudo-sound-toggle" aria-pressed={soundOn} onClick={() => setSoundOn(sounds.toggle())}>
+          {soundOn ? '🔊' : '🔇'}
+        </button>
       </div>
-    </main>
+    </>
   );
 }
