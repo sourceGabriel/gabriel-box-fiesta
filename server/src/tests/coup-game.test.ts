@@ -283,6 +283,32 @@ describe('CoupGame — assassination & blocks', () => {
     expect(pub.currentPlayerId).toBe('p2');
   });
 
+  it('Assassinate challenged (actor genuinely has Assassin): challenger loses influence, then the ORIGINAL TARGET still gets to block with Contessa', () => {
+    const game = mkGame();
+    game.start();
+    setHand(game, 'p1', ['Assassin', 'Duke']);
+    setHand(game, 'p2', ['Contessa', 'Captain']);
+    setHand(game, 'p3', ['Captain', 'Duke']);
+    setCoins(game, 'p1', 3);
+    setDeck(game, ['Ambassador']); // replacement for p1's proven Assassin
+    game.handleAction('p1', { kind: 'declare_action', action: 'Assassinate', targetId: 'p2' });
+    game.handleAction('p3', { kind: 'challenge' });
+    // Challenge fails (p1 genuinely holds the Assassin) — p3 (challenger) must lose an influence.
+    expect(game.getPublicState().phase).toBe('awaiting_influence_loss');
+    expect(game.getPublicState().influenceLossPlayerId).toBe('p3');
+    game.handleAction('p3', { kind: 'lose_influence', influenceIndex: 0 });
+    // Assassinate is still blockable — p2 (the original target, NOT the challenger) should get the decision.
+    const pub = game.getPublicState();
+    expect(pub.phase).toBe('awaiting_block');
+    expect(game.getPrivateState('p2').pendingDecision).toBe('block');
+    expect(game.getPrivateState('p2').blockOptions).toEqual(['Contessa']);
+    game.handleAction('p2', { kind: 'block', character: 'Contessa' });
+    allPassBlockChallenge(game, ['p2']);
+    const final = game.getPublicState();
+    expect(revealedCount(game, 'p2')).toBe(0); // blocked successfully — no influence lost
+    expect(final.players.find((p) => p.id === 'p1')!.coins).toBe(0); // Assassinate's cost stays spent
+  });
+
   it('only the target may block a steal', () => {
     const game = mkGame();
     game.start();
