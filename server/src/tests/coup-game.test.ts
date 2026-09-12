@@ -309,6 +309,32 @@ describe('CoupGame — assassination & blocks', () => {
     expect(final.players.find((p) => p.id === 'p1')!.coins).toBe(0); // Assassinate's cost stays spent
   });
 
+  it('Assassinate challenged BY ITS OWN TARGET (actor genuinely has Assassin): target loses an influence for the failed challenge, then still gets to block with Contessa (regression for the "surrenders despite holding Contessa" bug)', () => {
+    const game = mkGame();
+    game.start();
+    setHand(game, 'p1', ['Assassin', 'Duke']);
+    setHand(game, 'p2', ['Captain', 'Contessa']);
+    setCoins(game, 'p1', 3);
+    setDeck(game, ['Ambassador']); // replacement for p1's proven Assassin
+    game.handleAction('p1', { kind: 'declare_action', action: 'Assassinate', targetId: 'p2' });
+    // p2 (the target) challenges the Assassin claim themselves, instead of blocking outright.
+    game.handleAction('p2', { kind: 'challenge' });
+    // Challenge fails (p1 genuinely holds the Assassin) — p2 must lose an influence for the failed challenge.
+    expect(game.getPublicState().phase).toBe('awaiting_influence_loss');
+    expect(game.getPublicState().influenceLossPlayerId).toBe('p2');
+    game.handleAction('p2', { kind: 'lose_influence', influenceIndex: 0 }); // reveals Captain, Contessa remains
+    // p2 must still get the block decision — having challenged and lost does not forfeit their own right to block.
+    const pub = game.getPublicState();
+    expect(pub.phase).toBe('awaiting_block');
+    expect(game.getPrivateState('p2').pendingDecision).toBe('block');
+    expect(game.getPrivateState('p2').blockOptions).toEqual(['Contessa']);
+    game.handleAction('p2', { kind: 'block', character: 'Contessa' });
+    allPassBlockChallenge(game, ['p2']);
+    const final = game.getPublicState();
+    expect(revealedCount(game, 'p2')).toBe(1); // only the failed-challenge loss — blocked successfully, no second loss
+    expect(final.players.find((p) => p.id === 'p1')!.coins).toBe(0); // Assassinate's cost stays spent
+  });
+
   it('only the target may block a steal', () => {
     const game = mkGame();
     game.start();

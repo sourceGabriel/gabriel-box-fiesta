@@ -354,7 +354,9 @@ export class ActionResolver {
 
   /**
    * After a challenge on the action fails (defender proved the card), the action
-   * proceeds. The challenger cannot also block (challenge OR block, not both).
+   * proceeds. A third-party challenger cannot also block (challenge OR block, not
+   * both) — but if the challenger WAS the action's target, blocking is their own
+   * separate right and must not be forfeited by having challenged first.
    */
   private afterSuccessfulActionChallengeDefense(
     pendingAction: PendingAction,
@@ -366,6 +368,7 @@ export class ActionResolver {
 
     if (def.blockedBy.length > 0) {
       sideEffects.push({ type: 'set_timer', durationMs: this.timerMs });
+      const challengerIsTarget = challengerId === pendingAction.targetId;
       return {
         newPhase: 'AwaitingBlock',
         pendingAction,
@@ -374,7 +377,7 @@ export class ActionResolver {
         influenceLossRequest: null,
         exchangeState: null,
         sideEffects,
-        blockAutoPassIds: [challengerId],
+        blockAutoPassIds: challengerIsTarget ? [] : [challengerId],
       };
     }
 
@@ -657,9 +660,9 @@ export class ActionResolver {
           const targetAlive = pendingAction.targetId
             ? (game.getPlayer(pendingAction.targetId)?.isAlive ?? false)
             : true;
-          const challengerIsTarget = pendingAction.targetId === playerId;
-          if (targetAlive && !challengerIsTarget) {
+          if (targetAlive) {
             sideEffects.push({ type: 'set_timer', durationMs: this.timerMs });
+            const challengerIsTarget = pendingAction.targetId === playerId;
             return {
               newPhase: 'AwaitingBlock',
               pendingAction,
@@ -668,11 +671,8 @@ export class ActionResolver {
               influenceLossRequest: null,
               exchangeState: null,
               sideEffects,
-              blockAutoPassIds: [playerId],
+              blockAutoPassIds: challengerIsTarget ? [] : [playerId],
             };
-          }
-          if (challengerIsTarget) {
-            return this.resolveAction(game, pendingAction, sideEffects);
           }
         }
         return this.resolveAction(game, pendingAction, sideEffects);
