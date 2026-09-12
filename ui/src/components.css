@@ -1009,6 +1009,38 @@
 
 .ui-moment-victory { background: rgba(4, 6, 11, 0.86); }
 
+.ui-moment-spotlight-avatar {
+  position: relative;
+  width: 136px;
+  height: 136px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  margin-bottom: 0.4rem;
+  animation: ui-moment-callout-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.ui-moment-spotlight-avatar::before {
+  content: "";
+  position: absolute;
+  inset: -10px;
+  border-radius: 50%;
+  border: 3px solid var(--moment-accent, var(--accent));
+  box-shadow: 0 0 3rem color-mix(in srgb, var(--moment-accent, var(--accent)) 60%, transparent);
+  animation: ui-moment-rule-pulse 1.4s ease 0.3s infinite;
+}
+.ui-moment[data-perf="safe"] .ui-moment-spotlight-avatar { animation: none; }
+.ui-moment[data-perf="safe"] .ui-moment-spotlight-avatar::before { animation: none; }
+
+.ui-moment-countdown-num {
+  font-family: var(--stage-font, var(--font-display));
+  font-size: var(--tv-climax);
+  line-height: 1;
+  color: var(--moment-accent, var(--accent));
+  text-shadow: 0 0 4rem color-mix(in srgb, var(--moment-accent, var(--accent)) 55%, transparent);
+  animation: ui-moment-callout-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.ui-moment[data-perf="safe"] .ui-moment-countdown-num { animation: none; }
+
 @keyframes ui-moment-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes ui-moment-eyebrow-in { from { opacity: 0; transform: translateY(0.8rem); } to { opacity: 1; transform: none; } }
 @keyframes ui-moment-title-wipe { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
