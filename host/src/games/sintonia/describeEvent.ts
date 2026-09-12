@@ -1,37 +1,23 @@
 import type { SintoniaGameEvent } from '@party/shared';
+import type { BroadcastItem } from '@party/ui';
 
-/** A human line for the host event feed, or null for events not worth showing. */
-export const describeEvent = (
-  event: SintoniaGameEvent,
-  nameOf: (id: string) => string,
-): string | null => {
+/**
+ * Sintonia events → broadcast lower-thirds for the host TV. The best-guess
+ * spotlight is a `<Moment>` driven from the public state in the view — here we
+ * only narrate the quieter stuff.
+ */
+export const broadcastFor = (event: SintoniaGameEvent, nameOf: (id: string) => string): BroadcastItem | null => {
   switch (event.type) {
-    case 'game_started':
-      return `📻 Sintonia — ${event.totalRounds} rodadas`;
     case 'round_started':
-      return `Rodada ${event.round} de ${event.totalRounds} · 🔮 ${nameOf(event.mediumId)} é o médium`;
+      return { tier: 'important', graphic: 'headline', eyebrow: `Rodada ${event.round}/${event.totalRounds}`, title: `🔮 ${nameOf(event.mediumId)} é o médium` };
     case 'clue_given':
-      return `🔮 ${nameOf(event.mediumId)} deu a dica`;
+      return { tier: 'important', graphic: 'lower-third', eyebrow: 'Dica dada', title: 'Cada um puxa o próprio ponteiro' };
     case 'clue_skipped':
-      return '⌛ Sem dica — rodada pulada';
-    case 'guessing_started':
-      return '🎚️ Cada um puxa o próprio ponteiro';
+      return { tier: 'important', graphic: 'headline', title: 'Sem dica — rodada pulada' };
     case 'guess_locked':
-      return `🔒 ${nameOf(event.playerId)} travou o palpite`;
-    case 'round_revealed':
-      return event.bestPlayerId
-        ? `🎯 Alvo em ${event.target} — ${nameOf(event.bestPlayerId)} chegou mais perto (+${event.bestPoints})`
-        : `🎯 Alvo em ${event.target} — ninguém chegou perto`;
-    case 'round_finished': {
-      const top = event.standings[0];
-      return top ? `Placar: ${nameOf(top.playerId)} lidera com ${top.score}` : 'Fim da rodada';
-    }
-    case 'game_finished':
-      return event.winnerId === null ? '🤝 Empate!' : `🏆 ${nameOf(event.winnerId)} venceu!`;
+      return { tier: 'ambient', graphic: 'lower-third', eyebrow: '🔒 Travou', title: `${nameOf(event.playerId)} travou o palpite`, playerId: event.playerId };
     case 'game_paused':
-      return '⏸ Partida pausada';
-    case 'game_resumed':
-      return '▶ Partida retomada';
+      return { tier: 'critical', graphic: 'headline', title: 'Partida pausada' };
     default:
       return null;
   }
