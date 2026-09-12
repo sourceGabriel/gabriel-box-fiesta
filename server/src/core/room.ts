@@ -1,6 +1,6 @@
 import { nanoid } from 'nanoid';
-import type { AvatarSpec, ContentTier, Player } from '@party/shared';
-import { DEFAULT_CONTENT_TIER } from '@party/shared';
+import type { AvatarSpec, ContentTier, PerformanceMode, Player } from '@party/shared';
+import { DEFAULT_CONTENT_TIER, DEFAULT_PERFORMANCE_MODE } from '@party/shared';
 import { SessionService } from './session-service';
 import { isPausable, isRounded, isTurnTimed, type GameInstance } from './game-plugin';
 import { DEFAULT_GAME_ID, GAMES } from '../games/registry';
@@ -31,6 +31,8 @@ export class Room {
   selectedGameId: string = DEFAULT_GAME_ID;
   /** Content intensity for the text games. Host flips it in the lobby. */
   contentTier: ContentTier = DEFAULT_CONTENT_TIER;
+  /** Host-TV rendering budget for the host-stage show framework. Owner flips it from their phone, any time. */
+  performanceMode: PerformanceMode = DEFAULT_PERFORMANCE_MODE;
   /** gameId → chosen match length, for games with `meta.lengthOptions`. Host picks it in the lobby. */
   readonly matchLengths = new Map<string, number>();
   stateVersion = 0;
@@ -158,6 +160,11 @@ export class Room {
       throw new Error('GAME_IN_PROGRESS:Cannot change content intensity after the game started');
     }
     this.contentTier = tier;
+  }
+
+  /** Owner sets the TV's host-stage rendering budget. Any time, including mid-game. */
+  setPerformanceMode(mode: PerformanceMode): void {
+    this.performanceMode = mode;
   }
 
   /** The resolved match length for a game (host's pick, else the game's default, else undefined). */

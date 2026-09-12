@@ -309,6 +309,13 @@ export class PartyServer {
       return;
     }
 
+    if (message.type === 'SET_PERFORMANCE_MODE') {
+      this.assertOwner(ctx.playerId, ctx.role);
+      room.setPerformanceMode(message.payload.mode);
+      this.broadcastRoomState();
+      return;
+    }
+
     if (message.type === 'SET_MATCH_LENGTH') {
       this.assertOwner(ctx.playerId, ctx.role);
       try {
@@ -520,6 +527,7 @@ export class PartyServer {
       ownerPlayerId: room.ownerPlayerId,
       joinUrl,
       joinQrDataUrl,
+      performanceMode: room.performanceMode,
       players: room.getPlayers().map((player) => ({ id: player.id, name: player.name, avatar: player.avatar, connected: player.connected })),
     });
   }

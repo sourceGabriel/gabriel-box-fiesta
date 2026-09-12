@@ -134,7 +134,7 @@ function App() {
 
   return (
     <main className="mobile-layout">
-      {isOwner && inGame ? <HostControlsBar paused={gamePaused} send={conn.send} /> : null}
+      {isOwner && inGame ? <HostControlsBar paused={gamePaused} performanceMode={conn.performanceMode} send={conn.send} /> : null}
       {screen}
       {conn.error ? <p className="error">{conn.error}</p> : null}
       <TextScaleButton />

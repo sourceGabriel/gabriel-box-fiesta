@@ -31,3 +31,23 @@
   border-color: color-mix(in srgb, #f87171 50%, transparent);
   color: #fca5a5;
 }
+.host-bar-perf {
+  flex-basis: 100%;
+  display: flex;
+  gap: 0.35rem;
+}
+.host-bar-perf-btn {
+  flex: 1;
+  font: 600 0.76rem/1 var(--font, system-ui);
+  padding: 0.4rem 0.5rem;
+  border-radius: 7px;
+  border: 1px solid var(--line, #2b3646);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--muted, #94a3b8);
+  cursor: pointer;
+}
+.host-bar-perf-btn.is-active {
+  border-color: var(--accent, #6366f1);
+  color: var(--text, #f1f5f9);
+  background: color-mix(in srgb, var(--accent, #6366f1) 20%, transparent);
+}

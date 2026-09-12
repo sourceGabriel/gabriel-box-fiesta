@@ -1,5 +1,5 @@
 import type { AvatarSpec } from '../models/avatar';
-import type { ContentTier, GameMeta, LifecycleEvent } from '../games';
+import type { ContentTier, GameMeta, LifecycleEvent, PerformanceMode } from '../games';
 
 export type ClientMessageType =
   | 'JOIN_ROOM'
@@ -17,6 +17,7 @@ export type ClientMessageType =
   | 'UPDATE_AVATAR'
   | 'SET_CONTENT_TIER'
   | 'SET_MATCH_LENGTH'
+  | 'SET_PERFORMANCE_MODE'
   | 'PING';
 
 export type ServerMessageType =
@@ -68,11 +69,13 @@ export type ClientMessage =
   | Envelope<'SET_CONTENT_TIER', { tier: ContentTier }>
   /** Owner sets a game's match length (rounds/questions). Lobby only. */
   | Envelope<'SET_MATCH_LENGTH', { gameId: string; length: number }>
+  /** Owner sets the TV's host-stage rendering budget, from their phone. Any time, incl. mid-game. */
+  | Envelope<'SET_PERFORMANCE_MODE', { mode: PerformanceMode }>
   | Envelope<'PING', {}>;
 
 export type ServerMessage =
   | Envelope<'ROOM_JOINED', { roomCode: string; role: 'player' | 'host'; playerId?: string; ownerPlayerId: string | null; sessionToken?: string }>
-  | Envelope<'ROOM_STATE', { roomCode: string; ownerPlayerId: string | null; joinUrl: string; joinQrDataUrl?: string; players: { id: string; name: string; avatar: AvatarSpec; connected: boolean }[] }>
+  | Envelope<'ROOM_STATE', { roomCode: string; ownerPlayerId: string | null; joinUrl: string; joinQrDataUrl?: string; performanceMode: PerformanceMode; players: { id: string; name: string; avatar: AvatarSpec; connected: boolean }[] }>
   | Envelope<'GAME_CATALOG', { games: GameMeta[]; selectedGameId: string; contentTier: ContentTier; matchLengths: Record<string, number> }>
   | Envelope<'PLAYER_JOINED', { playerId: string; name: string; avatar: AvatarSpec }>
   | Envelope<'PLAYER_RECONNECTED', { playerId: string }>

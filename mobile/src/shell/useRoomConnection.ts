@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { AvatarSpec, ContentTier, GameMeta, ServerMessage } from '@party/shared';
+import type { AvatarSpec, ContentTier, GameMeta, PerformanceMode, ServerMessage } from '@party/shared';
 import { getRoomCodeFromPath, makeMessage, wsOrigin, type Send } from './messages';
 import {
   clearStoredSession,
@@ -28,6 +28,8 @@ export interface RoomConnection {
   catalog: GameMeta[];
   selectedGameId: string;
   contentTier: ContentTier;
+  /** Host-TV rendering budget (from ROOM_STATE) — read by the owner's `<HostControlsBar>` toggle. */
+  performanceMode: PerformanceMode;
   /** The game in progress for this player, or null while waiting in the lobby. */
   activeGameId: string | null;
   /** Latest GAME_STATE_PUBLIC / PLAYER_STATE_PRIVATE payloads — opaque; the game view casts them. */
@@ -52,6 +54,7 @@ export function useRoomConnection(): RoomConnection {
   const [catalog, setCatalog] = useState<GameMeta[]>([]);
   const [selectedGameId, setSelectedGameId] = useState('');
   const [contentTier, setContentTier] = useState<ContentTier>('pesado');
+  const [performanceMode, setPerformanceMode] = useState<PerformanceMode>('balanced');
   const [activeGameId, setActiveGameId] = useState<string | null>(null);
   const [publicState, setPublicState] = useState<unknown | null>(null);
   const [privateState, setPrivateState] = useState<unknown | null>(null);
@@ -135,6 +138,7 @@ export function useRoomConnection(): RoomConnection {
           case 'ROOM_STATE':
             setRoomPlayers(message.payload.players.map((p) => ({ id: p.id, name: p.name, avatar: p.avatar, connected: p.connected })));
             setOwnerPlayerId(message.payload.ownerPlayerId);
+            setPerformanceMode(message.payload.performanceMode);
             break;
           case 'OWNER_CHANGED':
             setOwnerPlayerId(message.payload.ownerPlayerId);
@@ -263,6 +267,7 @@ export function useRoomConnection(): RoomConnection {
     catalog,
     selectedGameId,
     contentTier,
+    performanceMode,
     activeGameId,
     publicState,
     privateState,

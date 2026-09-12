@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { AvatarSpec, ContentTier, GameMeta, ServerMessage } from '@party/shared';
+import type { AvatarSpec, ContentTier, GameMeta, PerformanceMode, ServerMessage } from '@party/shared';
 import { makeMessage, serverOrigin, wsOrigin, type Send } from './messages';
 
 export type ShellPlayer = { id: string; name: string; avatar?: AvatarSpec; connected: boolean };
@@ -22,6 +22,8 @@ export interface RoomConnection {
   contentTier: ContentTier;
   /** gameId -> chosen match length (rounds/questions), from GAME_CATALOG. */
   matchLengths: Record<string, number>;
+  /** Host-TV rendering budget, owner-controlled from their phone (from ROOM_STATE). */
+  performanceMode: PerformanceMode;
   /** The id of the game currently in progress, or null in the lobby. */
   activeGameId: string | null;
   /** Latest GAME_STATE_PUBLIC payload (opaque here; the game view casts it). */
@@ -49,6 +51,7 @@ export function useRoomConnection(): RoomConnection {
   const [selectedGameId, setSelectedGameId] = useState('');
   const [contentTier, setContentTier] = useState<ContentTier>('pesado');
   const [matchLengths, setMatchLengths] = useState<Record<string, number>>({});
+  const [performanceMode, setPerformanceMode] = useState<PerformanceMode>('balanced');
   const [activeGameId, setActiveGameId] = useState<string | null>(null);
   const [publicState, setPublicState] = useState<unknown | null>(null);
   const [events, setEvents] = useState<BufferedEvent[]>([]);
@@ -116,6 +119,7 @@ export function useRoomConnection(): RoomConnection {
             setPlayers(message.payload.players.map((p) => ({ id: p.id, name: p.name, avatar: p.avatar, connected: p.connected })));
             setJoinQrDataUrl(message.payload.joinQrDataUrl);
             setJoinUrl(message.payload.joinUrl);
+            setPerformanceMode(message.payload.performanceMode);
             break;
           case 'GAME_CATALOG':
             setCatalog(message.payload.games);
@@ -182,6 +186,7 @@ export function useRoomConnection(): RoomConnection {
     selectedGameId,
     contentTier,
     matchLengths,
+    performanceMode,
     activeGameId,
     publicState,
     events,
